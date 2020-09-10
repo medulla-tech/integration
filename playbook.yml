@@ -4,8 +4,8 @@
    hosts: relay
    remote_user: root
    vars:
-     - repoPulse: "https://pulse-repo.siveo.net/rpm-test-bs-integration"
      - PULSE_REPO_URL: "https://git.siveo.net"
+     - PULSE_REPO_RMP_URL: "https://pulse-repo.siveo.net/rpm-test-bs-integration"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
@@ -16,7 +16,8 @@
      - TOMCAT_VERSION_DEB_7: "6"
      - TOMCAT_VERSION_MAG: "6"
      - TOMCAT_VERSION_RH: "7"
-     - ROOT_PASSWORD: r00tSiveo(
+     - ROOT_PASSWORD: r00tSiveo*
+     - DRIVERS_PASSWORD: ''
      - TEMP_PASS_MYSQL: siveo
      - SERVER: "pulse"
      - mysql_user: root
@@ -44,23 +45,26 @@
    roles:
 
 #INSTALL_MULTSITE_DEPENDENCIES
-#     - config_start
-#     - config_repo_pulse
+     - config_repo_pulse
+     - config_start
 #INSTALL_MULTSITE
-#     - install_/multisite
+     - install_/multisite
 #INSTALL_MULTSITE_DEPENDENCIES
-#     - install_/apache2_php
-#     - install_/php
-#     - install_/mysql
-#     - install_/nfs_kernel
-#     - config_/nfc_kernel
+     - install_/apache2_php
+     - install_/php
+     - install_/mysql
+     - install_/nfs_kernel
+     - config_/nfc_kernel
      - install_/pxelinux
      - config_/pxelinux
-#     - install_/clonezilla
-#     - install_/samba
-#     - install_/xmpp
-#     - install_/guacamole
-#     - install_/syncthing
-#     - config_/mysql_access
-#     - config_/mysql_server
-#     - config_relay_server
+     - install_/clonezilla
+     - config_/clonezilla
+     - install_/samba
+     - config_/samba
+     - install_/xmpp
+     - config_/xmpp
+     - install_/guacamole
+     - install_/syncthing
+     - config_/mysql_access
+     - config_/mysql_server
+     - config_relay_server
