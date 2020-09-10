@@ -1,0 +1,145 @@
+---
+
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: stop ejabberd
+   service:
+     name: ejabberd
+     state: stopped
+
+ - name: shell
+   shell: "/bin/rm -rf /var/lib/ejabberd/*"
+
+ - name: debconf
+   debconf:
+     name: ejabberd
+     question: ejabberd/hostname
+     value: "{{ XMPP_DOMAIN }}"
+     vtype: string
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: debconf
+   debconf:
+     name: ejabberd
+     question: ejabberd/user
+     value: root
+     vtype: string
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: debconf
+   debconf:
+     name: ejabberd
+     question: ejabberd/password
+     value: "{{ ROOT_PASSWORD }}"
+     vtype: password
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: debconf
+   debconf:
+     name: ejabberd
+     question: ejabberd/verify
+     value: "{{ ROOT_PASSWORD }}"
+     vtype: password
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Reconfigure package ejabberd
+   command: dpkg-reconfigure -fnoninteractive ejabberd
+   when:
+     - ansible_distribution == "Debian"
+
+# else Debian
+
+ - name: restart ejabberd
+   service:
+     name: ejabberd start
+   when:
+     - ansible_distribution != "Debian"
+
+ - pause:
+     seconds: 2
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: shell
+   shell: "/bin/cp -fv /var/lib/ejabberd/.erlang.cookie /root/.erlang.cookie"
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: Change file ownership, group
+   file:
+     path: /root/.erlang.cookie
+     owner: root
+     group: root
+   when:
+     - ansible_distribution != "Debian"
+
+ - pause:
+     seconds: 2
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: ejabctl register master
+   shell: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
+   when:
+     - ansible_distribution != "Debian"
+
+ - pause:
+     seconds: 5
+   when:
+     - ansible_distribution != "Debian"
+
+    # Configure a few details
+
+ - name: shell multiline sed -i
+   shell: |
+    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+
+ - name: sed -i
+   shell: |
+    sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: shell multiline sed -i
+   shell: |
+    sed -i '/^[[:space:]]*subject.*/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i  '/^[[:space:]]*body.*/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/body: ""/ {n;N; s/^/    ##/gm }' /etc/ejabberd/ejabberd.yml
+   when:
+     - ansible_distribution != "Debian"
+
+    # Add the necessary modules
+
+ - name: shell multiline sed -i
+   shell: |
+    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+
+ - name: service ejabberd restart
+   service:
+     name: ejabberd
+     state: restarted
+
+ - pause:
+     seconds: 3
