@@ -18,101 +18,82 @@
 
         #INSTALL_MYSQL CENTOS
 
- - name: Install MySQL repo
+ - name: install_mysql_rh
    yum:
-     name: http://dev.mysql.com/get/mysql57-community-release-el7-8.noarch.rpm
-     state: present
-   when:
-     - ansible_distribution == "CentOS"
-
- - name: Install MySQL
-   yum:
-     name: "{{ mysql_cent_packages }}"
      update_cache: yes
      state: latest
-   vars:
-     mysql_cent_packages:
-       - mysql-community-server
-       - mysql-community-client
-       - MySQL-python
-   notify: restart mysqld
-   when:
-     - ansible_distribution == "CentOS"
-
-
- - name: Change mysql root password and keep track in
-   shell: |
-     password_match=`awk '/A temporary password is generated for/ {a=$0} END{ print a }' /var/log/mysqld.log | awk '{print $(NF)}'`
-     echo $password_match
-     mysql -uroot -p$password_match --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'; flush privileges; "
-     echo "[client]"
-     user=root
-     password=PassW0rd > /root/.my.cnf
-   args:
-     creates: /root/.my.cnf
-   register: change_temp_pass
-   notify: restart mysqld
-   when:
-     - ansible_distribution == "CentOS"
-
-        #INSTALL_MYSQL MAGEIA RHEL
-
- - name: install_mysql
-   urpmi:
-     name: "{{ packages_mysql_mag }}"
-     update_cache: yes
-     state: latest
-   vars:
-     packages_mysql_mag:
+     pkg:
        - mariadb
-       - mariadb-client
-       - MySQL-python
+       - mariadb-server
    when:
      - ansible_distribution == "Mageia"
-   notify: [ "start mysql" ]
 
- - name: install_mysql
+ - name: install_mysql_rh
    yum:
-     name: "{{ packages_mysql_rh }}"
      update_cache: yes
      state: latest
-   vars:
-     packages_mysql_rh:
+     pkg:
        - mariadb
        - mariadb-server
        - MySQL-python
    when:
-     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
-   notify: [ "start mysql" ]
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: start mysqld Mageia
+   service:
+     name: mysqld
+     state: started
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: start mysqld rh
+   systemd:
+     name: mariadb
+     state: started
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ # - name: Change mysql root password and keep track in
+ #   shell: |
+ #     password_match=`awk '/A temporary password is generated for/ {a=$0} END{ print a }' /var/log/mysqld.log | awk '{print $(NF)}'`
+ #     echo $password_match
+ #     mysql -uroot -p$password_match --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'; flush privileges; "
+ #     echo "[client]"
+ #     user=root
+ #     password=PassW0rd > /root/.my.cnf
+ #   register: change_temp_pass
+ #   notify: restart mysqld
+ #   when:
+ #     - ansible_distribution == "CentOS"
 
         #SECURE THE INSTALL
 
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
    shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ ROOT_PASSWORD }}') WHERE User='{{ mysql_user }}'" | mysql -u root
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
 
  - name: settings for mysql-server DELETE FROM mysql.user WHERE User='root' AND Host NOT IN
    shell: echo "DELETE FROM mysql.user WHERE User='{{ mysql_user }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
 
  - name: settings for mysql-server DELETE FROM mysql.user WHERE User=''"
    shell: echo "DELETE FROM mysql.user WHERE User=''" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
 
  - name: settings for mysql-server DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
    shell: echo "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
