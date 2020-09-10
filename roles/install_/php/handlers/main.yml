@@ -13,3 +13,17 @@
      state: "restarted"
    when:
      ansible_distribution == "Debian"
+
+ - name: "php restart"
+   service:
+     name: "php"
+     state: "restarted"
+   when:
+     ansible_distribution == "CentOS"
+
+ - name: "php restart"
+   service:
+     name: "php"
+     state: "restarted"
+   when:
+     ansible_distribution == "Debian"

@@ -8,7 +8,18 @@
  - name: install_php
    yum:
      update_cache: yes
-     name: php-mssql,php-pear,php,php-pdo,php-pecl-redis,php-xml,php-pecl-zip,php-pecl-jsonc,php-pecl-igbinary,httpd,httpd-tools,php-mbstring,php-fpm
+     pkg:
+       - php
+#       - php-mssql
+#       - php-pear
+#       - php-pdo
+#       - php-pecl-redis
+#       - php-xml
+#       - php-pecl-zip
+       - php-pecl-jsonc
+#       - php-pecl-igbinary
+#       - php-mbstring
+       - php-fpm
      state: latest
    when:
      - ansible_distribution == "CentOS"
@@ -47,6 +58,16 @@
    when:
      - ansible_distribution == "Rhel"
    notify: [ "apache restart" ]
+
+ - apache2_module:
+     state: absent
+     name: "{{item}}"
+   with_items:
+     - "{{ v_php }}"
+#     - mpm_prefork
+   notify: [ "apache restart" ]
+   when:
+     - ansible_distribution == "Debian"
 
         #CREATE SYMBOLIC
 
@@ -141,6 +162,15 @@
      backup: yes
    when:
      - ansible_distribution == "CentOS"
+
+ - name: Update php.ini date_timezone
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^;date.timezone.*$'
+     replace: 'date.timezone = Europe\/Paris/'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
         #SERVICES RESTART
 
