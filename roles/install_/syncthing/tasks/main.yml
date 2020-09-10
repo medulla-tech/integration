@@ -1,0 +1,179 @@
+---
+
+ - name: set server = 1
+   set_fact:
+     SERVER: 1
+
+        #INSTALL SYNCTHING
+
+ - name: install_syncthing
+   yum:
+     name: syncthing
+     state: latest
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: install_syncthing
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthing
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_syncthing
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthing
+   when:
+     - ansible_distribution == "Mageia"
+
+     # Delete syncthing folders if already present
+
+ - name: Remove file (delete file)
+   file:
+     path: /var/lib/syncthing/.config
+     state: absent
+
+ - name: Remove file (delete file)
+   file:
+     path: /var/lib/syncthing/Sync
+     state: absent
+
+ - name: Remove file (delete file)
+   file:
+     path: /var/lib/syncthing-depl/.config
+     state: absent
+
+ - name: Remove file (delete file)
+   file:
+     path: /var/lib/syncthing-depl/Sync
+     state: absent
+
+     # Create a syncthing unprivileged account for general synch
+
+ - name: useradd syncthing
+   user:
+     name: syncthing
+     state: present
+     create_home: yes
+     home: /var/lib/syncthing
+     shell: /bin/false
+     system: yes
+
+ - name: Make sure a service is running
+   systemd:
+     enabled: yes
+     name: syncthing@syncthing.service
+
+ - name: Make service restarted
+   systemd:
+     state: restarted
+     name: syncthing@syncthing.service
+
+# Pause for 5 minutes to build app cache.
+ - pause:
+     seconds: 5
+
+     # Create a syncthing unprivileged account for deployment
+
+ - name: useradd syncthing
+   user:
+     name: syncthing-depl
+     state: present
+     create_home: yes
+     home: /var/lib/syncthing-depl
+     shell: /bin/false
+     system: yes
+
+ - name: Make sure a service is running
+   systemd:
+     enabled: yes
+     name: syncthing@syncthing-depl.service
+
+ - name: Make service restarted
+   systemd:
+     state: restarted
+     name: syncthing@syncthing-depl.service
+
+# Pause for 5 minutes to build app cache.
+ - pause:
+     seconds: 5
+
+# Create a backup of the config files
+
+ - name: create backup
+   shell: "/bin/cp /var/lib/syncthing/.config/syncthing/config.xml /var/lib/syncthing/.config/syncthing/config.xml.orig"
+
+ - name: create backup
+   shell: "/bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig"
+
+        #INSTALL SYNCTHING_MANAGER
+
+ - name: install_syncthingmanager
+   yum:
+     update_cache: yes
+     name: syncthingmanager
+     state: latest
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: install_syncthingmanager
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthingmanager
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_syncthingmanager
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthingmanager
+   when:
+     - ansible_distribution == "Mageia"
+
+# add other install syncthing
+ - name: install_syncthing_other
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthing-discosrv
+       - syncthing-systemd-addons
+   when:
+     - ansible_distribution == "Debian"
+     - SERVER == "pulse"
+   notify: [ "enable stdiscosrv" ]
+
+ - name: install_syncthing_other
+   yum:
+     name: "{{ packages_cent }}"
+     update_cache: yes
+     state: latest
+   vars:
+     packages_cent:
+       - syncthing-tools
+       - syncthing-systemd-addons
+       - xmlstarlet
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - SERVER == "pulse"
+
+ - name: install_syncthing_other
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - syncthing-tools
+       - syncthing-systemd-addons
+       - xmlstarlet
+   when:
+     - ansible_distribution == "Mageia"
+     - SERVER == "pulse"

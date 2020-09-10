@@ -1,0 +1,66 @@
+---
+
+ - name: install_multisite_dependencies
+   hosts: relay
+   remote_user: root
+   vars:
+     - repoPulse: "https://pulse-repo.siveo.net/rpm-test-bs-integration"
+     - PULSE_REPO_URL: "https://git.siveo.net"
+     - GIT_BRANCH: "integration"
+     - XMPP_DOMAIN: "siveo"
+     - key: /root/.ssh/id_rsa.pub
+     - v_php: php7.0
+     - TOMCAT_VERSION_DEB_10: "9"
+     - TOMCAT_VERSION_DEB_9: "8"
+     - TOMCAT_VERSION_DEB_8: "8"
+     - TOMCAT_VERSION_DEB_7: "6"
+     - TOMCAT_VERSION_MAG: "6"
+     - TOMCAT_VERSION_RH: "7"
+     - ROOT_PASSWORD: r00tSiveo(
+     - TEMP_PASS_MYSQL: siveo
+     - SERVER: "pulse"
+     - mysql_user: root
+     - RELAY_CONFIG_FILE: '/etc/pulse-xmpp-agent/relayconf.ini'
+     - PLUGINLIST: ''
+     - SSH_COMMAND: ''
+     - MASTER_PASSWORD: 'root'
+     - GUACAMOLE_BASEURL: ''
+     - IP_REMOTE_SERVER: ''
+     - REVERSE_SSH_PORT: ''
+     - IP_ADDRESS: ''
+     - PUBLIC_IP: ''
+     - PLUGIN_CONFIG_FILE: ''
+     - CLIENTS_SSH_PORT: ''
+     - CLIENTS_VNC_PORT: ''
+     - MAX_ID: ''
+     - CLUSTER_ID: ''
+     - MULTISITE_ENTITY: ''
+     - PULSEMAIN_IP: ''
+     - RELAYSERVER_ID: ''
+     - PULSEMAIN_FQDN: ''
+     - SYSLINUX_PATH: ''
+     - PXELINUX_PATH: ''
+
+   roles:
+
+#INSTALL_MULTSITE_DEPENDENCIES
+#     - config_start
+#     - config_repo_pulse
+#INSTALL_MULTSITE
+#     - install_/multisite
+#INSTALL_MULTSITE_DEPENDENCIES
+#     - install_/apache2_php
+#     - install_/php
+#     - install_/mysql
+#     - install_/nfs_kernel
+#     - config_/nfc_kernel
+     - install_/pxelinux
+     - config_/pxelinux
+#     - install_/clonezilla
+#     - install_/samba
+#     - install_/xmpp
+#     - install_/guacamole
+#     - install_/syncthing
+#     - config_/mysql_access
+#     - config_/mysql_server
+#     - config_relay_server

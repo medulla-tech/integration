@@ -1,0 +1,180 @@
+---
+
+ - debug:
+     msg: "_____INSTALL_APACHE2_____"
+
+        #INSTALL APACHE2 CENT
+
+ - name: install_apache2
+   yum:
+     name: "{{ packages_cent }}"
+     update_cache: yes
+     state: latest
+   vars:
+     packages_cent:
+       - httpd
+       - python3
+       - rsync
+       - epel-release
+   when:
+     - ansible_distribution == "CentOS"
+
+        #INSTALL APACHE2 DEB
+
+ - name: install_apache2_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - apache2
+       - python3-pip
+   when:
+     - ansible_distribution == "Debian"
+   notify: [ "apache restart" ]
+
+ - name: install_apache_mag
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - apache
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: install_apache_rhel
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - httpd
+   when:
+     - ansible_distribution == "Rhel"
+
+        #DISABLE MODULES
+
+ - apache2_module:
+     state: absent
+     name: "{{item}}"
+   with_items:
+     - php7.0
+     - mpm_prefork
+   notify: [ "apache restart" ]
+   when:
+     - ansible_distribution == "Debian"
+
+        #ENABLE MODULES
+
+ - apache2_module:
+     state: present
+     name: "{{item}}"
+   with_items:
+     - proxy
+     - proxy_http
+     - proxy_wstunnel
+     - proxy_fcgi
+     - mpm_event
+   notify: [ "apache restart" ]
+   when:
+     - ansible_distribution == "Debian"
+
+        #CREATE EDIT NOPT.CONF
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /etc/systemd/system/apache2.service.d
+     state: directory
+     mode: '0755'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Create nopt.conf
+   file:
+     path: /etc/systemd/system/apache2.service.d/nopt.conf
+     state: touch
+     mode: '0755'
+   when:
+     - ansible_distribution == "Debian"
+
+ - copy:
+     content: "[Service]\nPrivateTmp=false"
+     dest: /etc/systemd/system/apache2.service.d/nopt.conf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /etc/systemd/system/httpd.service.d
+     state: directory
+     mode: '0755'
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Create nopt.conf
+   file:
+     path: /etc/systemd/system/httpd.service.d/nopt.conf
+     state: touch
+     mode: '0755'
+   when:
+     - ansible_distribution == "CentOS"
+
+ - copy:
+     content: "[Service]\nPrivateTmp=false"
+     dest: /etc/systemd/system/httpd.service.d/nopt.conf
+   when:
+     - ansible_distribution == "CentOS"
+
+        #DATE_TIMEZONE
+
+ - name: Update php.ini date_timezone
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^;date.timezone.*$'
+     replace: 'date.timezone = Europe\/Paris/'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Update php.ini date_timezone
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^;date.timezone.*$'
+     replace: 'date.timezone = Europe\/Paris/'
+     backup: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+        #SERVICES RESTART
+
+ - name: daemon_reload
+   systemd:
+     daemon_reload: yes
+
+ - name: restart apache2
+   systemd:
+     state: restarted
+     name: apache2.service
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: restart apache2
+   systemd:
+     state: restarted
+     name: httpd.service
+   when:
+     - ansible_distribution == "CentOS"
+
+        #SERVICES RESTART
+
+ - name: enabled apache2
+   systemd:
+     enabled: yes
+     name: apache2
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: enabled httpd
+   systemd:
+     enabled: yes
+     name: httpd
+   when:
+     - ansible_distribution == "CentOS"

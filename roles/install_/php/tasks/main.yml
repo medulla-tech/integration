@@ -1,0 +1,195 @@
+---
+
+ - debug:
+     msg: "_____INSTALL_PHP_____"
+
+       #INSTALL PHP
+
+ - name: install_php
+   yum:
+     update_cache: yes
+     name: php-mssql,php-pear,php,php-pdo,php-pecl-redis,php-xml,php-pecl-zip,php-pecl-jsonc,php-pecl-igbinary,httpd,httpd-tools,php-mbstring,php-fpm
+     state: latest
+   when:
+     - ansible_distribution == "CentOS"
+   notify: [ "apache restart" ]
+
+        #INSTALL APACHE2 & PHP
+
+ - name: install_apache2_php_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - libphp-phpmailer
+       - libapache2-mod-php7.0
+       - "{{v_php}}"
+       - php-fpm
+   when:
+     - ansible_distribution == "Debian"
+   notify: [ "apache restart" ]
+
+ - name: install_php_apache_mag
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - php-cgi
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: install_apache_php_rhel
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - php
+   when:
+     - ansible_distribution == "Rhel"
+   notify: [ "apache restart" ]
+
+        #CREATE SYMBOLIC
+
+ - name: Create symbolic link
+   file:
+     src: /etc/apache2/conf-available/php7.0-fpm.conf
+     dest: /etc/apache2/conf-enabled/php7.0-fpm.conf
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Debian"
+
+        #CONFIG
+
+ - name: Get path to php.ini deb
+   find:
+     paths: /etc/php
+     file_type: directory
+     recurse: no
+   register: ini_path
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini post_max_size
+   replace:
+     dest: "{{ ini_path.files[0].path }}/apache2/php.ini"
+     regexp: '^post_max_size.*$'
+     replace: 'post_max_size = 20M'
+     backup: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini upload_max_filesize
+   replace:
+     dest: "{{ ini_path.files[0].path }}/apache2/php.ini"
+     regexp: '^upload_max_filesize.*$'
+     replace: 'upload_max_filesize = 20M'
+     backup: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini upload_memory_limit
+   replace:
+     dest: "{{ ini_path.files[0].path }}/apache2/php.ini"
+     regexp: '^memory_limit.*$'
+     replace: 'memory_limit = 1024M'
+     backup: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini short_open_tag
+   replace:
+     dest: "{{ ini_path.files[0].path }}/apache2/php.ini"
+     regexp: '^short_open_tag.*$'
+     replace: 'short_open_tag = On'
+     backup: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini post_max_size
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^post_max_size.*$'
+     replace: 'post_max_size = 20M'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Update php.ini upload_max_filesize
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^upload_max_filesize.*$'
+     replace: 'upload_max_filesize = 20M'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Update php.ini upload_memory_limit
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^memory_limit.*$'
+     replace: 'memory_limit = 1024M'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Update php.ini short_open_tag
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^short_open_tag.*$'
+     replace: 'short_open_tag = On'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+        #SERVICES RESTART
+
+ - name: restart php-fpm
+   systemd:
+     state: restarted
+     name: php7.0-fpm
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: restart php-fpm
+   systemd:
+     state: restarted
+     name: php-fpm
+   when:
+     - ansible_distribution == "CentOS"
+
+        #SESSION_COOKIE
+
+ - name: Update php.ini session.cookie_httponly
+   replace:
+     dest: "{{ ini_path.files[0].path }}/apache2/php.ini"
+     regexp: '^session.cookie_httponly.*$'
+     replace: 'session.cookie_httponly = 1'
+     backup: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Update php.ini session.cookie_httponly
+   replace:
+     dest: "/etc/php.ini"
+     regexp: '^session.cookie_httponly.*$'
+     replace: 'session.cookie_httponly = 1'
+     backup: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+        #SERVICES RESTART
+
+ - name: enabled php-fpm deb
+   systemd:
+     enabled: yes
+     name: php7.0-fpm
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: enabled php-fpm cent
+   systemd:
+     enabled: yes
+     name: php-fpm
+   when:
+     - ansible_distribution == "CentOS"

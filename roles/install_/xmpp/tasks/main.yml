@@ -1,0 +1,73 @@
+---
+
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: Define a few settings for ejabberd
+   shell: 'echo "ejabberd ejabberd/hostname string {{ XMPP_DOMAIN }}" | debconf-set-selections'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Define a few settings for ejabberd
+   shell: 'echo "ejabberd ejabberd/user string root" | debconf-set-selections'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Define a few settings for ejabberd
+   shell: 'echo "ejabberd ejabberd/password password {{ ROOT_PASSWORD }}" | debconf-set-selections'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Define a few settings for ejabberd
+   shell: 'echo "ejabberd ejabberd/verify password {{ ROOT_PASSWORD }}" | debconf-set-selections'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: start auto ejabberd
+   service:
+     name: ejabberd
+     enabled: yes
+
+ - name: start stop ejabberd
+   service:
+     name: ejabberd
+     state: stopped
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: usermod rhel ejabberd
+   shell: "usermod ejabberd -d /var/lib/ejabberd"
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: service ejabberd start
+   service:
+     name: ejabberd
+     state: started
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: usermod rhel or Mageia ejabberd
+   shell: 'sed -i "s/localhost/{{ XMPP_DOMAIN }}/" /etc/ejabberd/ejabberd.yml'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+
+ - name: usermod rhel or Mageia ejabberd
+   shell: 'sed -i "/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - \"root@{{ XMPP_DOMAIN }}\"" /etc/ejabberd/ejabberd.yml'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+
+ - name: usermod rhel or Mageia ejabberd
+   shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+
+ - name: restart service ejabberd
+   systemd:
+     name: ejabberd
+     state: restarted

@@ -1,0 +1,318 @@
+---
+
+ - name: set guacamole option
+   shell: 'echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_guacamole
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - guacamole-tomcat
+       - libguac-client-rdp0
+       - libguac-client-ssh0
+       - libguac-client-vnc0
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_guacamole
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - guacamole-auth-mysql
+       - mysql-connector-java
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: install_guacamole
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - guacamole-auth-jdbc
+       - mysql-connector-java
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version != '8'
+
+ - name: Install package foo
+   urpmi:
+     pkg:
+       - guacamole
+       - guacd
+       - libguac-client-vnc
+       - libguac-client-ssh
+       - libguac-client-rdp
+       - guacamole-auth-mysql
+       - mysql-connector-java
+     state: present
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: Install package foo
+   yum:
+     pkg:
+       - guacamole
+       - guacd
+       - libguac-client-vnc
+       - libguac-client-ssh
+       - libguac-client-rdp
+       - guacamole-auth-mysql
+       - mysql-connector-java
+     state: present
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+# DEB 10
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - not stat_result.stat.exists
+
+#DEB 9
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+     - not stat_result.stat.exists
+
+#DEB 8
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+     - not stat_result.stat.exists
+
+#DEB 7
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+     - not stat_result.stat.exists
+
+#MAG
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_MAG }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_MAG }}'
+   when:
+     - ansible_distribution == "Mageia"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_MAG }}'
+   when:
+     - ansible_distribution == "Mageia"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_MAG }}'
+   when:
+     - ansible_distribution == "Mageia"
+     - not stat_result.stat.exists
+
+#RHEL or CentOS
+ - name: Check that the tomcat exists
+   stat:
+     path: /etc/default/tomcat{{ TOMCAT_VERSION_RH }}
+   register: stat_result
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: after Check
+   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - not stat_result.stat.exists
+
+ - name: after CheckS
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - not stat_result.stat.exists
+
+ - name: after Check
+   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - not stat_result.stat.exists
+
+#RESTART AND ENABLED SERVICES
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat{{ TOMCAT_VERSION_DEB_9 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat{{ TOMCAT_VERSION_DEB_8 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat{{ TOMCAT_VERSION_DEB_7 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat{{ TOMCAT_VERSION_MAG }}
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: enabled tomcat
+   systemd:
+     enabled: yes
+     name: tomcat
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: enabled guacd
+   systemd:
+     enabled: yes
+     name: guacd
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat{{ TOMCAT_VERSION_DEB_9 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat{{ TOMCAT_VERSION_DEB_8 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat{{ TOMCAT_VERSION_DEB_7 }}
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat{{ TOMCAT_VERSION_MAG }}
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: restarted tomcat
+   systemd:
+     state: restarted
+     name: tomcat
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: restarted guacd
+   systemd:
+     state: restarted
+     name: guacd

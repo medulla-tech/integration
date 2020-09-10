@@ -1,0 +1,154 @@
+---
+
+ - name: test
+   shell: 'echo "SET GLOBAL event_scheduler = ON" | mysql -uroot'
+   when:
+     - ansible_distribution == "Debian"
+
+# - name: Acquire temporary root pass
+#   shell: >
+#     awk -F': ' '$0 ~ "temporary password"{print $2}' /var/log/mysqld.log
+#   register: mysql_root_temp_password
+#   when:
+#     - ansible_distribution == "CentOS"
+#
+# - name: Set temp root pass as root password
+#   set_fact:
+#     TEMP_PASS_MYSQL: "{{ mysql_root_temp_password.stdout }}"
+#   when:
+#     - mysql_root_temp_password is defined
+#     - ansible_distribution == "CentOS"
+
+ - name: Check for event_scheduler setting
+   mysql_variables:
+     variable: event_scheduler
+     login_user: root
+     login_password: '{{ ROOT_PASSWORD }}'
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "[mariadb]"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "table_open_cache = 2000"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "query_cache_limit = 0"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "query_cache_size = 0"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "tmp_table_size = 2G"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "innodb_buffer_pool_size = 2G"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "key_buffer_size = 2G"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "max_heap_table_size = 2G"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "open_files_limit = 102400"
+     dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: copy data
+   copy:
+     content: "[mariadb]"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "table_open_cache = 2000"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "query_cache_limit = 0"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "query_cache_size = 0"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "tmp_table_size = 2G"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "innodb_buffer_pool_size = 2G"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "key_buffer_size = 2G"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "max_heap_table_size = 2G"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: copy data
+   copy:
+     content: "open_files_limit = 102400"
+     dest: /etc/my.cnf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"

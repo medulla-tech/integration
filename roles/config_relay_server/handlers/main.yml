@@ -1,0 +1,14 @@
+---
+
+ - name: pulse-xmpp-agent-relay restart
+   service:
+     name: pulse-xmpp-agent-relay
+     state: restarted
+
+ - name: pause
+   pause:
+     seconds: 15
+
+ - name: set RELAY_CONFIGURED
+   set_fact:
+     RELAY_CONFIGURED: echo 'SELECT count(*) FROM relayserver;' | mysql -s xmppmaster

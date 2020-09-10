@@ -1,0 +1,412 @@
+---
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /var/lib/pulse2/imaging/bootloader
+     state: directory
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /var/lib/pulse2/imaging/bootloader-uefi32
+     state: directory
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /var/lib/pulse2/imaging/bootloader-uefi64
+     state: directory
+
+ - name: set SYSLINUX_PATH
+   set_fact:
+     SYSLINUX_PATH: /usr/share/syslinux
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: set PXELINUX_PATH
+   set_fact:
+     PXELINUX_PATH: /usr/share/syslinux
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: set SYSLINUX_PATH
+   set_fact:
+     SYSLINUX_PATH: "{{ SYSLINUX_PATH }}"
+   when:
+     - ansible_distribution != "Rhel" or ansible_distribution != "CentOS"
+
+ - name: set PXELINUX_PATH
+   set_fact:
+     PXELINUX_PATH: "{{ PXELINUX_PATH }}"
+   when:
+     - ansible_distribution != "Rhel" or ansible_distribution != "CentOS"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/pxelinux.0
+     dest: /var/lib/pulse2/imaging/bootloader/pxelinux.0
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/PXELINUX/pxelinux.0
+     dest: /var/lib/pulse2/imaging/bootloader/pxelinux.0
+     state: link
+     force: yes
+   when:
+     - ansible_distribution != "Rhel" or ansible_distribution != "CentOS"
+
+######### IF NO ERROR SO WHEN resultERROR.rc != 0
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.c32
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/syslinux/modules/bios/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - inventory.c32
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.c32
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/hwdata/pci.ids
+     dest: /var/lib/pulse2/imaging/bootloader/pci.ids
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader-uefi32/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/hwdata/pci.ids
+     dest: /var/lib/pulse2/imaging/bootloader-uefi32/pci.ids
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/efi64/syslinux.efi
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/syslinux.efi
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/efi64/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.e64
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/syslinux/poweroff.c32
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/hwdata/pci.ids
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/pci.ids
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == "Rhel"
+
+# else != rhel
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/syslinux/modules/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.c32
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/misc/pci.ids
+     dest: /var/lib/pulse2/imaging/bootloader/pci.ids
+     state: link
+     force: yes
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/syslinux/modules/efi32/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader-uefi32/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - inventory.c32
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.e32
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/share/misc/pci.ids
+     dest: /var/lib/pulse2/imaging/bootloader-uefi32/pci.ids
+     state: link
+     force: yes
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/SYSLINUX.EFI/efi64/syslinux.efi
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/syslinux.efi
+     state: link
+     force: yes
+   when:
+     - ansible_distribution != "Rhel"
+
+ - name: Create symlink
+   file:
+     path: /usr/lib/syslinux/modules/efi64/{{ item }}
+     dest: /var/lib/pulse2/imaging/bootloader-uefi64/{{ item }}
+     state: link
+     force: yes
+   with_items:
+     - inventory.c32
+     - libgpl.c32
+     - libutil.c32
+     - reboot.c32
+     - ldlinux.e64
+     - liblua.c32
+     - vesamenu.c32
+     - hdt.c32
+     - libcom32.c32
+     - libmenu.c32
+     - poweroff.c32
+   when:
+     - ansible_distribution != "Rhel"
+
+####### COPY if error
+
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/share/syslinux/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/ldlinux.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#    when:
+#      - ansible_distribution == "Rhel"
+#
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#    when:
+#      - ansible_distribution == "Rhel"
+#
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/share/syslinux/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#    when:
+#      - ansible_distribution == "Rhel"
+#
+# ##### ELSE != RHEL
+#
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/ldlinux.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#      - { src: '/usr/lib/syslinux/modules/bios/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
+#    when:
+#      - ansible_distribution != "Rhel"
+#
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/ldlinux.e32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#      - { src: '/usr/lib/syslinux/modules/efi32/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
+#    when:
+#      - ansible_distribution != "Rhel"
+#
+#  - name: Copy file
+#    copy: src={{ item.src }} dest={{ item.dest }}
+#    with_items:
+#      - { src: '/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
+#    when:
+#      - ansible_distribution != "Rhel"
+
+# Create the symlink for pxelinux to find the bootmenus
+
+ - name: cd ans ln
+   shell: "cd /var/lib/pulse2/imaging/bootloader/; ln -s ../bootmenus pxelinux.cfg"
+
+ - name: cd ans ln
+   shell: "cd /var/lib/pulse2/imaging/bootloader-uefi32/; ln -s ../bootmenus pxelinux.cfg"
+
+ - name: cd ans ln
+   shell: "cd /var/lib/pulse2/imaging/bootloader-uefi64/; ln -s ../bootmenus pxelinux.cfg"
+
+ - name: Create a directory if it does not exist
+   file:
+     path: /var/lib/pulse2/imaging/tools
+     state: directory
+
+# Create the utilities.menu
+
+ - name:  Create the utilities.menu
+   shell: "/bin/cp /usr/share/doc/mmc/contrib/imaging/template/utilities.menu.in /var/lib/pulse2/imaging/tools/utilities.menu"
+
+ - name:  sed -i
+   shell: 'sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu'

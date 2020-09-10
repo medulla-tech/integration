@@ -1,0 +1,645 @@
+---
+
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: set RELAY_CONFIG_FILE
+   set_fact:
+     RELAY_CONFIG_FILE: '/etc/pulse-xmpp-agent/relayconf.ini.local'
+
+ - name: set PLUGINLIST
+   set_fact:
+     PLUGINLIST: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini plugin pluginlist'
+
+ - name: echo crudini --set
+   shell: 'crudini --set {{ RELAY_CONFIG_FILE }} plugin pluginlist "{{ PLUGINLIST }}"'
+
+# IF XMPP_DOMAIN != pulse
+# Obtain MASTER_PASSWORD from Pulse main server
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# - name: set MASTER_PASSWORD
+#   set_fact:
+#     MASTER_PASSWORD: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#   when:
+#     - XMPP_DOMAIN != 'pulse'
+
+ - name: create lowercase 8 character name for Kubernetes pod name
+   set_fact:
+     MASTER_PASSWORD: "{{ PULSEMAIN_IP }}{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+
+# Register master
+ - name: ejabctl register master
+   shell: "ejabberdctl register master {{ XMPP_DOMAIN }} {{ MASTER_PASSWORD }}"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - debug:
+     msg: '{{ MASTER_PASSWORD }}'
+
+ - name: set GUACAMOLE_BASEURL
+   set_fact:
+     GUACAMOLE_BASEURL: 'http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Copy manage_scheduler from main pulse
+
+# Register master
+ - name: ejabctl register master
+   shell: "scp {{ PULSEMAIN_IP }}:/etc/pulse-xmpp-agent/manage_scheduler.ini.local /etc/pulse-xmpp-agent/manage_scheduler.ini.local"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Enable and start the package watching service
+ - name: enabled pulse-package-watching
+   systemd:
+     name: pulse-package-watching
+     enabled: yes
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: start Service
+   service:
+     name: pulse-package-watching
+     state: started
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Configuration of relayserver
+
+ - name: relayserver
+   shell: |
+     "crudini --set {{ RELAY_CONFIG_FILE }} connection server {{ IP_ADDRESS }}"
+     "crudini --set {{ RELAY_CONFIG_FILE }} connection password {{ MASTER_PASSWORD }}"
+     "crudini --set {{ RELAY_CONFIG_FILE }} type guacamole_baseurl {{ GUACAMOLE_BASEURL }}"
+     "crudini --set {{ RELAY_CONFIG_FILE }} chat domain {{ XMPP_DOMAIN }}"
+     "crudini --set {{ RELAY_CONFIG_FILE }} jid_01 jidname RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"
+
+ - name: relayserver if public_ip != ''
+   shell: |
+     "crudini --set {{ RELAY_CONFIG_FILE }} type request_type public"
+     "crudini --set {{ RELAY_CONFIG_FILE }} type public_ip {{ PUBLIC_IP }}"
+   when:
+     - PUBLIC_IP != ''
+
+ - name: relayserver
+   shell: "crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamoleconf"
+
+ - name: set RELAY_CONFIG_FILE
+   set_fact:
+     GUAC_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamoleconf.ini.local'
+
+ - name: relayserver
+   shell: "crudini --set {{ GUAC_CONFIG_FILE }} parameters guacamole_dbpasswd {{ ROOT_PASSWORD }}"
+
+# Update hosts file
+
+# Update local hosts file with pulse
+
+ - name: update local file
+   copy:
+     sr: "\n{{ IP_ADDRESS }} pulse"
+     dest: "/etc/hosts"
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Update local hosts file to find pulse xmpp domain
+ - name: update local file
+   copy:
+     sr: "\n{{ PULSEMAIN_IP }} pulse"
+     dest: "/etc/hosts"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Update local hosts file to find local xmpp domain
+ - name: update local file
+   copy:
+     src: "\n{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}"
+     dest: "/etc/hosts"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Update hosts file on main pulse
+
+ - name: set PLUGINLIST
+   set_fact:
+     SSH_COMMAND: 'if [ \"\$(grep -cx \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" /etc/hosts)\" -eq 0 ]; then echo \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" >> /etc/hosts; fi'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo SSH_COMMAND
+   shell: "ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Update ssh port to be used on clients if defined
+#applicationdeploymentjson
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist applicationdeploymentjson'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+#else xxmp_domain != pulse
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist applicationdeploymentjson'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+#downloadfileexpert
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfileexpert.ini.local'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfileexpert'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+#else xxmp_domain != pulse
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfileexpert.ini.local'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfileexpert'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+#downloadfile
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfile.ini.local'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfile'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+#else xxmp_domain != pulse
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfile.ini.local'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfile'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+#guacamole
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_SSH_PORT != ''
+
+#else xxmp_domain != pulse
+
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo scp
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Update vnc port to be used on clients if defined
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_VNC_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - CLIENTS_VNC_PORT != ''
+
+ - name: echo scp
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Update ssh port of reverse ssh server
+ - name: set PLUGIN_CONFIG_FILE
+   set_fact:
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/reverse_ssh_on.ini.local'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - REVERSE_SSH_PORT != ''
+
+ - name: echo crudini
+   shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - REVERSE_SSH_PORT != ''
+
+ - name: echo scp
+   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Allow orders coming from registration substitute (used to configure guacamole)
+ - name: echo crudini
+   shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} global allow_order master_reg'
+
+# Update default RS if on main pulse and public IP is defined
+
+ - name: echo crudini
+   shell: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local defaultconnection serverip {{ PUBLIC_IP }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - PUBLIC_IP != ''
+
+ - name: echo crudini
+   shell: 'crudini --set /etc/mmc/plugins/assessor_agent.ini.local parameters serverip {{ PUBLIC_IP }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - PUBLIC_IP != ''
+
+ - name: echo crudini
+   shell: 'crudini --set /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local parameters serverip {{ PUBLIC_IP }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - PUBLIC_IP != ''
+
+ - name: restart service mmc-agent
+   service:
+     name: mmc-agent
+     state: restarted
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - PUBLIC_IP != ''
+
+ - name: restart service mmc-agent
+   service:
+     name: pulse-xmpp-master-substitute-assessor
+     state: restarted
+   when:
+     - XMPP_DOMAIN == 'pulse'
+     - PUBLIC_IP != ''
+
+# Enable and start the service
+ - name: enable pulse-xmpp-agent-relay
+   systemd:
+     name: pulse-xmpp-master-substitute-assessor
+     enabled: yes
+
+ - name: restart service mmc-agent
+   service:
+     name: pulse-xmpp-agent-relay
+     state: restarted
+
+ - pause:
+     seconds: 15
+
+# Create the clusters of ARS for multisite installs
+# First wait a few minutes until the relay server is configured
+ - pause:
+     minutes: 2
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+     # Create the cluster for the remote site
+
+ - name: set MAX_ID
+   set_fact:
+     MAX_ID: (ssh {{ PULSEMAIN_IP }} 'echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -s xmppmaster')
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set CLUSTER_ID
+   set_fact:
+     CLUSTER_ID: '(MAX_ID+1)'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell SSH_COMMAND
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Add the relayserver to the cluster
+
+ - name: set MAX_ID
+   set_fact:
+     MAX_ID: (ssh {{ PULSEMAIN_IP }} "echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -s xmppmaster")
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: (ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster")
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('((MAX_ID+1))','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell SSH_COMMAND
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# Create the substitutes configuration rules
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: echo 'SELECT count(*) FROM relayserver;' | mysql -s xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+   notify:
+     - pulse-xmpp-agent-relay restart
+     - pause
+     - set RELAY_CONFIGURED
+
+
+ - name: echo
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', 1);" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: echo
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', 1);" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: echo
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', 1);" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: echo
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', 1);" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: echo
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', 1);" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+     #-------------
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', ${RELAYSERVER_ID});\" | mysql xmppmaster
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# ------------
+
+# Enable autoupdate by relay servers
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# ----------------
+
+ - name: Create a directory if it does not exist
+   file:
+     path: //var/lib/pulse2/file-transfer/.ssh
+     state: directory
+     mode: '0755'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: Copy file with owner and permissions
+   copy:
+     src: /root/.ssh/id_rsa.pub
+     dest: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
+     mode: '600'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - file:
+     path: /var/lib/pulse2/file-transfert/.ssh
+     owner: pulsetransfert
+     group: pulsetransfert
+     recurse: yes
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - file:
+     path: /var/lib/pulse2/file-transfert/.ssh
+     mode: '700'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+#else
+
+ - name: set PUBKEY
+   set_fact:
+     PUBKEY: '(cat /root/.ssh/id_rsa.pub)'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SSH_COMMAND
+   set_fact:
+     SSH_COMMAND: 'echo {{ PUBKEY }} >> /var/lib/pulse2/file-transfer/.ssh/authorized_keys'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell
+   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+# _END

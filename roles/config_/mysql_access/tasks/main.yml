@@ -1,0 +1,51 @@
+---
+
+ - name: config mysql_access
+   shell: "/bin/rm -f /root/.my.cnf"
+
+ - name: Touch file chmode600
+   file:
+     path: /root/.my.cnf
+     state: touch
+     mode: '600'
+
+ - name: copy file
+   copy:
+     content: "[mysql]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     dest: /root/.my.cnf
+
+ - name: copy file
+   copy:
+     content: "\n[mysqladmin]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     dest: /root/.my.cnf
+
+ - name: copy file
+   copy:
+     content: "\n[mysqlcheck]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     dest: /root/.my.cnf
+
+ - name: copy file
+   copy:
+     content: "\n[mysqldump]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     dest: /root/.my.cnf
+
+ - name: restart mariadb
+   service:
+     name: mariadb
+     state: restarted
+   when:
+     - ansible_distribution != "CentOS"
+
+ - name: restart mariadb
+   service:
+     name: mysqld
+     state: restarted
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: chkconfig mariadb
+   service:
+     name: mariadb
+     enabled: yes
+   when:
+     - ansible_distribution == "Debian"

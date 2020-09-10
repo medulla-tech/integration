@@ -1,0 +1,42 @@
+---
+
+ - name: install_multisite_cent
+   yum:
+     name: "{{ packages_cent }}"
+     update_cache: yes
+     state: latest
+   vars:
+     packages_cent:
+       - pulse2-package-server
+       - uuid
+       - pulse2-uuid-resolver
+       - pulse-xmpp-agent-relay
+       - python-mmc-backuppc
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: install_multisite_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - pulse2-package-server
+       - uuid-runtime
+       - pulse2-uuid-resolver
+       - pulse-xmpp-agent-relay
+       - python-mmc-backuppc
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_multisite_mag
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - pulse2-package-server
+       - uuid-runtime
+       - pulse2-uuid-resolver
+       - pulse-xmpp-agent-relay
+       - python-mmc-backuppc
+   when:
+     - ansible_distribution == "Mageia"

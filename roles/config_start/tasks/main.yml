@@ -1,0 +1,70 @@
+---
+
+ - debug:
+     msg: "_____CONFIG_&_DOWNLOAD_____"
+
+ - name: Set authorized key taken from file
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ lookup('file', '{{ key }}') }}"
+
+#CONFIGURE ejabberd
+
+ - name: install_ejabberd_rh
+   yum:
+     name: "{{ packages_cent }}"
+     update_cache: yes
+     state: latest
+   vars:
+     packages_cent:
+       - ejabberd
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "CentOS"
+
+ - name: install_ejabberd_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ejabberd
+   when:
+     - ansible_distribution == "Debian"
+     
+ - name: install_ejabberd_mag
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ejabberd
+   when:
+     - ansible_distribution == "Mageia"
+
+#---------
+
+ - name: install crudini
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_crudini
+   urpmi:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+   when:
+     - ansible_distribution == "Mageia"
+
+ - name: install_crudini
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+   when:
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"

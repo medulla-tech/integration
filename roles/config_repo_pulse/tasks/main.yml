@@ -1,0 +1,208 @@
+---
+
+#CONFIG PULSE REPO DEB
+
+ - name: install_gnupg2
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - gnupg2
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+
+ - name: download key and add
+   shell: wget -qO - {{ PULSE_REPO_URL }}/pubkey.txt | apt-key add -
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_transport_https
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - apt-transport-https
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: enable pulse liste repo for debian version 8
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} jessie mds mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: enable list drbl for debian version 8
+   copy:
+     content: "deb http://free.nchc.org.tw/drbl-core drbl stable"
+     dest: /etc/apt/sources.list.d/drbl.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: add apt key for debian version 8
+   apt_key:
+     url: http://drbl.org/GPG-KEY-DRBL
+     state: present
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: download lib neurodebian for debian version 8
+   get_url:
+     url: ttp://neuro.debian.net/lists/jessie.de-md.libre
+     dest: /etc/apt/sources.list.d/neurodebian.sources.list
+     mode: '0440'
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: apt_key
+   shell: apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+ - name: enable repo pulse for debian version 8
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} {{ GIT_BRANCH }} mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '8'
+
+###########################################################
+############# VERSION DEBIAN 9
+############# IF PULSE_REPO_URL == "git.siveo.net"
+############# IF GIT_BRANCH != "master"
+ - name: enable repo pulse liste for debian version 9
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} {{ GIT_BRANCH }} mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '9'
+     - PULSE_REPO_URL == "https://git.siveo.net"
+     - GIT_BRANCH != "master"
+############## ELSE (master)
+ - name: enable repo pulse liste for debian version 9
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} xmppmaster mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '9'
+     - PULSE_REPO_URL == "https://git.siveo.net"
+     - GIT_BRANCH == "master"
+############# ELSE (pulse_repo__url)
+#---
+############# IF GIT_BRANCH != "master"
+ - name: enable repo pulse liste for debian version 9
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} {{ GIT_BRANCH }} mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '9'
+     - GIT_BRANCH != "master"
+     - PULSE_REPO_URL != "https://git.siveo.net"
+############# ELSE (master)
+ - name: enable repo pulse liste for debian version 9
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} stretch mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '9'
+     - PULSE_REPO_URL != "https://git.siveo.net"
+     - GIT_BRANCH == "master"
+
+############# VERSION DEBIAN 10
+############# IF PULSE_REPO_URL == "git.siveo.net"
+############# IF GIT_BRANCH != "master"
+ - name: enable repo pulse liste for debian version 10
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} {{ GIT_BRANCH }} mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+     - PULSE_REPO_URL == "https://git.siveo.net"
+     - GIT_BRANCH != "master"
+############# ELSE (master)
+ - name: enable repo pulse liste for debian version 10
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} xmppmaster mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+     - PULSE_REPO_URL == "https://git.siveo.net"
+############# ELSE (pulse_repo__url)
+#---
+############# IF GIT_BRANCH != "master"
+ - name: enable repo pulse liste for debian version 10
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} {{ GIT_BRANCH }} mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+     - GIT_BRANCH != "master"
+     - PULSE_REPO_URL != "https://git.siveo.net"
+############# ELSE (master)
+ - name: enable repo pulse liste for debian version 10
+   copy:
+     content: "deb {{ PULSE_REPO_URL }} buster mmc-core pulse 3rdparty"
+     dest: /etc/apt/sources.list.d/pulse.list
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+     - PULSE_REPO_URL != "https://git.siveo.net"
+###########################################################
+
+ - name: apt get update debian
+   apt:
+     update_cache: yes
+   when:
+     - ansible_distribution == "Debian"
+
+### Mageia
+ - name: urpmi.update
+   shell: urpmi.update -a
+   when:
+     - ansible_distribution == "Mageia"
+##########
+
+#CONFIG PULSE REPO CENT
+
+ - name: enable mmc-core sur CentOS
+   copy:
+     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ repoPulse }}/mmc-core\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/mmc-core.repo
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: enable pulse sur CentOS
+   copy:
+     content: "[pulse]\nname=Pulse\nbaseurl={{ repoPulse }}/pulse\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/pulse.repo
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: enable 3rdparty sur CentOS
+   copy:
+     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ repoPulse }}/3rdparty\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/3rdparty.repo
+   when:
+     - ansible_distribution == "CentOS"
+
+#CONFIG PULSE REPO RHEL
+
+ - name: enable repo mmc-core sur Rhel
+   copy:
+     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ repoPulse }}/mmc-core\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/mmc-core.repo
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: enable repo pulse sur Rhel
+   copy:
+     content: "[pulse]\nname=Pulse\nbaseurl={{ repoPulse }}/pulse\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/pulse.repo
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: enable repo 3rdparty sur Rhel
+   copy:
+     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ repoPulse }}/3rdparty\nenabled=1\ngpgcheck = 0"
+     dest: /etc/yum.repos.d/3rdparty.repo
+   when:
+     - ansible_distribution == "Rhel"

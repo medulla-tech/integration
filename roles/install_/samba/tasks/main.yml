@@ -1,0 +1,28 @@
+---
+
+ - name: install_samba_cent
+   yum:
+     name: samba
+     update_cache: yes
+   when:
+     - ansible_distribution == "CentOS"
+
+        #INSTALL SAMBA <>
+
+ - name: install_samba_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - samba
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: install_samba_deb
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - smbclient
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
