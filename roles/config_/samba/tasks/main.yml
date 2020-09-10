@@ -1,0 +1,44 @@
+---
+
+ - name: shell
+   shell: "/bin/cp -fv /usr/share/doc/mmc/contrib/samba/smb.conf /etc/samba/"
+
+ - name: shell
+   shell: "(echo {{ ROOT_PASSWORD }}; echo {{ ROOT_PASSWORD }}) | smbpasswd -s -a root"
+
+ - name: samba_users | adding samba users
+   user:
+     name: "drivers"
+     append: yes
+   become: true
+
+ - name: shell
+   shell: "(echo {{ DRIVERS_PASSWORD }}; echo {{ DRIVERS_PASSWORD }}) | smbpasswd -s -a root"
+
+ - name: systemd restart smbd
+   systemd:
+     name: smbd
+     state: restarted
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: systemd enabled smbd
+   systemd:
+     name: smbd
+     enabled: yes
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: systemd restart smbd
+   systemd:
+     name: smb
+     state: restarted
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: systemd enabled smbd
+   systemd:
+     name: smb
+     enabled: yes
+   when:
+     - ansible_distribution != "Debian"
