@@ -5,7 +5,7 @@
    remote_user: root
    vars:
      - PULSE_REPO_URL: "https://git.siveo.net"
-     - PULSE_REPO_RMP_URL: "https://git.siveo.net"
+     - PULSE_REPO_RPM_URL: "https://git.siveo.net"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
@@ -41,6 +41,8 @@
      - PULSEMAIN_FQDN: ''
      - SYSLINUX_PATH: ''
      - PXELINUX_PATH: ''
+     - TOMCAT_VERSION: ''
+     - HOSTNAME_F: ''
 
    roles:
 
