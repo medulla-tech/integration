@@ -1,0 +1,74 @@
+---
+
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: set GUACAMOLE_ROOT_PASSWORD
+   set_fact:
+     GUACAMOLE_ROOT_PASSWORD: 'pwgen --secure 40 1'
+
+ - stat:
+     path: /etc/guacamole/guacamole.properties.bak
+   register: stfile
+
+ - name: shell
+   shell: "/bin/cp /etc/guacamole/guacamole.properties /etc/guacamole/guacamole.properties.bak"
+   when: stfile.stat.isreg is not defined
+
+ - name: DROP DATABASE
+   shell: "echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot"
+
+ - name: DROP USER
+   shell: "echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot"
+   when: ansible_distribution == "Debian"
+
+ - name: DROP USER
+   shell: "echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot"
+   when: ansible_distribution != "Debian"
+
+ - name: CREATE DATABASE
+   shell: "echo "CREATE DATABASE guacamole;" | mysql -uroot"
+
+ - name: CREATE USER
+   shell: "echo CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot"
+
+ - name: GRANT
+   shell: "echo GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot"
+
+# if debian version 8
+
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
+   when: ansible_distribution == "Debian" ansible_distribution_major_version == '8'
+
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
+   when: ansible_distribution == "Debian" ansible_distribution_major_version == '8'
+
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
+   when: ansible_distribution == "Debian" ansible_distribution_major_version != '8'
+
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
+   when: ansible_distribution == "Debian" ansible_distribution_major_version != '8'
+
+#
+
+ - name: SET
+   shell: "echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole"
+
+#
+
+ - stat:
+     path: /etc/guacamole/guacamole.properties.bak
+   register: stfiletwo
+
+ - name: shell
+   shell: "/bin/cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties"
+   when: stfiletwo.stat.isreg is defined
