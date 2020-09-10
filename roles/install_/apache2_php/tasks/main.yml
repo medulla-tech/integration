@@ -13,11 +13,12 @@
    vars:
      packages_cent:
        - httpd
+       - httpd-tools
        - python3
        - rsync
        - epel-release
    when:
-     - ansible_distribution == "CentOS"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
         #INSTALL APACHE2 DEB
 
@@ -41,26 +42,16 @@
    when:
      - ansible_distribution == "Mageia"
 
- - name: install_apache_rhel
-   yum:
-     update_cache: yes
-     state: latest
-     pkg:
-       - httpd
-   when:
-     - ansible_distribution == "Rhel"
-
         #DISABLE MODULES
 
- - apache2_module:
-     state: absent
-     name: "{{item}}"
-   with_items:
-     - php7.0
-     - mpm_prefork
-   notify: [ "apache restart" ]
-   when:
-     - ansible_distribution == "Debian"
+ # - apache2_module:
+ #     state: absent
+ #     name: "{{item}}"
+ #   with_items:
+ #     - mpm_prefork
+ #   notify: [ "apache restart" ]
+ #   when:
+ #     - ansible_distribution == "Debian"
 
         #ENABLE MODULES
 
@@ -122,26 +113,6 @@
      dest: /etc/systemd/system/httpd.service.d/nopt.conf
    when:
      - ansible_distribution == "CentOS"
-
-        #DATE_TIMEZONE
-
- - name: Update php.ini date_timezone
-   replace:
-     dest: "/etc/php.ini"
-     regexp: '^;date.timezone.*$'
-     replace: 'date.timezone = Europe\/Paris/'
-     backup: yes
-   when:
-     - ansible_distribution == "CentOS"
-
- - name: Update php.ini date_timezone
-   replace:
-     dest: "/etc/php.ini"
-     regexp: '^;date.timezone.*$'
-     replace: 'date.timezone = Europe\/Paris/'
-     backup: yes
-   when:
-     - ansible_distribution == "Rhel"
 
         #SERVICES RESTART
 
