@@ -1,0 +1,21 @@
+---
+
+ - stat:
+     path: /home/partimag
+   register: links
+
+ - name: remove if exist or simlink
+   file:
+     path: /home/partimag
+     state: absent
+   when:
+     - links.stat.islnk is defined and links.stat.islnk or links.stat.exists
+
+ - name: Create symlink
+   file:
+     path: /var/lib/pulse2/imaging/masters/
+     dest: /home/partimag
+     state: link
+     force: yes
+   when:
+     - ansible_distribution != "Rhel" or ansible_distribution != "CentOS"
