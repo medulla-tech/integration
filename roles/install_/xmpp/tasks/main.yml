@@ -33,24 +33,24 @@
      name: ejabberd
      enabled: yes
 
- - name: start stop ejabberd
+ - name: service stop ejabberd
    service:
      name: ejabberd
      state: stopped
    when:
-     - ansible_distribution == "Rhel"
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: usermod rhel ejabberd
    shell: "usermod ejabberd -d /var/lib/ejabberd"
    when:
-     - ansible_distribution == "Rhel"
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: service ejabberd start
    service:
      name: ejabberd
      state: started
    when:
-     - ansible_distribution == "Rhel"
+     - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: usermod rhel or Mageia ejabberd
    shell: 'sed -i "s/localhost/{{ XMPP_DOMAIN }}/" /etc/ejabberd/ejabberd.yml'
