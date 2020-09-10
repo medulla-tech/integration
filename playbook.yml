@@ -5,7 +5,7 @@
    remote_user: root
    vars:
      - PULSE_REPO_URL: "https://git.siveo.net"
-     - PULSE_REPO_RMP_URL: "https://pulse-repo.siveo.net/rpm-test-bs-integration"
+     - PULSE_REPO_RMP_URL: "https://git.siveo.net"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
