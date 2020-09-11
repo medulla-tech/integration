@@ -171,21 +171,21 @@
 
  - name: enable mmc-core sur CentOS
    copy:
-     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ PULSE_REPO_RMP_URL }}/mmc-core\nenabled=1\ngpgcheck = 0"
+     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ PULSE_REPO_RPM_URL }}/mmc-core\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/mmc-core.repo
    when:
      - ansible_distribution == "CentOS"
 
  - name: enable pulse sur CentOS
    copy:
-     content: "[pulse]\nname=Pulse\nbaseurl={{ PULSE_REPO_RMP_URL }}/pulse\nenabled=1\ngpgcheck = 0"
+     content: "[pulse]\nname=Pulse\nbaseurl={{ PULSE_REPO_RPM_URL }}/pulse\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/pulse.repo
    when:
      - ansible_distribution == "CentOS"
 
  - name: enable 3rdparty sur CentOS
    copy:
-     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ PULSE_REPO_RMP_URL }}/3rdparty\nenabled=1\ngpgcheck = 0"
+     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ PULSE_REPO_RPM_URL }}/3rdparty\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/3rdparty.repo
    when:
      - ansible_distribution == "CentOS"
@@ -194,21 +194,21 @@
 
  - name: enable repo mmc-core sur Rhel
    copy:
-     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ PULSE_REPO_RMP_URL }}/mmc-core\nenabled=1\ngpgcheck = 0"
+     content: "[mmc-core]\nname=MMC Core\nbaseurl={{ PULSE_REPO_RPM_URL }}/mmc-core\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/mmc-core.repo
    when:
      - ansible_distribution == "Rhel"
 
  - name: enable repo pulse sur Rhel
    copy:
-     content: "[pulse]\nname=Pulse\nbaseurl={{ PULSE_REPO_RMP_URL }}/pulse\nenabled=1\ngpgcheck = 0"
+     content: "[pulse]\nname=Pulse\nbaseurl={{ PULSE_REPO_RPM_URL }}/pulse\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/pulse.repo
    when:
      - ansible_distribution == "Rhel"
 
  - name: enable repo 3rdparty sur Rhel
    copy:
-     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ PULSE_REPO_RMP_URL }}/3rdparty\nenabled=1\ngpgcheck = 0"
+     content: "[3rdparty]\nname=3rd Party\nbaseurl={{ PULSE_REPO_RPM_URL }}/3rdparty\nenabled=1\ngpgcheck = 0"
      dest: /etc/yum.repos.d/3rdparty.repo
    when:
      - ansible_distribution == "Rhel"
