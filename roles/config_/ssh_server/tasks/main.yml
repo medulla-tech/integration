@@ -1,0 +1,82 @@
+---
+
+# Search if Port 22 is already present. If not, define it
+ - name: grep for port22
+   shell: 'grep "^Port 22$" /etc/ssh/sshd_config'
+   register:
+     state_result
+
+ - name: set PORT22STAT
+   set_fact:
+     PORT22STAT: state_result.results
+
+ - name: config port22 if not
+   shell: "sed -i 's/^#[[:space:]]*Port 22$/Port 22/' /etc/ssh/sshd_config"
+   when:
+     - PORT22STAT == '' or PORT22STAT == '0'
+
+ - name: grep for reverse_port
+   shell: 'grep "^Port {{ REVERSE_SSH_PORT }}$" /etc/ssh/sshd_config'
+   register:
+     state_result
+   when:
+     - REVERSE_SSH_PORT == 1
+
+ - name: set REVERSESSH
+   set_fact:
+     REVERSESSH: state_result_reverse.results
+   when:
+     - REVERSE_SSH_PORT == 1
+
+ - name: config port22 if not
+   shell: "sed -i "/^Port 22$/{p;s/22/{{ REVERSE_SSH_PORT }}/;}" /etc/ssh/sshd_config"
+   when:
+     - REVERSESSH == '' or REVERSESSH == '0'
+     - REVERSE_SSH_PORT == 1
+
+ - name: restart ssh
+   service:
+     name: ssh
+     state: restarted
+   when: ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name: restart ssh
+   service:
+     name: sshd
+     state: restarted
+   when: ansible_distribution != "Debian" or ansible_distribution != "Mageia"
+
+#FILEBROWSER
+
+# Enable GatewayPorts for reversessh from clients to access filebrowser
+
+ - name: grep for gatewayports
+   shell: 'grep "^GatewayPorts .*$" /etc/ssh/sshd_config'
+   register:
+     state_result_gatewayports
+
+ - name: set GATEWAYPORTS_RES
+   set_fact:
+     GATEWAYPORTS_RES: state_result_gatewayports.results
+
+ - name: config gatewayports
+   shell: "sed -i 's/^#[[:space:]]*GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config"
+   when:
+     - GATEWAYPORTS_RES == '' or GATEWAYPORTS_RES == '0'
+
+ - name: config gatewayports
+   shell: "sed -i 's/GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config"
+   when:
+     - GATEWAYPORTS_RES != '' or GATEWAYPORTS_RES != '0'
+
+ - name: restart ssh
+   service:
+     name: ssh
+     state: restarted
+   when: ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name: restart ssh
+   service:
+     name: sshd
+     state: restarted
+   when: ansible_distribution != "Debian" or ansible_distribution != "Mageia"
