@@ -1,8 +1,12 @@
 ---
 
- - name: set server = 1
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
    set_fact:
-     SERVER: 1
+     SERVER: "{{ result.stdout }}"
 
         #INSTALL SYNCTHING
 
