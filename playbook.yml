@@ -43,6 +43,9 @@
      - PXELINUX_PATH: ''
      - TOMCAT_VERSION: ''
      - HOSTNAME_F: ''
+     - REVERSE_SSH_PORT: ''
+     - REVERSESSH: ''
+     - GATEWAYPORTS_RES: ''
 
    roles:
 
@@ -72,4 +75,5 @@
      - config_/syncthing_depl
      - config_/mysql_access
      - config_/mysql_server
+     - config_/ssh_server
      - config_relay_server
