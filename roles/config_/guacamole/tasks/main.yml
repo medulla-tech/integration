@@ -21,24 +21,24 @@
    when: stfile.stat.isreg is not defined
 
  - name: DROP DATABASE
-   shell: "echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot"
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot'
 
  - name: DROP USER
-   shell: "echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot"
+   shell: echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
    when: ansible_distribution == "Debian"
 
  - name: DROP USER
-   shell: "echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot"
+   shell: echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
    when: ansible_distribution != "Debian"
 
  - name: CREATE DATABASE
-   shell: "echo "CREATE DATABASE guacamole;" | mysql -uroot"
+   shell: echo "CREATE DATABASE guacamole;" | mysql -uroot
 
  - name: CREATE USER
-   shell: "echo CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot"
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot
 
  - name: GRANT
-   shell: "echo GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot"
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
 
 # if debian version 8
 
@@ -61,7 +61,7 @@
 #
 
  - name: SET
-   shell: "echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole"
+   shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
 
 #
 
@@ -188,7 +188,7 @@
     # Setup Tomcat
 
  - name: shell
-   shell: "sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION }}/server.xml"
+   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION }}/server.xml
 
  - name: shell
    shell: |
@@ -229,35 +229,35 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: "<Location /guacamole/>"
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Order Deny,Allow'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Deny from all'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Allow from env=GUACAMOLE_ALLOWED'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
@@ -272,84 +272,84 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '</Location>'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '<Location /guacamole/websocket-tunnel>'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Order Deny,Allow'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Deny from all'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    Allow from env=GUACAMOLE_ALLOWED'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '    ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: '</Location>'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: 'SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
@@ -358,7 +358,7 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: 'CustomLog  /var/log/apache2/guac.log common env=!dontlog'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == "Debian"
@@ -366,7 +366,7 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      src: 'CustomLog  /var/log/httpd/guac.log common env=!dontlog'
-     dest: {{ GUACAMOLE_APACHE_PATH }}
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution != "Debian"

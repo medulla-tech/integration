@@ -11,7 +11,7 @@
      PORT22STAT: state_result.results
 
  - name: config port22 if not
-   shell: "sed -i 's/^#[[:space:]]*Port 22$/Port 22/' /etc/ssh/sshd_config"
+   shell: sed -i 's/^#[[:space:]]*Port 22$/Port 22/' /etc/ssh/sshd_config
    when:
      - PORT22STAT == '' or PORT22STAT == '0'
 
@@ -20,19 +20,19 @@
    register:
      state_result
    when:
-     - REVERSE_SSH_PORT == 1
+     - REVERSE_SSH_PORT != ''
 
  - name: set REVERSESSH
    set_fact:
      REVERSESSH: state_result_reverse.results
    when:
-     - REVERSE_SSH_PORT == 1
+     - REVERSE_SSH_PORT != ''
 
  - name: config port22 if not
-   shell: "sed -i "/^Port 22$/{p;s/22/{{ REVERSE_SSH_PORT }}/;}" /etc/ssh/sshd_config"
+   shell: sed -i "/^Port 22$/{p;s/22/{{ REVERSE_SSH_PORT }}/;}" /etc/ssh/sshd_config
    when:
      - REVERSESSH == '' or REVERSESSH == '0'
-     - REVERSE_SSH_PORT == 1
+     - REVERSE_SSH_PORT != ''
 
  - name: restart ssh
    service:
@@ -60,12 +60,12 @@
      GATEWAYPORTS_RES: state_result_gatewayports.results
 
  - name: config gatewayports
-   shell: "sed -i 's/^#[[:space:]]*GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config"
+   shell: sed -i 's/^#[[:space:]]*GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config
    when:
      - GATEWAYPORTS_RES == '' or GATEWAYPORTS_RES == '0'
 
  - name: config gatewayports
-   shell: "sed -i 's/GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config"
+   shell: sed -i 's/GatewayPorts .*$/GatewayPorts yes/' /etc/ssh/sshd_config
    when:
      - GATEWAYPORTS_RES != '' or GATEWAYPORTS_RES != '0'
 

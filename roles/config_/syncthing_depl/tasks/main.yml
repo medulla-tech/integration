@@ -29,27 +29,27 @@
  - name: write in file
    copy:
      src: "ProxyPass /syncthing-depl/ http://localhost:8385/"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "<Location /syncthing-depl/>/"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "    ProxyPassReverse http://localhost:8385/"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "    Require all granted"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "</Location>"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: shell
    shell: "a2enconf syncthing"
@@ -208,7 +208,7 @@
 
  - name: set ENCRYPTED_PASS
    set_fact:
-     ENCRYPTED_PASS: '$(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')'
+     ENCRYPTED_PASS: $(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')
 
  - name: shell
    shell: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
@@ -283,7 +283,7 @@
 # Auto-accept shares coming from pulsemain
 
  - name: shell
-   shell: 'xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != "pulse"
 

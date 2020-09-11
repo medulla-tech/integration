@@ -29,27 +29,27 @@
  - name: write in file
    copy:
      src: "ProxyPass /syncthing/ http://localhost:8384/"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "<Location /syncthing/>"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "    ProxyPassReverse http://localhost:8384/"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "    Require all granted"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
    copy:
      src: "</Location>"
-     dest: {{ SYNCTHING_APACHE_PATH }}
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: shell
    shell: 'a2enconf syncthing'
@@ -192,7 +192,7 @@
 
  - name: set ENCRYPTED_PASS
    set_fact:
-     ENCRYPTED_PASS: '$(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')'
+     ENCRYPTED_PASS: $(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')
 
  - name: xmlstarlet
    shell: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
