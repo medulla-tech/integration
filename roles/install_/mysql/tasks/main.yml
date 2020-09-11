@@ -19,7 +19,7 @@
         #INSTALL_MYSQL CENTOS
 
  - name: install_mysql_rh
-   yum:
+   urpmi:
      update_cache: yes
      state: latest
      pkg:
@@ -53,47 +53,47 @@
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
- # - name: Change mysql root password and keep track in
- #   shell: |
- #     password_match=`awk '/A temporary password is generated for/ {a=$0} END{ print a }' /var/log/mysqld.log | awk '{print $(NF)}'`
- #     echo $password_match
- #     mysql -uroot -p$password_match --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'; flush privileges; "
- #     echo "[client]"
- #     user=root
- #     password=PassW0rd > /root/.my.cnf
- #   register: change_temp_pass
- #   notify: restart mysqld
- #   when:
- #     - ansible_distribution == "CentOS"
+  - name: Change mysql root password and keep track in
+    shell: |
+      password_match=`awk '/A temporary password is generated for/ {a=$0} END{ print a }' /var/log/mysqld.log | awk '{print $(NF)}'`
+      echo $password_match
+      mysql -uroot -p$password_match --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'; flush privileges; "
+      echo "[client]"
+      user=root
+      password=PassW0rd > /root/.my.cnf
+    register: change_temp_pass
+    notify: restart mysqld
+    when:
+      - ansible_distribution == "CentOS"
 
         #SECURE THE INSTALL
 
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
    shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ ROOT_PASSWORD }}') WHERE User='{{ mysql_user }}'" | mysql -u root
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
 
  - name: settings for mysql-server DELETE FROM mysql.user WHERE User='root' AND Host NOT IN
    shell: echo "DELETE FROM mysql.user WHERE User='{{ mysql_user }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
 
  - name: settings for mysql-server DELETE FROM mysql.user WHERE User=''"
    shell: echo "DELETE FROM mysql.user WHERE User=''" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
 
  - name: settings for mysql-server DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
    shell: echo "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root -p"{{ ROOT_PASSWORD }}"
    when:
-     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian" or ansible_distribution == "CentOS"
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "Debian"
