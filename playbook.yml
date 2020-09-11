@@ -66,7 +66,10 @@
      - install_/xmpp
      - config_/xmpp
      - install_/guacamole
+     - config_/guacamole
      - install_/syncthing
+     - config_/syncthing
+     - config_/syncthing_depl
      - config_/mysql_access
      - config_/mysql_server
      - config_relay_server
