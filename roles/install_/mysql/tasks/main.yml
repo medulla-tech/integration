@@ -41,7 +41,7 @@
 
  - name: start mysqld Mageia
    service:
-     name: mysqld
+     name: mariadb
      state: started
    when:
      - ansible_distribution == "Mageia"

@@ -46,6 +46,7 @@
      - REVERSE_SSH_PORT: ''
      - REVERSESSH: ''
      - GATEWAYPORTS_RES: ''
+     - SYNCTHING_APACHE_PATH:
 
    roles:
 

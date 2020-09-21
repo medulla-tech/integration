@@ -27,29 +27,19 @@
 # Configure Apache for syncthing
 
  - name: write in file
-   copy:
-     src: "ProxyPass /syncthing/ http://localhost:8384/"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   shell: 'echo "ProxyPass /syncthing/ http://localhost:8384/" > {{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
-   copy:
-     src: "<Location /syncthing/>"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   shell: 'echo "<Location /syncthing/>" >> {{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
-   copy:
-     src: "    ProxyPassReverse http://localhost:8384/"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   shell: 'echo "    ProxyPassReverse http://localhost:8384/" >> {{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
-   copy:
-     src: "    Require all granted"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   shell: 'echo "    Require all granted" >> {{ SYNCTHING_APACHE_PATH }}'
 
  - name: write in file
-   copy:
-     src: "</Location>"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   shell: 'echo "</Location>" >> {{ SYNCTHING_APACHE_PATH }}'
 
  - name: shell
    shell: 'a2enconf syncthing'

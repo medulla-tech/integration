@@ -63,7 +63,7 @@
      - proxy_http
      - proxy_wstunnel
      - proxy_fcgi
-     - mpm_event
+#     - mpm_event
    notify: [ "apache restart" ]
    when:
      - ansible_distribution == "Debian"
