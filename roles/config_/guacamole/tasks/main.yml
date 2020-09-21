@@ -27,9 +27,9 @@
    shell: echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
    when: ansible_distribution == "Debian"
 
- # - name: DROP USER
- #   shell: echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
- #   when: ansible_distribution != "Debian"
+ - name: DROP USER
+   shell: echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
+   when: ansible_distribution != "Debian"
 
  - name: CREATE DATABASE
    shell: echo "CREATE DATABASE guacamole;" | mysql -uroot
@@ -42,26 +42,26 @@
 
 # if debian version 8
 
- # - name: DROP USER
- #   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
- #   when: ansible_distribution == "Debian" ansible_distribution_major_version == '8'
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
+   when: ansible_distribution_major_version == '8'
 
- # - name: DROP USER
- #   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
- #   when: ansible_distribution == "Debian" ansible_distribution_major_version == '8'
-  
+ - name: DROP USER
+   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
+   when: ansible_distribution_major_version == '8'
+
  - name: DROP USER
    shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
-   when: ansible_distribution == "Debian" ansible_distribution_major_version != '8'
+   when: ansible_distribution_major_version != '8'
 
  - name: DROP USER
    shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
-   when: ansible_distribution == "Debian" ansible_distribution_major_version != '8'
+   when: ansible_distribution_major_version != '8'
 
 #
 
  - name: SET
-   shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
+   shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
 
 #
 
@@ -98,35 +98,35 @@
 
  - name: write in file
    copy:
-     src: "# Hostname and port of guacamole proxy"
+     content: "# Hostname and port of guacamole proxy"
      dest: /etc/guacamole/guacamole.properties
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: write in file
    copy:
-     src: "guacd-hostname: localhost"
+     content: "guacd-hostname: localhost"
      dest: /etc/guacamole/guacamole.properties
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: write in file
    copy:
-     src: "guacd-port:     4822"
+     content: "guacd-port:     4822"
      dest: /etc/guacamole/guacamole.properties
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: write in file
    copy:
-     src: "# Auth provider class (authenticates user/pass combination, needed if using the provided login screen)"
+     content: "# Auth provider class (authenticates user/pass combination, needed if using the provided login screen)"
      dest: /etc/guacamole/guacamole.properties
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: write in file
    copy:
-     src: "auth-provider: net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider"
+     content: "auth-provider: net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider"
      dest: /etc/guacamole/guacamole.properties
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
@@ -147,70 +147,105 @@
 
  - name: write in file
    copy:
-     src: "mysql-disallow-simultaneous-connections: false"
+     content: "mysql-disallow-simultaneous-connections: false"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-disallow-duplicate-connections: false"
+     content: "mysql-disallow-duplicate-connections: false"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "lib-directory: /var/lib/guacamole/classpath\n"
+     content: "lib-directory: /var/lib/guacamole/classpath\n"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-hostname: localhost"
+     content: "mysql-hostname: localhost"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-port: 3306"
+     content: "mysql-port: 3306"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-database: guacamole"
+     content: "mysql-database: guacamole"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-username: guacamole"
+     content: "mysql-username: guacamole"
      dest: /etc/guacamole/guacamole.properties
 
  - name: write in file
    copy:
-     src: "mysql-password: {{ ROOT_PASSWORD }}"
+     content: "mysql-password: {{ ROOT_PASSWORD }}"
      dest: /etc/guacamole/guacamole.properties
 
     # Setup Tomcat
 
  - name: shell
-   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION }}/server.xml
+   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: shell
+   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: shell
    shell: |
      xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
      -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION }}/server.xml
+     /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
    when:
      - INSTALL_TYPE == "p"
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
+ - name: shell
+   shell: |
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
+     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" \
+     /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+   when:
+     - INSTALL_TYPE == "p"
+     - ansible_distribution == "CentOS"
 
  - name: shell
    shell: |
      xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
      -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION }}/server.xml
+     /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
    when:
      - INSTALL_TYPE != "p"
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: shell
+   shell: |
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
+     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" \
+     /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+   when:
+     - INSTALL_TYPE != "p"
+     - ansible_distribution == "CentOS"
 
  - name: service tomcat restart
    service:
-     name: tomcat{{ TOMCAT_VERSION }}
+     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
      state: restarted
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+ - name: service tomcat restart
+   service:
+     name: tomcat{{ TOMCAT_VERSION_RH }}
+     state: restarted
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: set GUACAMOLE_ROOT_PASSWORD
    set_fact:
@@ -228,35 +263,35 @@
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: "<Location /guacamole/>"
+     content: "<Location /guacamole/>"
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED'
+     content: '    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Order Deny,Allow'
+     content: '    Order Deny,Allow'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Deny from all'
+     content: '    Deny from all'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Allow from env=GUACAMOLE_ALLOWED'
+     content: '    Allow from env=GUACAMOLE_ALLOWED'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
@@ -271,84 +306,84 @@
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on'
+     content: '    ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/'
+     content: '    ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '</Location>'
+     content: '</Location>'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '<Location /guacamole/websocket-tunnel>'
+     content: '<Location /guacamole/websocket-tunnel>'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
+     content: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Order Deny,Allow'
+     content: '    Order Deny,Allow'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Deny from all'
+     content: '    Deny from all'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    Allow from env=GUACAMOLE_ALLOWED'
+     content: '    Allow from env=GUACAMOLE_ALLOWED'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
+     content: '    ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '    ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
+     content: '    ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: '</Location>'
+     content: '</Location>'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: 'SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog'
+     content: 'SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
@@ -357,7 +392,7 @@
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: 'CustomLog  /var/log/apache2/guac.log common env=!dontlog'
+     content: 'CustomLog  /var/log/apache2/guac.log common env=!dontlog'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
@@ -365,7 +400,7 @@
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     src: 'CustomLog  /var/log/httpd/guac.log common env=!dontlog'
+     content: 'CustomLog  /var/log/httpd/guac.log common env=!dontlog'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
