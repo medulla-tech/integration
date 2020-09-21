@@ -59,9 +59,10 @@
 
 # else Debian
 
- - name: restart ejabberd
+ - name: start ejabberd
    service:
-     name: ejabberd start
+     name: ejabberd
+     state: started
    when:
      - ansible_distribution != "Debian"
 
@@ -89,7 +90,7 @@
      - ansible_distribution != "Debian"
 
  - name: ejabctl register master
-   shell: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
+   shell: ejabberdctl register root {{ XMPP_DOMAIN }} "{{ ROOT_PASSWORD }}"
    when:
      - ansible_distribution != "Debian"
 
