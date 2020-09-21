@@ -55,17 +55,17 @@
  - name: usermod rhel or Mageia ejabberd
    shell: 'sed -i "s/localhost/{{ XMPP_DOMAIN }}/" /etc/ejabberd/ejabberd.yml'
    when:
-     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
  - name: usermod rhel or Mageia ejabberd
    shell: 'sed -i "/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - \"root@{{ XMPP_DOMAIN }}\"" /etc/ejabberd/ejabberd.yml'
    when:
-     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
  - name: usermod rhel or Mageia ejabberd
    shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
    when:
-     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia"
+     - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
  - name: restart service ejabberd
    systemd:
