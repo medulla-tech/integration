@@ -5,7 +5,7 @@
    remote_user: root
    vars:
      - PULSE_REPO_URL: "https://git.siveo.net"
-     - PULSE_REPO_RPM_URL: "https://git.siveo.net"
+     - PULSE_REPO_RPM_URL: "https://pulse-repo.siveo.net/cnam-repo/"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
@@ -46,7 +46,8 @@
      - REVERSE_SSH_PORT: ''
      - REVERSESSH: ''
      - GATEWAYPORTS_RES: ''
-     - SYNCTHING_APACHE_PATH:
+     - SYNCTHING_APACHE_PATH: ''
+     - GUACAMOLE_ROOT_PASSWORD: r00tSiveo*
 
    roles:
 
