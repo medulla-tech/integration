@@ -35,7 +35,7 @@
      - MAX_ID: ''
      - CLUSTER_ID: ''
      - MULTISITE_ENTITY: ''
-     - PULSEMAIN_IP: ''
+     - PULSEMAIN_IP: 'wva-mmc.siveo.lan'
      - RELAYSERVER_ID: ''
      - PULSEMAIN_FQDN: ''
      - SYSLINUX_PATH: ''
@@ -46,9 +46,10 @@
      - REVERSESSH: ''
      - GATEWAYPORTS_RES: ''
      - SYNCTHING_APACHE_PATH: ''
-     - GUACAMOLE_ROOT_PASSWORD: r00tSiveo*
+     - GUACAMOLE_ROOT_PASSWORD:
      - SERVER_FQDN: ''
      - INSTALL_TYPE: ''
+     - GUACAMOLE_APACHE_PATH: ''
 
    roles:
 
