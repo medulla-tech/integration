@@ -14,6 +14,7 @@
        - libguac-client-rdp0
        - libguac-client-ssh0
        - libguac-client-vnc0
+       - xmlstarlet
    when:
      - ansible_distribution == "Debian"
 
@@ -47,6 +48,7 @@
        - libguac-client-rdp
        - guacamole-auth-mysql
        - mysql-connector-java
+       - xmlstarlet
      state: present
    when:
      - ansible_distribution == "Mageia"
@@ -61,32 +63,63 @@
        - libguac-client-rdp
        - guacamole-auth-mysql
        - mysql-connector-java
+       - xmlstarlet
      state: present
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
+ - name: Get version of tomcat
+   shell: basename /etc/default/tomcat*
+   register: versionTC
+   changed_when: False
+   when:
+     - ansible_distribution == "Debian"
+
+ - set_fact:
+     V_TOMCAT_TEST_DEB: "{{ versionTC.stdout }}"
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Get version of tomcat
+   shell: basename /etc/default/tomcat*
+   register: versionTC
+   changed_when: False
+   when:
+     - ansible_distribution == "CentOS"
+
+ - set_fact:
+     V_TOMCAT_TEST_CENT: "{{ versionTC.stdout }}"
+   when:
+     - ansible_distribution == "CentOS"
+
+ - debug:
+     msg: "{{ V_TOMCAT_TEST_DEB }}"
+
+ - debug:
+     msg: "{{ V_TOMCAT_TEST_CENT }}"
+
 # DEB 10
  - name: Check that the tomcat exists
    stat:
-     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}
+     path: /etc/default/{{ V_TOMCAT_TEST_DEB }}
    register: stat_result
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: after Check
-   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_10 }}'
+   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
      - not stat_result.stat.exists
@@ -94,25 +127,25 @@
 #DEB 9
  - name: Check that the tomcat exists
    stat:
-     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}
+     path: /etc/default/{{ V_TOMCAT_TEST_DEB }}
    register: stat_result
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
 
  - name: after Check
-   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_9 }}'
+   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
      - not stat_result.stat.exists
@@ -120,25 +153,25 @@
 #DEB 8
  - name: Check that the tomcat exists
    stat:
-     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}
+     path: /etc/default/{{ V_TOMCAT_TEST_DEB }}
    register: stat_result
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
 
  - name: after Check
-   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_8 }}'
+   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
      - not stat_result.stat.exists
@@ -146,25 +179,25 @@
 #DEB 7
  - name: Check that the tomcat exists
    stat:
-     path: /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}
+     path: /etc/default/{{ V_TOMCAT_TEST_DEB }}
    register: stat_result
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
 
  - name: after Check
-   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_DEB_7 }}'
+   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
      - not stat_result.stat.exists
@@ -198,25 +231,25 @@
 #RHEL or CentOS
  - name: Check that the tomcat exists
    stat:
-     path: /etc/default/tomcat{{ TOMCAT_VERSION_RH }}
+     path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
    register: stat_result
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: after Check
-   shell: 'echo "" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
 
  - name: after CheckS
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
 
  - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/tomcat{{ TOMCAT_VERSION_RH }}'
+   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
@@ -226,28 +259,28 @@
  - name: enabled tomcat
    systemd:
      enabled: yes
-     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
+     name: '{{V_TOMCAT_TEST_DEB}}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: enabled tomcat
    systemd:
      enabled: yes
-     name: tomcat{{ TOMCAT_VERSION_DEB_9 }}
+     name: '{{V_TOMCAT_TEST_DEB}}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
 
  - name: enabled tomcat
    systemd:
      enabled: yes
-     name: tomcat{{ TOMCAT_VERSION_DEB_8 }}
+     name: '{{V_TOMCAT_TEST_DEB}}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
 
  - name: enabled tomcat
    systemd:
      enabled: yes
-     name: tomcat{{ TOMCAT_VERSION_DEB_7 }}
+     name: '{{V_TOMCAT_TEST_DEB}}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
 
@@ -273,28 +306,28 @@
  - name: restarted tomcat
    systemd:
      state: restarted
-     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
+     name: '{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
 
  - name: restarted tomcat
    systemd:
      state: restarted
-     name: tomcat{{ TOMCAT_VERSION_DEB_9 }}
+     name: '{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
 
  - name: restarted tomcat
    systemd:
      state: restarted
-     name: tomcat{{ TOMCAT_VERSION_DEB_8 }}
+     name: '{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
 
  - name: restarted tomcat
    systemd:
      state: restarted
-     name: tomcat{{ TOMCAT_VERSION_DEB_7 }}
+     name: '{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
 
