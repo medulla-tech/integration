@@ -10,19 +10,12 @@
      update_cache: yes
      pkg:
        - php
-#       - php-mssql
-#       - php-pear
-#       - php-pdo
-#       - php-pecl-redis
-#       - php-xml
-#       - php-pecl-zip
        - php-pecl-jsonc
-#       - php-pecl-igbinary
-#       - php-mbstring
        - php-fpm
+       - php-mysqlnd
      state: latest
    when:
-     - ansible_distribution == "CentOS"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
    notify: [ "apache restart" ]
 
         #INSTALL APACHE2 & PHP
@@ -48,16 +41,6 @@
        - php-cgi
    when:
      - ansible_distribution == "Mageia"
-
- - name: install_apache_php_rhel
-   yum:
-     update_cache: yes
-     state: latest
-     pkg:
-       - php
-   when:
-     - ansible_distribution == "Rhel"
-   notify: [ "apache restart" ]
 
  - apache2_module:
      state: absent
@@ -221,5 +204,29 @@
    systemd:
      enabled: yes
      name: php-fpm
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: Get version of PHP
+   shell: apt list installed php | grep php | awk '{print $2}' | cut -d'-' -f1
+   register: version
+   changed_when: False
+   when:
+     - ansible_distribution == "Debian"
+
+ - set_fact:
+     V_PHP_TEST_DEB: "{{ version.stdout }}"
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: Get version of PHP
+   shell: yum list installed php | grep php | awk '{print $2}' | cut -d'-' -f1
+   register: version
+   changed_when: False
+   when:
+     - ansible_distribution == "CentOS"
+
+ - set_fact:
+     V_PHP_TEST_CENT: "{{ version.stdout }}"
    when:
      - ansible_distribution == "CentOS"
