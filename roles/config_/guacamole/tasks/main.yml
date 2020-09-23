@@ -188,61 +188,53 @@
     # Setup Tomcat
 
  - name: shell
-   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
+   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
    when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - ansible_distribution == "Debian"
 
  - name: shell
-   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+   shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat/server.xml
    when:
      - ansible_distribution == "CentOS"
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
-     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
    when:
      - INSTALL_TYPE == "p"
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - ansible_distribution == "Debian"
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
-     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/tomcat/server.xml
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == "CentOS"
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
-     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION_DEB_10 }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
    when:
      - INSTALL_TYPE != "p"
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - ansible_distribution == "Debian"
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" \
-     -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" \
-     /etc/tomcat{{ TOMCAT_VERSION_RH }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/tomcat/server.xml
    when:
      - INSTALL_TYPE != "p"
      - ansible_distribution == "CentOS"
 
  - name: service tomcat restart
    service:
-     name: tomcat{{ TOMCAT_VERSION_DEB_10 }}
+     name: '{{ V_TOMCAT_TEST_DEB }}'
      state: restarted
    when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+     - ansible_distribution == "Debian"
 
  - name: service tomcat restart
    service:
-     name: tomcat{{ TOMCAT_VERSION_RH }}
+     name: 'tomcat'
      state: restarted
    when:
      - ansible_distribution == "CentOS"
@@ -270,7 +262,7 @@
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     content: '    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED'
+     content: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
@@ -430,221 +422,228 @@
 
 #else INSTALL_TYPE != p
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"<Location /guacamole-{{ XMPP_DOMAIN }}/>\" >> {{ GUACAMOLE_APACHE_PATH }}'
+ - name: SHELL TEST SHELL TEST SHELL TEST
+   shell: echo \"<Location /guacamole-{{ XMPP_DOMAIN }}/>\" >> {{ GUACAMOLE_APACHE_PATH }}
    when:
      - INSTALL_TYPE != "p"
+     - inventory_hostname in groups['pulse']
 
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Order Deny,Allow\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Deny from all\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Allow from env=GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"</Location>\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"<Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APAC }HE_PATH}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Order Deny,Allow\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Deny from all\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Allow from env=GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel\" >> {{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/\" >> {{GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"</Location>\" >> {{GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
-
-# if debian
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'systemctl restart apache2.service'
-   when:
-     - INSTALL_TYPE != "p"
-     - ansible_distribution == "Debian"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'systemctl restart httpd.service'
-   when:
-     - INSTALL_TYPE != "p"
-     - ansible_distribution != "Debian"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - INSTALL_TYPE != "p"
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"<Location /guacamole-{{ XMPP_DOMAIN }}/>\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    hosts: pulse
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Order Deny,Allow\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Deny from all\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Allow from env=GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"</Location>\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"<Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APAC }HE_PATH}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Order Deny,Allow\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Deny from all\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    Allow from env=GUACAMOLE_ALLOWED\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel\" >> {{ GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/\" >> {{GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'echo \"</Location>\" >> {{GUACAMOLE_APACHE_PATH }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
+#
+# # if debian
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'systemctl restart apache2.service'
+#    when:
+#      - INSTALL_TYPE != "p"
+#      - ansible_distribution == "Debian"
+#
+#  - name: set SSH_COMMAND
+#    set_fact:
+#      SSH_COMMAND: 'systemctl restart httpd.service'
+#    when:
+#      - INSTALL_TYPE != "p"
+#      - ansible_distribution != "Debian"
+#
+#  - name: run ssh SSH_COMMAND
+#    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+#    when:
+#      - INSTALL_TYPE != "p"
