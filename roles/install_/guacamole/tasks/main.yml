@@ -176,32 +176,6 @@
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
      - not stat_result.stat.exists
 
-#DEB 7
- - name: Check that the tomcat exists
-   stat:
-     path: /etc/default/{{ V_TOMCAT_TEST_DEB }}
-   register: stat_result
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
-
- - name: after Check
-   shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
-     - not stat_result.stat.exists
-
- - name: after Check
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
-     - not stat_result.stat.exists
-
- - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
-     - not stat_result.stat.exists
-
 #MAG
  - name: Check that the tomcat exists
    stat:
@@ -309,27 +283,6 @@
      name: '{{ V_TOMCAT_TEST_DEB }}'
    when:
      - ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
-
- - name: restarted tomcat
-   systemd:
-     state: restarted
-     name: '{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "9"
-
- - name: restarted tomcat
-   systemd:
-     state: restarted
-     name: '{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "8"
-
- - name: restarted tomcat
-   systemd:
-     state: restarted
-     name: '{{ V_TOMCAT_TEST_DEB }}'
-   when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version == "7"
 
  - name: restarted tomcat
    systemd:
