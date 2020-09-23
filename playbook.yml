@@ -5,17 +5,16 @@
    remote_user: root
    vars:
      - PULSE_REPO_URL: "https://git.siveo.net"
-     - PULSE_REPO_RPM_URL: "https://pulse-repo.siveo.net/cnam-repo/"
+     - PULSE_REPO_RPM_URL: "https://git.siveo.net"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
      - v_php: php7.0
-     - TOMCAT_VERSION_DEB_10: "9"
-     - TOMCAT_VERSION_DEB_9: "8"
-     - TOMCAT_VERSION_DEB_8: "8"
-     - TOMCAT_VERSION_DEB_7: "6"
+     - V_PHP_TEST_DEB: ''
+     - V_PHP_TEST_CENT: ''
      - TOMCAT_VERSION_MAG: "6"
-     - TOMCAT_VERSION_RH: "7"
+     - V_TOMCAT_TEST_DEB: ''
+     - V_TOMCAT_TEST_CENT: ''
      - ROOT_PASSWORD: r00tSiveo*
      - DRIVERS_PASSWORD: ''
      - TEMP_PASS_MYSQL: siveo
@@ -48,6 +47,8 @@
      - GATEWAYPORTS_RES: ''
      - SYNCTHING_APACHE_PATH: ''
      - GUACAMOLE_ROOT_PASSWORD: r00tSiveo*
+     - SERVER_FQDN: ''
+     - INSTALL_TYPE: ''
 
    roles:
 
