@@ -37,7 +37,7 @@
      - MULTISITE_ENTITY: ''
      - PULSEMAIN_IP: 'wva-mmc.siveo.lan'
      - RELAYSERVER_ID: ''
-     - PULSEMAIN_FQDN: ''
+     - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
      - SYSLINUX_PATH: ''
      - PXELINUX_PATH: ''
      - TOMCAT_VERSION: ''
@@ -50,6 +50,8 @@
      - SERVER_FQDN: ''
      - INSTALL_TYPE: ''
      - GUACAMOLE_APACHE_PATH: ''
+     - PULSEMAIN_DEVICE_ID: ''
+     - LOCAL_DEVICE_ID: ''
 
    roles:
 
@@ -81,3 +83,14 @@
      - config_/mysql_server
      - config_/ssh_server
      - config_relay_server
+
+ - name: config_guacamole_pulse_task
+   hosts: pulse
+   remote_user: root
+   vars:
+     - GUACAMOLE_APACHE_PATH: ''
+     - SERVER_FQDN: ''
+     - PULSEMAIN_FQDN: ''
+
+   roles:
+     - config_/guacamole_pulse
