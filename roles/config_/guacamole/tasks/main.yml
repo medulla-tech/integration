@@ -253,307 +253,151 @@
    when:
      - ansible_distribution != "Debian"
 
- #    # Setup Apache FOR PULSE PRINCIPALE /!\
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: "<Location /guacamole/>"
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Order Deny,Allow'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Deny from all'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Allow from env=GUACAMOLE_ALLOWED'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Get hostname f
- #   shell: hostname -f
- #   register: reshostf
- #
- # - name: set hostname f
- #   set_fact:
- #     HOSTNAME_F: "{{ reshostf.stdout }}"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '</Location>'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '<Location /guacamole/websocket-tunnel>'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    SetEnvIf Referer \"^https?://{{ SERVER_FQDN }}/\" GUACAMOLE_ALLOWED'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Order Deny,Allow'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Deny from all'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    Allow from env=GUACAMOLE_ALLOWED'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '    ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: '</Location>'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
- #
- # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
- #   copy:
- #     content: 'SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog'
- #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
- #   when:
- #     - INSTALL_TYPE == "p"
-
-#Debian
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: 'CustomLog  /var/log/apache2/guac.log common env=!dontlog'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE == "p"
-     - ansible_distribution == "Debian"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: 'CustomLog  /var/log/httpd/guac.log common env=!dontlog'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE == "p"
-     - ansible_distribution != "Debian"
-
- - name: a2enconf
-   shell: 'a2enconf guacamole.conf'
-   when:
-     - ansible_distribution == "CentOS"
-     - INSTALL_TYPE == "p"
-
- - name:
-   systemd:
-     name: apache2
-     state: restarted
-   when:
-     - ansible_distribution == "CentOS"
-     - INSTALL_TYPE == "p"
-
- - name:
-   systemd:
-     name: httpd
-     state: restarted
-   when:
-     - ansible_distribution != "CentOS"
-     - INSTALL_TYPE == "p"
-
 #else INSTALL_TYPE != p
- - debug:
-     msg: '{{ GUACAMOLE_APACHE_PATH }}'
-
- - debug:
-     msg: '{{ SSH_COMMAND }}'
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
-     content: '<Location /guacamole-{{ XMPP_DOMAIN }}/>'
+     content: |
+        <Location /guacamole-{{ XMPP_DOMAIN }}/>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ XMPP_DOMAIN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ XMPP_DOMAIN }}:8081/guacamole/
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
+        </Location>
+        <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
+        </Location>
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE != "p"
 
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Order Deny,Allow'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Deny from all'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Allow from env=GUACAMOLE_ALLOWED'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '</Location>'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '<Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Order Deny,Allow'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Deny from all'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    Allow from env=GUACAMOLE_ALLOWED'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
-   copy:
-     content: '</Location>'
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
-   when:
-     - INSTALL_TYPE != "p"
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Order Deny,Allow'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Deny from all'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Allow from env=GUACAMOLE_ALLOWED'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '</Location>'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '<Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    SetEnvIf Referer \\\"^https?://{{ PULSEMAIN_FQDN }}/\\\" GUACAMOLE_ALLOWED'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Order Deny,Allow'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Deny from all'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    Allow from env=GUACAMOLE_ALLOWED'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '    ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
+ #
+ # - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ #   copy:
+ #     content: '</Location>'
+ #     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+ #   when:
+ #     - INSTALL_TYPE != "p"
 
 # if debian
 
