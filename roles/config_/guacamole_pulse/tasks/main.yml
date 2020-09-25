@@ -95,10 +95,16 @@
      - INSTALL_TYPE == "p"
  #    # Setup Apache FOR PULSE PRINCIPALE /!\
 
- - name: Get hostname f
-   shell: hostname -f
-   register: reshostf
-
- - name: set hostname f
+ - name: set LOCAL_DEVICE_ID
    set_fact:
-     HOSTNAME_F: "{{ reshostf.stdout }}"
+     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+
+ - name: shell
+   shell: 'stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}'
+   when:
+     - SHARE_ADDED == ''
+
+ - name: shell
+   shell: 'stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}'
+   when:
+     - SHARE_ADDED == ''
