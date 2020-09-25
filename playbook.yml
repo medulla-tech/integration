@@ -80,6 +80,9 @@
      - install_/syncthing
      - config_/syncthing
      - config_/syncthing_share_packages
+     - config_/syncthing_share_bootmenus
+     - config_/syncthing_share_baseremoteagent
+     - config_/syncthing_share_downloads
      - config_/syncthing_depl
      - config_/mysql_access
      - config_/mysql_server
