@@ -10,7 +10,14 @@
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+
+ - shell: '{{ LOCAL_DEVICE_ID }}'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: '{{ deviceid.stdout }}'
 
  - name: set SYNCTHING_APACHE_PATH
    set_fact:
