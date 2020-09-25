@@ -1,0 +1,93 @@
+---
+
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+
+ - name: delete file if present
+   file:
+     path: /var/lib/syncthing/packages
+     state: absent
+
+ - name: create file
+   file:
+     path: /var/lib/syncthing/packages
+     state: directory
+     mode: '0755'
+
+ - name: shell
+   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/packages/
+
+ - name: shell
+   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
+
+ - name: stman
+   shell: stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
+   when:
+     - XMPP_DOMAIN == pulse
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: shell
+   shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: '$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)'
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: restarted syncthing@syncthing
+   systemd:
+     name: syncthing@syncthing
+     state: stopped
+   when:
+     - XMPP_DOMAIN != pulse
+
+ - name: Move foo to bar
+   command: mv /var/lib/syncthing/packages/.st*  /var/lib/pulse2/packages/
+   when:
+     - XMPP_DOMAIN != pulse
+
+ - name: delete file if present
+   file:
+     path: /var/lib/syncthing/packages
+     state: absent
+   when:
+     - XMPP_DOMAIN != pulse
+
+ - name: shell
+   shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_packages']/@path" -v "/var/lib/pulse2/packages" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - XMPP_DOMAIN != pulse
+
+ - name: restarted syncthing@syncthing
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+   when:
+     - XMPP_DOMAIN != pulse
+
+ - pause:
+     seconds: 5
+   when:
+     - XMPP_DOMAIN != pulse
