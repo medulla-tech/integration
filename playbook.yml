@@ -52,6 +52,7 @@
      - GUACAMOLE_APACHE_PATH: ''
      - PULSEMAIN_DEVICE_ID: ''
      - LOCAL_DEVICE_ID: ''
+     - SHARE_ADDED: ''
 
    roles:
 
@@ -89,8 +90,10 @@
    remote_user: root
    vars:
      - GUACAMOLE_APACHE_PATH: ''
-     - SERVER_FQDN: ''
-     - PULSEMAIN_FQDN: ''
+     - SERVER_FQDN: 'wva-mmc.siveo.lan'
+     - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
+     - SHARE_ADDED: ''
+     - LOCAL_DEVICE_ID: ''
 
    roles:
      - config_/guacamole_pulse
