@@ -10,13 +10,16 @@
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+
+ - name: shell
+   shell: ' {{ LOCAL_DEVICE_ID }} '
    register: deviceid
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-     
+
  - name: delete file if present
    file:
      path: /var/lib/syncthing/bootmenus
@@ -43,19 +46,19 @@
  - name: stman
    shell: stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
    when:
-     - XMPP_DOMAIN == pulse
+     - XMPP_DOMAIN == 'pulse'
 
  - name: shell
    shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell
    shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - pause:
      seconds: 20
@@ -65,40 +68,40 @@
      SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: restarted syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: stopped
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: Move foo to bar
    command: mv /var/lib/syncthing/bootmenus/.st*  /var/lib/pulse2/imaging/bootmenus/
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: delete file if present
    file:
      path: /var/lib/syncthing/bootmenus
      state: absent
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell
    shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_bootmenus']/@path" -v "/var/lib/pulse2/imaging/bootmenus" /var/lib/syncthing/.config/syncthing/config.xml
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: restarted syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: restarted
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - pause:
      seconds: 5
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
