@@ -10,13 +10,16 @@
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+
+ - name: shell
+   shell: '{{ LOCAL_DEVICE_ID }}'
    register: deviceid
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-     
+
  - name: delete file if present
    file:
      path: /var/lib/syncthing/baseremoteagent
@@ -28,7 +31,8 @@
      state: directory
      mode: '0755'
 
-#chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent
+ - name: chown -R
+   shell: chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent
 
  - name: shell
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
@@ -39,19 +43,19 @@
  - name: stman
    shell: stman folder add --label baseremoteagent --foldertype readonly /var/lib/pulse2/xmpp_baseremoteagent/ pulsemaster_baseremoteagent
    when:
-     - XMPP_DOMAIN == pulse
+     - XMPP_DOMAIN == 'pulse'
 
  - name: shell
    shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell
    shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - pause:
      seconds: 20
@@ -61,40 +65,40 @@
      SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: restarted syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: stopped
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: Move foo to bar
    command: mv /var/lib/syncthing/baseremoteagent/.st*  /var/lib/pulse2/xmpp_baseremoteagent/
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: delete file if present
    file:
      path: /var/lib/syncthing/baseremoteagent
      state: absent
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell
    shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_baseremoteagent']/@path" -v "/var/lib/pulse2/xmpp_baseremoteagent" /var/lib/syncthing/.config/syncthing/config.xml
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - name: restarted syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: restarted
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
 
  - pause:
      seconds: 5
    when:
-     - XMPP_DOMAIN != pulse
+     - XMPP_DOMAIN != 'pulse'
