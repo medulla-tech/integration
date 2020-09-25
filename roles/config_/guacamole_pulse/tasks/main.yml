@@ -100,11 +100,61 @@
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
 
  - name: shell
-   shell: 'stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}'
+   shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
 
  - name: shell
-   shell: 'stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}'
+   shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: shell
+   shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: shell
+   shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
+
+ - name: shell
+   shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != pulse
