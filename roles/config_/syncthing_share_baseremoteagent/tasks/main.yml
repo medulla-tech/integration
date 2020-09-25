@@ -32,7 +32,7 @@
      mode: '0755'
 
  - name: chown -R
-   shell: chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent
+   shell: 'chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent'
 
  - name: shell
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
