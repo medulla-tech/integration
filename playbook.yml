@@ -79,6 +79,7 @@
      - config_/guacamole
      - install_/syncthing
      - config_/syncthing
+     - config_/syncthing_share_packages
      - config_/syncthing_depl
      - config_/mysql_access
      - config_/mysql_server

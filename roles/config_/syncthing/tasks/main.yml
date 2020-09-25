@@ -60,79 +60,38 @@
    when:
      - ansible_distribution != "Debian"
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/\" >> {{ SYNCTHING_APACHE_PATH }}'
+ - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: |
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           Require all granted
+       </Location>
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != "p"
 
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"<Location /syncthing-{{ XMPP_DOMAIN }}/>\" >> {{ SYNCTHING_APACHE_PATH }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/\" >> {{ SYNCTHING_APACHE_PATH }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"    Require all granted\" >> {{ SYNCTHING_APACHE_PATH }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'echo \"</Location>\" >> {{ SYNCTHING_APACHE_PATH }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: reload apache2
-   shell: "systemctl reload apache2.service"
-   when:
-     - XMPP_DOMAIN != "pulse"
-     - ansible_distribution == "Debian"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-     - ansible_distribution == "Debian"
-
-# Run syncthing discovery server
-
- - name: stop syncthing
+ - name: reload systemd
    systemd:
-     name: syncthing-discosrv
-     state: startted
+     name: apache2
+     state: reloaded
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name: reload systemd
+   systemd:
+     name: httpd
+     state: reloaded
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: start syncthing
+   systemd:
+     name: syncthing.discosrv
+     state: started
+   when:
+     - XMPP_DOMAIN == 'pulse'
 
 # Stop syncthing service
 
@@ -152,13 +111,28 @@
 
  - name: set SSH_COMMAND
    set_fact:
-     SSH_COMMAND: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id'
+     SSH_COMMAND: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
-     PULSEMAIN_DEVICE_ID: '$(ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }})'
+     PULSEMAIN_DEVICE_ID: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   when:
+     - XMPP_DOMAIN != "pulse"
+
+ - name: recup id pulsemain and sshcommand
+   shell: '{{ PULSEMAIN_DEVICE_ID }}'
+   register: resid
+   when:
+     - XMPP_DOMAIN != "pulse"
+
+ - debug:
+     msg: '{{ resid.stdout }}'
+
+ - name: set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
    when:
      - XMPP_DOMAIN != "pulse"
 
@@ -249,7 +223,7 @@
  # Auto-accept shares coming from pulsemain
 
  - name: stman
-   shell: stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}
+   shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -271,15 +245,12 @@
    shell: 'stman folder remove "Default Folder"'
 
    # Add the shares
-
- - name: stman
-   shell: 'configure_syncthing_share_packages {{ XMPP_DOMAIN }}'
-
- - name: stman
-   shell: 'configure_syncthing_share_bootmenus {{ XMPP_DOMAIN }}'
-
- - name: stman
-   shell: 'configure_syncthing_share_baseremoteagent {{ XMPP_DOMAIN }}'
-
- - name: stman
-   shell: 'configure_syncthing_share_downloads {{ XMPP_DOMAIN }}'
+ # 
+ # - name: stman
+ #   shell: 'configure_syncthing_share_bootmenus {{ XMPP_DOMAIN }}'
+ #
+ # - name: stman
+ #   shell: 'configure_syncthing_share_baseremoteagent {{ XMPP_DOMAIN }}'
+ #
+ # - name: stman
+ #   shell: 'configure_syncthing_share_downloads {{ XMPP_DOMAIN }}'
