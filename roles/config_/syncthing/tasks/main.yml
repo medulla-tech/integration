@@ -243,14 +243,3 @@
 
  - name: stman
    shell: 'stman folder remove "Default Folder"'
-
-   # Add the shares
- # 
- # - name: stman
- #   shell: 'configure_syncthing_share_bootmenus {{ XMPP_DOMAIN }}'
- #
- # - name: stman
- #   shell: 'configure_syncthing_share_baseremoteagent {{ XMPP_DOMAIN }}'
- #
- # - name: stman
- #   shell: 'configure_syncthing_share_downloads {{ XMPP_DOMAIN }}'
