@@ -52,10 +52,10 @@
      mode: '0755'
 
  - name: chown
-   shell: chown syncthing: /var/lib/pulse2/clients
+   shell: 'chown syncthing: /var/lib/pulse2/clients'
 
  - name: chown
-   shell: chown -R syncthing: /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}
+   shell: 'chown -R syncthing: /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}'
 
  - name: shell
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}
