@@ -98,6 +98,11 @@
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
  - name: shell
    shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
@@ -114,6 +119,11 @@
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
  - name: shell
    shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
@@ -130,6 +140,11 @@
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
  - name: shell
    shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
@@ -146,6 +161,11 @@
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
  - name: shell
    shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}

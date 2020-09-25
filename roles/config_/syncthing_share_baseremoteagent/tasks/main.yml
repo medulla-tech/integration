@@ -11,7 +11,12 @@
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+   register: deviceid
 
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
+     
  - name: delete file if present
    file:
      path: /var/lib/syncthing/baseremoteagent
