@@ -1,5 +1,5 @@
 ---
-
+####___________GUACAMOLE_____________
  - name: Get hostname
    shell: hostname -f
    register: result
@@ -95,6 +95,8 @@
      - INSTALL_TYPE == "p"
  #    # Setup Apache FOR PULSE PRINCIPALE /!\
 
+ ####___________SYNCTHING_____________
+
  - name: set LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
@@ -179,14 +181,85 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
- - name: shell
-   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
+ # - name: shell
+ #   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+ #   when:
+ #     - SHARE_ADDED == ''
+ #     - XMPP_DOMAIN != pulse
 
  - name: shell
    shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
      - XMPP_DOMAIN != pulse
+
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+   when:
+     - SHARE_ADDED == ''
+     - XMPP_DOMAIN != 'pulse'
+
+####Syncthing_depl write
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/apache2/conf-available/syncthing.conf'
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
+   when:
+     - ansible_distribution != "Debian" or ansible_distribution != "Mageia"
+
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/\n"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     force: no
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>\n"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     force: no
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/\n"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     force: no
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: "    Require all granted\n"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     force: no
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: "</Location>\n"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     force: no
+
+#reload apache2.service
+
+ - name: set SSH_COMMAND
+   systemd:
+     name: apache2
+     state: reload
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
+
+ - name: set SSH_COMMAND
+   systemd:
+     name: httpd
+     state: reload
+   when:
+     - ansible_distribution != "Debian" or ansible_distribution != 'Mageia'
