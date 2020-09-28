@@ -44,7 +44,7 @@
      dest: '{{ SYNCTHING_APACHE_PATH }}'
 
  - name: shell
-   shell: 'a2enconf syncthing'
+   command: 'a2enconf syncthing'
    when:
      - ansible_distribution == "Debian"
 
@@ -70,7 +70,7 @@
            ProxyPassReverse http://localhost:8384/
            Require all granted
        </Location>
-       
+
        ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
        <Location /syncthing-{{ XMPP_DOMAIN }}/>
            ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
@@ -134,9 +134,6 @@
    register: resid
    when:
      - XMPP_DOMAIN != "pulse"
-
- - debug:
-     msg: '{{ resid.stdout }}'
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
