@@ -48,28 +48,6 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
-   shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell
-   shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
-
- - pause:
-     seconds: 20
-
- - name: set SHARE_ADDED
-   set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
-
  - name: restarted syncthing@syncthing
    systemd:
      name: syncthing@syncthing
@@ -77,10 +55,16 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
+ - name: Check if d folder is empty before proceeding
+   find:
+     paths: '/var/lib/syncthing/bootmenus/'
+   register: filesFound
+
  - name: Move foo to bar
    command: mv /var/lib/syncthing/bootmenus/.st*  /var/lib/pulse2/imaging/bootmenus/
    when:
      - XMPP_DOMAIN != 'pulse'
+     - filesFound.matched > 0
 
  - name: delete file if present
    file:
