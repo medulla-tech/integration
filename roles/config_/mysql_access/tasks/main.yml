@@ -10,42 +10,42 @@
      mode: '600'
 
  - name: copy file
-   copy:
-     content: "[mysql]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+   lineinfile:
+     line: "[mysql]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
      dest: /root/.my.cnf
 
  - name: copy file
-   copy:
-     content: "\n[mysqladmin]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+   lineinfile:
+     line: "\n[mysqladmin]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
      dest: /root/.my.cnf
 
  - name: copy file
-   copy:
-     content: "\n[mysqlcheck]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+   lineinfile:
+     line: "\n[mysqlcheck]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
      dest: /root/.my.cnf
 
  - name: copy file
-   copy:
-     content: "\n[mysqldump]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+   lineinfile:
+     line: "\n[mysqldump]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
      dest: /root/.my.cnf
+
+ - name: restart mariadb
+   service:
+     name: mysql
+     state: restarted
+   when:
+     - ansible_distribution != "CentOS" or ansible_distribution != "Rhel"
 
  - name: restart mariadb
    service:
      name: mariadb
      state: restarted
    when:
-     - ansible_distribution != "CentOS"
-
- - name: restart mariadb
-   service:
-     name: mysqld
-     state: restarted
-   when:
-     - ansible_distribution == "CentOS"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
  - name: chkconfig mariadb
    service:
-     name: mariadb
+     name: mysql
      enabled: yes
    when:
-     - ansible_distribution == "Debian"
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
