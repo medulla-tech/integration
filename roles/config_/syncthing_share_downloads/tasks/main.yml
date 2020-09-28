@@ -54,41 +54,17 @@
  - name: chown
    shell: 'chown syncthing: /var/lib/pulse2/clients'
 
+ # - name: chown
+ #   shell: 'chown -R syncthing: /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}'
+
  - name: chown
-   shell: 'chown -R syncthing: /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}'
+   shell: 'chown -R syncthing: /var/lib/pulse2/clients/.st*'
 
  - name: shell
-   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}
+   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/.st*
 
  - name: shell
-   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}
-
- - name: stman
-   shell: stman folder add --label downloads --foldertype readonly /var/lib/pulse2/clients/ pulsemaster_downloads
-   when:
-     - XMPP_DOMAIN == 'pulse'
-
- - name: shell
-   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell
-   shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
-
- - pause:
-     seconds: 20
-
- - name: set SHARE_ADDED
-   set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
+   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/.st*
 
  - name: restarted syncthing@syncthing
    systemd:
@@ -97,10 +73,16 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
+ - name: Check if d folder is empty before proceeding
+   find:
+     paths: '/var/lib/syncthing/downloads/'
+   register: filesFound
+
  - name: Move foo to bar
    command: mv /var/lib/syncthing/downloads/.st*  /var/lib/pulse2/clients/
    when:
      - XMPP_DOMAIN != 'pulse'
+     - filesFound.matched > 0
 
  - name: delete file if present
    file:
@@ -110,7 +92,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell
-   shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_downloads']/@path" -v "/var/lib/pulse2/clients" /var/lib/syncthing/.config/syncthing/config.xml
+   shell: xmlstarlet ed --inplace -u "configuration/folder[@id="pulsemaster_downloads"]/@path" -v "/var/lib/pulse2/clients" /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != 'pulse'
 
