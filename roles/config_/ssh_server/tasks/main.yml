@@ -3,8 +3,8 @@
 # Search if Port 22 is already present. If not, define it
  - name: grep for port22
    shell: 'grep "^Port 22$" /etc/ssh/sshd_config'
-   register:
-     state_result
+   register: state_result
+   ignore_errors: yes
 
  - name: set PORT22STAT
    set_fact:
@@ -17,8 +17,8 @@
 
  - name: grep for reverse_port
    shell: 'grep "^Port {{ REVERSE_SSH_PORT }}$" /etc/ssh/sshd_config'
-   register:
-     state_result
+   register: state_result
+   ignore_errors: yes
    when:
      - REVERSE_SSH_PORT != ''
 
@@ -52,6 +52,7 @@
 
  - name: grep for gatewayports
    shell: 'grep "^GatewayPorts .*$" /etc/ssh/sshd_config'
+   ignore_errors: yes
    register:
      state_result_gatewayports
 
