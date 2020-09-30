@@ -258,3 +258,6 @@
      state: reload
    when:
      - ansible_distribution != "Debian" or ansible_distribution != 'Mageia'
+
+ - name: shell
+   shell: if [ \"\$(grep -cx \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" /etc/hosts)\" -eq 0 ]; then echo \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" >> /etc/hosts; fi
