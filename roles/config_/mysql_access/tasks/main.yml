@@ -34,14 +34,14 @@
      name: mysql
      state: restarted
    when:
-     - ansible_distribution != "CentOS" or ansible_distribution != "Rhel"
+     - ansible_distribution != "CentOS"
 
  - name: restart mariadb
    service:
      name: mariadb
      state: restarted
    when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - ansible_distribution == "CentOS"
 
  - name: chkconfig mariadb
    service:
