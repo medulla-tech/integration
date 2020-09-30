@@ -22,23 +22,53 @@
 
  - name: DROP DATABASE
    shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot'
+   when:
+     - ansible_distribution != 'CentOS'
+
+ - name: DROP DATABASE
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot -p{{ ROOT_PASSWORD }}'
+   when:
+     - ansible_distribution == 'CentOS'
 
  - name: DROP USER
    shell: echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
-   when: ansible_distribution == "Debian"
+   when:
+     - ansible_distribution != "CentOS"
 
  - name: DROP USER
-   shell: echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
-   when: ansible_distribution != "Debian"
+   shell: echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot -p{{ ROOT_PASSWORD }}
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: CREATE DATABASE
    shell: echo "CREATE DATABASE guacamole;" | mysql -uroot
+   when:
+     - ansible_distribution != "CentOS"
+
+ - name: CREATE DATABASE
+   shell: echo "CREATE DATABASE guacamole;" | mysql -uroot -p{{ ROOT_PASSWORD }}
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: CREATE USER
    shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot
+   when:
+     - ansible_distribution != "CentOS"
+
+ - name: CREATE USER
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot -p{{ ROOT_PASSWORD }}
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: GRANT
    shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
+   when:
+     - ansible_distribution != "CentOS"
+
+ - name: GRANT
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot -p{{ ROOT_PASSWORD }}
+   when:
+     - ansible_distribution == "CentOS"
 
 # if debian version 8
 
