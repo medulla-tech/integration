@@ -219,34 +219,29 @@
 
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/\n"
+   lineinfile:
+     line: "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     force: no
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>\n"
+   lineinfile:
+     line: "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     force: no
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/\n"
+   lineinfile:
+     line: "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     force: no
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: "    Require all granted\n"
+   lineinfile:
+     line: "    Require all granted"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     force: no
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: "</Location>\n"
+   lineinfile:
+     line: "</Location>"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     force: no
 
 #reload apache2.service
 
