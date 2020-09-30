@@ -20,135 +20,141 @@
 #     - ansible_distribution == "CentOS"
 
  - name: Check for event_scheduler setting
-   mysql_variables:
-     variable: event_scheduler
-     login_user: root
-     login_password: '{{ ROOT_PASSWORD }}'
+   lineinfile:
+     line: "event_scheduler = ON"
+     dest: /root/.my.cnf
    when:
      - ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "[mariadb]"
+   lineinfile:
+     line: "[mariadb]"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "table_open_cache = 2000"
+   lineinfile:
+     line: "table_open_cache = 2000"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "query_cache_limit = 0"
+   lineinfile:
+     line: "query_cache_limit = 0"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "query_cache_size = 0"
+   lineinfile:
+     line: "query_cache_size = 0"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "tmp_table_size = 2G"
+   lineinfile:
+     line: "tmp_table_size = 2G"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "innodb_buffer_pool_size = 2G"
+   lineinfile:
+     line: "innodb_buffer_pool_size = 2G"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "key_buffer_size = 2G"
+   lineinfile:
+     line: "key_buffer_size = 2G"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "max_heap_table_size = 2G"
+   lineinfile:
+     line: "max_heap_table_size = 2G"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
  - name: copy data
-   copy:
-     content: "open_files_limit = 102400"
+   lineinfile:
+     line: "open_files_limit = 102400"
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
 
+ - name: Create pulse-99.cnf
+   file:
+     path: /etc/my.cnf.d/99-pulse.cnf
+     state: touch
+   when:
+     - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+
  - name: copy data
-   copy:
-     content: "[mariadb]"
+   lineinfile:
+     line: "[mariadb]"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "table_open_cache = 2000"
+   lineinfile:
+     line: "table_open_cache = 2000"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "query_cache_limit = 0"
+   lineinfile:
+     line: "query_cache_limit = 0"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "query_cache_size = 0"
+   lineinfile:
+     line: "query_cache_size = 0"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "tmp_table_size = 2G"
+   lineinfile:
+     line: "tmp_table_size = 2G"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "innodb_buffer_pool_size = 2G"
+   lineinfile:
+     line: "innodb_buffer_pool_size = 2G"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "key_buffer_size = 2G"
+   lineinfile:
+     line: "key_buffer_size = 2G"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "max_heap_table_size = 2G"
+   lineinfile:
+     line: "max_heap_table_size = 2G"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
  - name: copy data
-   copy:
-     content: "open_files_limit = 102400"
+   lineinfile:
+     line: "open_files_limit = 102400"
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
