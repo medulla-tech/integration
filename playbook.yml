@@ -34,7 +34,7 @@
      - CLIENTS_VNC_PORT: ''
      - MAX_ID: ''
      - CLUSTER_ID: ''
-     - MULTISITE_ENTITY: ''
+     - MULTISITE_ENTITY: '--entity=Main'
      - PULSEMAIN_IP: 'wva-mmc.siveo.lan'
      - RELAYSERVER_ID: ''
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
@@ -98,6 +98,7 @@
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
      - SHARE_ADDED: ''
      - LOCAL_DEVICE_ID: ''
+     - INSTALL_TYPE: 'p'
 
    roles:
      - config_/guacamole_pulse
