@@ -23,7 +23,6 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      content: |
-       CustomLog  /var/log/apache2/guac.log common env=!dontlog
        <Location /guacamole/>
            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
            Order Deny,Allow
@@ -41,6 +40,7 @@
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
        SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog
+       CustomLog  /var/log/apache2/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
@@ -49,7 +49,6 @@
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      content: |
-       CustomLog  /var/log/httpd/guac.log common env=!dontlog
        <Location /guacamole/>
            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
            Order Deny,Allow
@@ -67,10 +66,11 @@
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
        SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog
+       CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
-     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+     - ansible_distribution != "Debian" or ansible_distribution != "Mageia"
 
  - name: a2enconf
    shell: 'a2enconf guacamole.conf'
@@ -261,3 +261,57 @@
 
  - name: shell
    shell: if [ \"\$(grep -cx \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" /etc/hosts)\" -eq 0 ]; then echo \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" >> /etc/hosts; fi
+
+# Create the cluster for the remote site
+
+ - name: set MAX_ID
+   set_fact:
+     MAX_ID: $(ssh {{ PULSEMAIN_IP }} "echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -s xmppmaster")
+
+ - name: set CLUSTER_ID
+   set_fact:
+     CLUSTER_ID: $((MAX_ID+1))
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');\" | mysql xmppmaster
+
+# Add the relayserver to the cluster
+
+ - name: set MAX_ID
+   set_fact:
+     MAX_ID: $(ssh {{ PULSEMAIN_IP }} "echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -s xmppmaster")
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: $(ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster")
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('$((MAX_ID+1))','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');\" | mysql xmppmaster
+
+# Create the substitutes configuration rules
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: $(ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster")
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
+
+ - name: set PUBKEY
+   set_fact:
+     PUBKEY: '(cat /root/.ssh/id_rsa.pub)'
+
+ - name: shell
+   shell: 'echo {{ PUBKEY }} >> /var/lib/pulse2/file-transfer/.ssh/authorized_keys'
