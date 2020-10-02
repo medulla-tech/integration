@@ -5,26 +5,18 @@
    when:
      - ansible_distribution == "Debian"
 
-# - name: Acquire temporary root pass
-#   shell: >
-#     awk -F': ' '$0 ~ "temporary password"{print $2}' /var/log/mysqld.log
-#   register: mysql_root_temp_password
-#   when:
-#     - ansible_distribution == "CentOS"
-#
-# - name: Set temp root pass as root password
-#   set_fact:
-#     TEMP_PASS_MYSQL: "{{ mysql_root_temp_password.stdout }}"
-#   when:
-#     - mysql_root_temp_password is defined
-#     - ansible_distribution == "CentOS"
-
  - name: Check for event_scheduler setting
    lineinfile:
      line: "event_scheduler = ON"
      dest: /root/.my.cnf
    when:
      - ansible_distribution == "CentOS"
+
+ - name: creat 99-pulse.cnf
+   file:
+     name: 99-pulse.cnf
+     state: touch
+     path: /etc/mysql/mariadb.conf.d/
 
  - name: copy data
    lineinfile:
