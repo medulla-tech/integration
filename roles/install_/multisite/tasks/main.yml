@@ -11,6 +11,7 @@
        - uuid
        - pulse2-uuid-resolver
        - pulse-xmpp-agent-relay
+       - python2-crypto
        - python-mmc-backuppc
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
