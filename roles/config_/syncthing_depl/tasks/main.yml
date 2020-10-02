@@ -28,28 +28,14 @@
 
  - name: write in file
    lineinfile:
-     line: "ProxyPass /syncthing-depl/ http://localhost:8385/\n"
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-
- - name: write in file
-   lineinfile:
-     line: "<Location /syncthing-depl/>\n"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-
- - name: write in file
-   lineinfile:
-     line: "    ProxyPassReverse http://localhost:8385/\n"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-
- - name: write in file
-   lineinfile:
-     line: "    Require all granted\n"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-
- - name: write in file
-   lineinfile:
-     line: "</Location>\n"
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     line: '{{ item }}'
+   with_items:
+     - "ProxyPass /syncthing-depl/ http://localhost:8385/"
+     - "<Location /syncthing-depl/>"
+     - "    ProxyPassReverse http://localhost:8385/"
+     - "    Require all granted"
+     - "</Location>\n"
 
  - name: shell
    shell: "a2enconf syncthing"
@@ -243,7 +229,7 @@
  - name: shell
    shell: 'crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_device_id "{{ LOCAL_DEVICE_ID }}"'
 
- - name: system restart pulse-xmpp-agent-relay service
-   systemd:
-     name: pulse-xmpp-agent-relay
-     state: restarted
+ # - name: system restart pulse-xmpp-agent-relay service
+ #   systemd:
+ #     name: pulse-xmpp-agent-relay
+ #     state: restarted
