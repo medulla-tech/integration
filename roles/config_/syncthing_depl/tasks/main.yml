@@ -229,7 +229,7 @@
  - name: shell
    shell: 'crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_device_id "{{ LOCAL_DEVICE_ID }}"'
 
- # - name: system restart pulse-xmpp-agent-relay service
- #   systemd:
- #     name: pulse-xmpp-agent-relay
- #     state: restarted
+ - name: system restart pulse-xmpp-agent-relay service
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
