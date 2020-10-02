@@ -63,39 +63,19 @@
      - ansible_distribution != "Debian"
 
  - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
+   copy:
+     content: |
+       ProxyPass /syncthing/ http://localhost:8384/
+       <Location /syncthing/>
+           ProxyPassReverse http://localhost:8384/
+           Require all granted
+       </Location>
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           Require all granted
+       </Location>
      dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: "ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/"
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: "<Location /syncthing-{{ XMPP_DOMAIN }}/>"
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/"
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: "    Require all granted"
-   when:
-     - INSTALL_TYPE != "p"
-
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: "</Location>"
-   when:
-     - INSTALL_TYPE != "p"
 
  - name: reload systemd
    systemd:
