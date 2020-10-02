@@ -14,9 +14,10 @@
 
  - name: creat 99-pulse.cnf
    file:
-     name: 99-pulse.cnf
      state: touch
-     path: /etc/mysql/mariadb.conf.d/
+     path: /etc/mysql/mariadb.conf.d/99-pulse.cnf
+   when:
+     - ansible_distribution == "Debian"
 
  - name: copy data
    lineinfile:
