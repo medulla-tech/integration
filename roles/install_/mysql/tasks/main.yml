@@ -75,14 +75,14 @@
        user={{ mysql_user }}
        password={{ ROOT_PASSWORD }}
      dest: /root/.my.cnf
+   when:
+     - ansible_distribution == "Debian"
 
- - name: edit /.my.cnf
-   copy:
-     content: |
-       [mysql]
-       user={{ mysql_user }}
-       password={{ ROOT_PASSWORD }}
-     dest: /.my.cnf
+ - name: enabled centos password
+   shell: mysqladmin -u root password 'r00tSiveo*'
+   when:
+     - ansible_distribution == "CentOS"
+     - ENABLE_CHANGE_PASS_CENT == 'true'
 
  - name: restart mariadb
    service:
@@ -90,7 +90,7 @@
      state: restarted
 
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
-   shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ ROOT_PASSWORD }}') WHERE User='{{ mysql_user }}'" | mysql -u root
+   shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ ROOT_PASSWORD }}') WHERE User='{{ mysql_user }}'" | mysql -u root -p{{ ROOT_PASSWORD }}
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root -p"{{ ROOT_PASSWORD }}"
