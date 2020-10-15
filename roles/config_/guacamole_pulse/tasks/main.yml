@@ -18,7 +18,13 @@
    set_fact:
      GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole.conf'
    when:
-     - ansible_distribution != "Debian" or ansible_distribution != "Mageia"
+     - ansible_distribution == "CentOS"
+
+ - name: set GUACAMOLE_ROOT_PASSWORD
+   set_fact:
+     GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole.conf'
+   when:
+     - ansible_distribution == "Rhel"
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
@@ -39,7 +45,7 @@
            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
-       SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog
+       SetEnvIf Request_URI "^/guacamole/tunnel\" dontlog
        CustomLog  /var/log/apache2/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
@@ -65,12 +71,12 @@
            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
-       SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog
+       SetEnvIf Request_URI "^/guacamole/tunnel\" dontlog
        CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
      - INSTALL_TYPE == "p"
-     - ansible_distribution != "Debian" or ansible_distribution != "Mageia"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
  - name: a2enconf
    shell: 'a2enconf guacamole.conf'
@@ -78,31 +84,87 @@
      - ansible_distribution == "CentOS"
      - INSTALL_TYPE == "p"
 
- - name:
-   systemd:
-     name: apache2
-     state: restarted
-   when:
-     - ansible_distribution == "CentOS"
-     - INSTALL_TYPE == "p"
+ # - name:
+ #   systemd:
+ #     name: apache2
+ #     state: restarted
+ #   when:
+ #     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
  - name:
    systemd:
      name: httpd
      state: restarted
    when:
-     - ansible_distribution != "CentOS"
-     - INSTALL_TYPE == "p"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
  #    # Setup Apache FOR PULSE PRINCIPALE /!\
 
  ####___________SYNCTHING_____________
 
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+#_syncthing
 
+ - name: Get hostname
+   shell: hostname -f
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/apache2/conf-available/syncthing.conf'
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   lineinfile:
+     line: "ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   lineinfile:
+     line: "<Location /syncthing-{{ XMPP_DOMAIN }}/>"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   lineinfile:
+     line: "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   lineinfile:
+     line: "    Require all granted"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+
+ - name: write in {{ SYNCTHING_APACHE_PATH }}
+   lineinfile:
+     line: "</Location>"
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+
+ # - name:
+ #   systemd:
+ #     name: apache2
+ #     state: restarted
+ #   when:
+ #     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+
+ - name:
+   systemd:
+     name: httpd
+     state: restarted
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+#_syncthing_share_packages
  - name: shell
-   shell: ' {{ LOCAL_DEVICE_ID }} '
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: deviceid
 
  - name: set LOCAL_DEVICE_ID
@@ -113,20 +175,25 @@
    shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
  - name: shell
    shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
- - name: set LOCAL_DEVICE_ID
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
    set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+   when:
+     - SHARE_ADDED == ''
+
+#_syncthing_share_bootmenus
 
  - name: shell
-   shell: ' {{ LOCAL_DEVICE_ID }} '
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: deviceid
 
  - name: set LOCAL_DEVICE_ID
@@ -137,20 +204,25 @@
    shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
  - name: shell
    shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
- - name: set LOCAL_DEVICE_ID
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
    set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+   when:
+     - SHARE_ADDED == ''
+
+#_syncthing_share_baseremoteagent
 
  - name: shell
-   shell: ' {{ LOCAL_DEVICE_ID }} '
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: deviceid
 
  - name: set LOCAL_DEVICE_ID
@@ -161,47 +233,51 @@
    shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
  - name: shell
    shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-
- - name: shell
-   shell: ' {{ LOCAL_DEVICE_ID }} '
-   register: deviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-
- # - name: shell
- #   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
- #   when:
- #     - SHARE_ADDED == ''
- #     - XMPP_DOMAIN != pulse
-
- - name: shell
-   shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
-   when:
-     - SHARE_ADDED == ''
-     - XMPP_DOMAIN != pulse
 
  - pause:
      seconds: 20
 
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
    when:
      - SHARE_ADDED == ''
-     - XMPP_DOMAIN != 'pulse'
+
+#_syncthing_share_pulsemaster_downloads
+
+ - name: shell
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+
+ - name: shell
+   shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   when:
+     - SHARE_ADDED == ''
+
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+   when:
+     - SHARE_ADDED == ''
+
+####FIN_sync_share
 
 ####Syncthing_depl write
 
@@ -215,8 +291,7 @@
    set_fact:
      SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
    when:
-     - ansible_distribution != "Debian" or ansible_distribution != "Mageia"
-
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
  - name: write in {{ SYNCTHING_APACHE_PATH }}
    lineinfile:
@@ -257,11 +332,14 @@
      name: httpd
      state: reload
    when:
-     - ansible_distribution != "Debian" or ansible_distribution != 'Mageia'
+     - ansible_distribution == "CentOS" or ansible_distribution == 'Rhel'
+
+##_config_relay_server
 
  - name: shell
    shell: if [ \"\$(grep -cx \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" /etc/hosts)\" -eq 0 ]; then echo \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" >> /etc/hosts; fi
 
+##_config_relay_server
 # Create the cluster for the remote site
 
  - name: set MAX_ID
@@ -275,6 +353,7 @@
  - name: set SSH_COMMAND
    shell: echo \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');\" | mysql xmppmaster
 
+##_config_relay_server
 # Add the relayserver to the cluster
 
  - name: set MAX_ID
@@ -288,6 +367,7 @@
  - name: set SSH_COMMAND
    shell: echo \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('$((MAX_ID+1))','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');\" | mysql xmppmaster
 
+##_config_relay_server
 # Create the substitutes configuration rules
 
  - name: set RELAYSERVER_ID
