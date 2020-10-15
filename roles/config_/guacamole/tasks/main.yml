@@ -24,6 +24,13 @@
 
  - name: DROP DATABASE
    shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot'
+   when:
+     - ansible_distribution != "CentOS"
+
+ - name: DROP DATABASE
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot -p{{ ROOT_PASSWORD }}'
+   when:
+     - ansible_distribution == "CentOS"
 
 #drop user
 
@@ -33,12 +40,12 @@
      - ansible_distribution != "CentOS"
 
  - name: DROP USER
-   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u root
+   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u root -p{{ ROOT_PASSWORD }}
    when:
      - ansible_distribution == "CentOS"
 
  - name: DROP USER
-   shell: echo "FLUSH PRIVILEGES;" | mysql -u root
+   shell: echo "FLUSH PRIVILEGES;" | mysql -u root -p{{ ROOT_PASSWORD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -50,7 +57,7 @@
      - ansible_distribution != "CentOS"
 
  - name: CREATE DATABASE
-   shell: echo "CREATE DATABASE guacamole;" | mysql -u root
+   shell: echo "CREATE DATABASE guacamole;" | mysql -u root -p{{ ROOT_PASSWORD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -62,7 +69,7 @@
      - ansible_distribution != "CentOS"
 
  - name: CREATE USER
-   shell: echo "CREATE USER 'guacamole'@'%' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -u root
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -u root -p{{ ROOT_PASSWORD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -74,7 +81,7 @@
      - ansible_distribution != "CentOS"
 
  - name: GRANT
-   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u root
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u root -p{{ ROOT_PASSWORD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -89,11 +96,11 @@
    when: ansible_distribution_major_version == '8'
 
  - name: DROP USER
-   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
+   shell: "mysql -uroot -p{{ ROOT_PASSWORD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
    when: ansible_distribution_major_version != '8'
 
  - name: DROP USER
-   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
+   shell: "mysql -uroot -p{{ ROOT_PASSWORD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version != '8'
 
 #
