@@ -92,6 +92,21 @@
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
    shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ ROOT_PASSWORD }}') WHERE User='{{ mysql_user }}'" | mysql -u root -p{{ ROOT_PASSWORD }}
 
+ - name: edit /.my.cnf
+   copy:
+     content: |
+       [mysql]
+       user={{ mysql_user }}
+       password={{ ROOT_PASSWORD }}
+     dest: /root/.my.cnf
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: restart mariadb
+   service:
+     name: mariadb
+     state: restarted
+
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u root -p"{{ ROOT_PASSWORD }}"
 
