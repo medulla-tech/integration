@@ -197,7 +197,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: ssh
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   shell: ssh {{ PULSEMAIN_IP }} stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}
    when:
      - XMPP_DOMAIN != 'pulse'
 
