@@ -162,7 +162,8 @@
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
-#_syncthing_share_packages
+#çsyncthing_device_id
+
  - name: shell
    shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: deviceid
@@ -171,111 +172,185 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
+#_syncthing_share_packages
+
  - name: shell
-   shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   shell: stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - name: shell
    shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - pause:
      seconds: 20
 
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+
+ - name: shell xmlstarlet
+   shell: '{{ SHARE_ADDED }}'
+   register: xmlout
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     SHARE_ADDED: "{{ xmlout.stdout }}"
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
+
+ - name: shell
+   shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   when:
+     - SHARE_ADDED == '0'
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
 
 #_syncthing_share_bootmenus
 
  - name: shell
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-   register: deviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-
- - name: shell
-   shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   shell: stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - name: shell
    shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - pause:
      seconds: 20
 
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+
+ - name: shell xmlstarlet
+   shell: '{{ SHARE_ADDED }}'
+   register: xmlout
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     SHARE_ADDED: "{{ xmlout.stdout }}"
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
+
+ - name: shell
+   shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   when:
+     - SHARE_ADDED == '0'
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
 
 #_syncthing_share_baseremoteagent
 
  - name: shell
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-   register: deviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-
- - name: shell
-   shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   shell: stman folder add --label baseremoteagent --foldertype readonly /var/lib/pulse2/xmpp_baseremoteagent/ pulsemaster_baseremoteagent
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - name: shell
    shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - pause:
      seconds: 20
 
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+
+ - name: shell xmlstarlet
+   shell: '{{ SHARE_ADDED }}'
+   register: xmlout
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     SHARE_ADDED: "{{ xmlout.stdout }}"
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
+
+ - name: shell
+   shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   when:
+     - SHARE_ADDED == '0'
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
 
 #_syncthing_share_pulsemaster_downloads
 
  - name: shell
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-   register: deviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-
- - name: shell
-   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   shell: stman folder add --label downloads --foldertype readonly /var/lib/pulse2/clients/ pulsemaster_downloads
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - name: shell
    shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
 
  - pause:
      seconds: 20
 
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: $(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+
+ - name: shell xmlstarlet
+   shell: '{{ SHARE_ADDED }}'
+   register: xmlout
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     SHARE_ADDED: "{{ xmlout.stdout }}"
+
+ - name: shell
+   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
    when:
-     - SHARE_ADDED == ''
+     - SHARE_ADDED == '0'
+
+ - name: shell
+   shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   when:
+     - SHARE_ADDED == '0'
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
 
 ####FIN_sync_share
 
@@ -320,78 +395,228 @@
 
 #reload apache2.service
 
- - name: set SSH_COMMAND
-   systemd:
-     name: apache2
-     state: reload
-   when:
-     - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
+ # - name: reload apache2
+ #   systemd:
+ #     name: apache2
+ #     state: reloaded
+ #   when:
+ #     - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
 
  - name: set SSH_COMMAND
    systemd:
      name: httpd
-     state: reload
+     state: reloaded
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == 'Rhel'
 
 ##_config_relay_server
 
  - name: shell
-   shell: if [ \"\$(grep -cx \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" /etc/hosts)\" -eq 0 ]; then echo \"{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}\" >> /etc/hosts; fi
+   shell: grep -cx "{{ IP_REMOTE_SERVER1 }} {{ XMPP_DOMAIN }}" /etc/hosts
+   register: grepres
+
+ - name: set RES_GREP
+   set_fact:
+     RES_GREP: '{{ grepres.stdout }}'
+
+ - name: write in /etc/hosts
+   lineinfile:
+     line: '{{ IP_REMOTE_SERVER1 }} {{ XMPP_DOMAIN }}'
+     dest: /etc/hosts
+   when:
+     - grepres == 0
+ #2
+ - name: shell
+   shell: grep -cx "{{ IP_REMOTE_SERVER2 }} {{ XMPP_DOMAIN }}" /etc/hosts
+   register: grepres
+
+ - name: set RES_GREP
+   set_fact:
+     RES_GREP: '{{ grepres.stdout }}'
+
+ - name: write in /etc/hosts
+   lineinfile:
+     line: '{{ IP_REMOTE_SERVER2 }} {{ XMPP_DOMAIN }}'
+     dest: /etc/hosts
+   when:
+     - grepres == 0
 
 ##_config_relay_server
 # Create the cluster for the remote site
 
  - name: set MAX_ID
    set_fact:
-     MAX_ID: $(ssh {{ PULSEMAIN_IP }} "echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -s xmppmaster")
+     MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -s xmppmaster
 
  - name: set CLUSTER_ID
    set_fact:
      CLUSTER_ID: $((MAX_ID+1))
 
  - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');\" | mysql xmppmaster
+   shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');" | mysql xmppmaster
 
 ##_config_relay_server
 # Add the relayserver to the cluster
 
  - name: set MAX_ID
    set_fact:
-     MAX_ID: $(ssh {{ PULSEMAIN_IP }} "echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -s xmppmaster")
+     MAX_ID: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -s xmppmaster
+
+ - name: shell
+   shell: '{{ MAX_ID }}'
+   register: maxid
+
+ - name: set MAX_ID
+   set_fact:
+     MAX_ID: '{{ maxid.stdout }}'
 
  - name: set RELAYSERVER_ID
    set_fact:
-     RELAYSERVER_ID: $(ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster")
+     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -s xmppmaster
+
+ - name: shell
+   shell: '{{ RELAYSERVER_ID }}'
+   register: relayserverid
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: '{{ relayserverid.stdout }}'
 
  - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('$((MAX_ID+1))','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');\" | mysql xmppmaster
+   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID }}+1','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql xmppmaster
 
 ##_config_relay_server
 # Create the substitutes configuration rules
 
  - name: set RELAYSERVER_ID
    set_fact:
-     RELAYSERVER_ID: $(ssh {{ PULSEMAIN_IP }} "echo \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';\" | mysql -s xmppmaster")
-
- - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
-
- - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
-
- - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
-
- - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
-
- - name: set SSH_COMMAND
-   shell: echo \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});\" | mysql xmppmaster
-
- - name: set PUBKEY
-   set_fact:
-     PUBKEY: '(cat /root/.ssh/id_rsa.pub)'
+     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -s xmppmaster
 
  - name: shell
-   shell: 'echo {{ PUBKEY }} >> /var/lib/pulse2/file-transfer/.ssh/authorized_keys'
+   shell: '{{ RELAYSERVER_ID }}'
+   register: relayserverid
+
+ - name: set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: '{{ relayserverid.stdout }}'
+
+ - name: set SSH_COMMAND
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+
+ - name: set SSH_COMMAND
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+
+ - name: Set authorized key in alternate location
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+     path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
+
+##_check_mysql_connection
+
+ - name: shell
+   shell: sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/mariadb.conf.d/50-server.cnf
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+     - GLPI_DBHOST == PULSEMAIN_IP
+
+ - name: shell
+   shell: sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/my.cnf
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - GLPI_DBHOST == PULSEMAIN_IP
+
+     # Create remote glpi user
+
+ - name: shell
+   shell: echo "GRANT ALL PRIVILEGES ON {{ GLPI_DBNAME }}.* to '{{ GLPI_DBUSER }}'@'{{ IP_REMOTE_SERVER }}' identified by '{{ ROOT_PASSWORD }}';" |mysql -s
+   when:
+     - GLPI_DBHOST == PULSEMAIN_IP
+
+ - name: restarted mariadb
+   systemd:
+     name: mariadb
+     state: restarted
+   when:
+     - GLPI_DBHOST == PULSEMAIN_IP
+
+##_configure_glpi_multisite
+##_configure_package_server_multisite
+
+##_create_server_cert
+
+ - name: shell
+   shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
+
+ - name: shell
+   shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
+
+# Create the key and sign request on Pulse main server
+
+ - name: shell
+   shell: openssl req -config {{ SSL_CONF_FILE }} -subj \"/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}\" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+
+# Sign the certificate
+
+ - name: shell
+   shell: openssl ca -config {{ SSL_CONF_FILE }} -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile {{ SSL_CONF_FILE }} -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+
+# Generate the final certificate
+
+ - name: shell
+   shell: openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+
+ - name: shell
+   shell: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+
+# Remove the setting in ssl configuration file
+
+ - name: shell
+   shell: crudini --del {{ SSL_CONF_FILE }} alt_names
+
+# Final tasks: permissions and cleanup
+
+- name: chmod 400
+  file:
+    path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+    # owner: root
+    # group: root
+    mode: '400'
+
+- name: chmod 444
+  file:
+    path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+    # owner: root
+    # group: root
+    mode: '444'
+
+- name: chmod 444
+  file:
+    path: /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+    # owner: root
+    # group: root
+    mode: '444'
+
+ - name: shell
+   shell: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+
+# Get the keys to configure package server and ejabberd
+
+ - name: shell
+   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
+
+ - name: shell
+   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
+
+ - name: shell
+   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
