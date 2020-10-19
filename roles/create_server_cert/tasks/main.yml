@@ -1,0 +1,132 @@
+---
+#set xmppDomain
+ - name: Get hostname
+   shell: hostname -s
+   register: result
+
+ - name: set xmppDomain = 1
+   set_fact:
+     XMPP_DOMAIN: "{{ result.stdout }}"
+
+#set pki_password
+ - name: set PKI_PASSWORD
+   set_fact:
+     PKI_PASSWORD: '{{ ROOT_PASSWORD }}'
+
+#set ssl_config
+ - name: set SSL_CONF_FILE
+   set_fact:
+     SSL_CONF_FILE: '/var/lib/pulse2/pki/conf/pulse.cnf'
+
+#when:
+#  - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: 'crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: 'crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Create the key and sign request on Pulse main server
+
+ - name: shell
+   shell: openssl req -config {{ SSL_CONF_FILE }} -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Sign the certificate
+
+ - name: shell
+   shell: openssl ca -config {{ SSL_CONF_FILE }} -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile {{ SSL_CONF_FILE }} -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Generate the final certificate
+ - name: shell
+   shell: openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Remove the setting in ssl configuration file
+
+ - name: shell
+   shell: crudini --del {{ SSL_CONF_FILE }} alt_names
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Final tasks: permissions and cleanup
+
+#replace by module file chmod
+ - name: chmod 400
+   file:
+     path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+     # owner: root
+     # group: root
+     mode: '400'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: chmod 444
+   file:
+     path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+     # owner: root
+     # group: root
+     mode: '444'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: chmod 444
+   file:
+     path: /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+     # owner: root
+     # group: root
+     mode: '444'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# Get the keys to configure package server and ejabberd
+
+ - name: shell
+   shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: shell
+   shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+# rest
+# Replace ejabberd.pem by the certificate generated above
+
+ - name: shell
+   shell: sed -i "s/ejabberd.pem/{{ XMPP_DOMAIN }}.pem/" /etc/ejabberd/ejabberd.yml
+
+ - name: restarted
+   systemd:
+     name: pulse2-package-server
+     state: restarted
+
+ - name: restarted
+   systemd:
+     name: ejabberd
+     state: restarted
