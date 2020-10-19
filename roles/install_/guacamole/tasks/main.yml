@@ -33,10 +33,22 @@
      update_cache: yes
      state: latest
      pkg:
+       - guacamole-auth-mysql
+       - libmysql-java
+   when:
+     - ansible_distribution == "Debian" and ansible_distribution_major_version == '10'
+
+ - name: install_guacamole
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
        - guacamole-auth-jdbc
        - mysql-connector-java
    when:
-     - ansible_distribution == "Debian" and ansible_distribution_major_version != '8'
+     - ansible_distribution == "Debian"
+     - ansible_distribution_major_version != '8'
+     - ansible_distribution_major_version != '10'
 
  - name: Install package foo
    urpmi:
