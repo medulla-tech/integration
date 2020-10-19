@@ -30,7 +30,7 @@
        - ejabberd
    when:
      - ansible_distribution == "Debian"
-     
+
  - name: install_ejabberd_mag
    urpmi:
      update_cache: yes
