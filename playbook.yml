@@ -54,6 +54,14 @@
      - LOCAL_DEVICE_ID: ''
      - SHARE_ADDED: ''
      - ENABLE_CHANGE_PASS_CENT: 'true'
+     - PKI_PASSWORD: ''
+     - SSL_CONF_FILE: ''
+     - GLPI_DBHOST: ''
+     - GLPI_DBPORT: ''
+     - GLPI_DBUSER: ''
+     - GLPI_DBPASSWD: ''
+     - GLPI_DBNAME: ''
+     - CREATE_ENTITY: ''
 
    roles:
 
@@ -97,13 +105,23 @@
      - GUACAMOLE_APACHE_PATH: ''
      - SERVER_FQDN: 'wva-mmc.siveo.lan'
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
-     - SHARE_ADDED: ''
+     - SHARE_ADDED: '0'
      - LOCAL_DEVICE_ID: ''
      - INSTALL_TYPE: 'p'
      - MULTISITE_ENTITY: ''
      - CLUSTER_ID: ''
-     - IP_REMOTE_SERVER: ''
+     - IP_REMOTE_SERVER1: 'wva-ars1'
+     - IP_REMOTE_SERVER2: 'wva-ars2'
      - XMPP_DOMAIN: ''
+     - RES_GREP: '0'
+     - PKI_PASSWORD: ''
+     - SSL_CONF_FILE: ''
+     - GLPI_DBHOST: ''
+     - GLPI_DBPORT: ''
+     - GLPI_DBUSER: ''
+     - GLPI_DBPASSWD: ''
+     - GLPI_DBNAME: ''
+     - CREATE_ENTITY: ''
 
    roles:
      - config_/guacamole_pulse
