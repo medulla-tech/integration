@@ -43,6 +43,7 @@
  - name: shell
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/imaging/bootmenus/
 
+## Ne sert à rien pour le moment tant car ansible ne fait que les ars, sera utile une fois que ansible configurera pp
  - name: stman
    shell: stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
    when:

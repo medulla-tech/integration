@@ -40,6 +40,7 @@
  - name: shell
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
 
+## Ne sert à rien pour le moment tant car ansible ne fait que les ars, sera utile une fois que ansible configurera pp
  - name: stman
    shell: stman folder add --label baseremoteagent --foldertype readonly /var/lib/pulse2/xmpp_baseremoteagent/ pulsemaster_baseremoteagent
    when:
