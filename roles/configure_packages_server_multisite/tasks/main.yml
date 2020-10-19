@@ -1,1 +1,46 @@
 ---
+
+ - name: set CONFIG_FILE
+   set_fact:
+     CONFIG_FILE: '/etc/mmc/pulse2/package-server/package-server.ini.local'
+
+# Configure multi-site package server
+ - name: set PACKAGESERVER_UUID
+   set_fact:
+     PACKAGESERVER_UUID: `uuidgen`
+
+# Allow computer to reach package server
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} main public_ip {{ IP_ADDRESS }}
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} main public_mask {{ NETMASK }}
+
+# Define MMC of the Pulse
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} mmc_agent host {{ PULSEMAIN_IP }}
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} imaging_api uuid {{ PACKAGESERVER_UUID }}
+
+# Define Pulse inventory server IP
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} imaging_api inventory_host {{ PULSEMAIN_IP }}
+
+ - name: shell
+   shell: crudini --set {{ CONFIG_FILE }} imaging_api glpi_mode True
+
+# restart pulse2-package-server
+
+ - name: enable pulse2-package-server
+   systemd:
+     name: pulse2-package-server
+     enabled: yes
+
+ - name: enable pulse2-package-server
+   systemd:
+     name: pulse2-package-server
+     state: restarted
