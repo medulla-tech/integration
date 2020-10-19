@@ -45,7 +45,7 @@
            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
-       SetEnvIf Request_URI "^/guacamole/tunnel\" dontlog
+       SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
        CustomLog  /var/log/apache2/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
@@ -71,7 +71,7 @@
            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
        </Location>
-       SetEnvIf Request_URI "^/guacamole/tunnel\" dontlog
+       SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
        CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ GUACAMOLE_APACHE_PATH }}'
    when:
@@ -97,7 +97,7 @@
      state: restarted
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
- #    # Setup Apache FOR PULSE PRINCIPALE /!\
+ #    # Setup Apache FOR PULSE PRINCIPALE /!
 
  ####___________SYNCTHING_____________
 
@@ -525,13 +525,13 @@
 ##_check_mysql_connection
 
  - name: shell
-   shell: sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/mariadb.conf.d/50-server.cnf
+   shell: sed "s/^bind-address.*/bind-address             = 0.0.0.0/g" -i /etc/mysql/mariadb.conf.d/50-server.cnf
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
      - GLPI_DBHOST == PULSEMAIN_IP
 
  - name: shell
-   shell: sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/my.cnf
+   shell: sed "s/^bind-address.*/bind-address             = 0.0.0.0/g" -i /etc/my.cnf
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
      - GLPI_DBHOST == PULSEMAIN_IP
@@ -553,6 +553,50 @@
 ##_configure_glpi_multisite
 ##_configure_package_server_multisite
 
+   # Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
+ - name: shell
+   shell: crudini --set /etc/mmc/agent/config.ini.local main host 0.0.0.0 && systemctl restart mmc-agent.service
+
+   # Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
+ - name: shell
+   shell: echo "INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('{{ MULTISITE_ENTITY }}', 'https://{{ IP_REMOTE_SERVER }}:9990/imaging_api', 1, '{{ PACKAGESERVER_UUID }}', 1, 0, 1, 1);" | mysql imaging
+
+   # Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
+ - name: shell
+   shell: echo 'SELECT id FROM imaging.ImagingServer ORDER BY id DESC LIMIT 1'|mysql -s
+   register: uuidimag
+
+ - name: set UUID_IMAGING
+   set_fact:
+     UUID_IMAGING: UUID'{{ uuidimag.stdout }}'
+
+ - name: shell
+   shell: echo "SELECT id FROM {{ GLPI_DBNAME }}.glpi_entities WHERE name='{{ MULTISITE_ENTITY }}';" |mysql -s
+   register: glpientity
+
+ - name: set GLPI_ENTITY_ID
+   set_fact:
+     GLPI_ENTITY_ID: '{{ glpientity.stdout }}'
+
+ - name: set UUID
+   set_fact:
+     UUID: UUID'{{ GLPI_ENTITY_ID }}'
+
+ - name: shell
+   shell: echo "INSERT INTO imaging.Entity (name, uuid, pxe_keymap) values ('{{ MULTISITE_ENTITY }}','{{ UUID }}','fr_FR');" | mysql imaging
+
+   # Register multisite package server in Pulse. Done on main Pulse server
+ - name: shell
+   shell: echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s
+   register: idout
+
+ - name: set ID
+   set_fact:
+     ID: '{{ idout.stdout }}'
+
+ - name: shell
+   shell: echo "UPDATE ImagingServer SET associated=1, fk_entity={{ ID }} WHERE packageserver_uuid='{{ PACKAGESERVER_UUID }}';"| mysql imaging
+
 ##_create_server_cert
 
  - name: shell
@@ -564,7 +608,7 @@
 # Create the key and sign request on Pulse main server
 
  - name: shell
-   shell: openssl req -config {{ SSL_CONF_FILE }} -subj \"/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}\" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
+   shell: openssl req -config {{ SSL_CONF_FILE }} -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
 
 # Sign the certificate
 
