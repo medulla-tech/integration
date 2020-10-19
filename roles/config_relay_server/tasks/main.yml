@@ -395,6 +395,10 @@
      - XMPP_DOMAIN == 'pulse'
      - PUBLIC_IP != ''
 
+# Disable geolocalization
+ - name: shell
+   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type geolocalisation False
+
 # Enable and start the service
  - name: enable pulse-xmpp-agent-relay
    systemd:
