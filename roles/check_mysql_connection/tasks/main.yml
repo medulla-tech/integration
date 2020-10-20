@@ -2,7 +2,7 @@
 
  - name: shell
    shell: echo "select 0;" | mysql -h{{ GLPI_DBHOST }} -P{{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} &> /dev/null
-   ignore_erros: yes
+   ignore_errors: yes
    register: resmysqlco
    when:
      - GLPI_DBHOST != PULSEMAIN_IP
