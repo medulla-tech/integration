@@ -225,7 +225,7 @@
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == "Debian"
@@ -239,7 +239,7 @@
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/{{ V_TOMCAT_TEST_DEB }}/server.xml
    when:
      - INSTALL_TYPE != "p"
      - ansible_distribution == "Debian"
