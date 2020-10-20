@@ -125,8 +125,3 @@
    systemd:
      name: pulse2-package-server
      state: restarted
-
- - name: restarted
-   systemd:
-     name: ejabberd
-     state: restarted
