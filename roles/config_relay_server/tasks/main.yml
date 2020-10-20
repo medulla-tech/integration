@@ -487,7 +487,7 @@
 
  - name: Create a directory if it does not exist
    file:
-     path: //var/lib/pulse2/file-transfer/.ssh
+     path: /var/lib/pulse2/file-transfer/.ssh
      state: directory
      mode: '0755'
    when:
