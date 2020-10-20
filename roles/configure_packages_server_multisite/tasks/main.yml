@@ -7,7 +7,7 @@
 # Configure multi-site package server
  - name: set PACKAGESERVER_UUID
    set_fact:
-     PACKAGESERVER_UUID: `uuidgen`
+     PACKAGESERVER_UUID: 'uuidgen'
 
 # Allow computer to reach package server
 
