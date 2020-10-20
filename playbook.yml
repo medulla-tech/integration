@@ -5,7 +5,7 @@
    remote_user: root
    vars:
      - PULSE_REPO_URL: "https://git.siveo.net"
-     - PULSE_REPO_RPM_URL: "https://git.siveo.net"
+     - PULSE_REPO_RPM_URL: "https://pulse-repo.siveo.net/cnam-repo/"
      - GIT_BRANCH: "integration"
      - XMPP_DOMAIN: "siveo"
      - key: /root/.ssh/id_rsa.pub
@@ -34,7 +34,7 @@
      - CLIENTS_VNC_PORT: ''
      - MAX_ID: ''
      - CLUSTER_ID: ''
-     - MULTISITE_ENTITY: '--entity=Main'
+     - MULTISITE_ENTITY: 'Main'
      - PULSEMAIN_IP: 'wva-mmc.siveo.lan'
      - RELAYSERVER_ID: ''
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
@@ -56,14 +56,14 @@
      - ENABLE_CHANGE_PASS_CENT: 'true'
      - PKI_PASSWORD: ''
      - SSL_CONF_FILE: ''
-     - GLPI_DBHOST: ''
-     - GLPI_DBPORT: ''
-     - GLPI_DBUSER: ''
-     - GLPI_DBPASSWD: ''
-     - GLPI_DBNAME: ''
+     - GLPI_DBHOST: 'wva-mmc.siveo.lan'
+     - GLPI_DBPORT: '3306'
+     - GLPI_DBUSER: 'root'
+     - GLPI_DBPASSWD: 'r00tSiveo*'
+     - GLPI_DBNAME: 'glpi'
      - CREATE_ENTITY: ''
      - PACKAGESERVER_UUID: ''
-     - NETMASK: ''
+     - NETMASK: '255.255.255.0'
      - UUID: ''
      - UUID_IMAGING: ''
      - GLPI_ENTITY_ID: ''
@@ -73,11 +73,15 @@
 #INSTALL_MULTSITE_DEPENDENCIES
      - config_repo_pulse
      - config_start
-#INSTALL_MULTSITE
-     - install_/multisite
+#
 #INSTALL_MULTSITE_DEPENDENCIES
      - install_/apache2_php
      - install_/php
+#
+#INSTALL_MULTSITE
+     - install_/multisite
+#
+#INSTALL_MULTSITE_DEPENDENCIES_AGAIN
      - install_/mysql
      - install_/nfs_kernel
      - config_/nfc_kernel
@@ -102,31 +106,46 @@
      - config_/mysql_server
      - config_/ssh_server
      - config_relay_server
+     - check_mysql_connection
+     - configure_glpi_multisite
+     - configure_packages_server_multisite
+     - create_server_cert
 
  - name: config_guacamole_pulse_task
    hosts: pulse
    remote_user: root
    vars:
      - GUACAMOLE_APACHE_PATH: ''
-     - SERVER_FQDN: 'wva-mmc.siveo.lan'
+     - SERVER_FQDN: 'wva-ars1.siveo.lan'
+     - SERVER_FQDN2: 'wva-ars2.siveo.lan'
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
      - SHARE_ADDED: '0'
      - LOCAL_DEVICE_ID: ''
      - INSTALL_TYPE: 'p'
-     - MULTISITE_ENTITY: ''
+     - MULTISITE_ENTITY: 'Main'
      - CLUSTER_ID: ''
      - IP_REMOTE_SERVER1: 'wva-ars1'
      - IP_REMOTE_SERVER2: 'wva-ars2'
      - XMPP_DOMAIN: ''
      - RES_GREP: '0'
-     - PKI_PASSWORD: ''
+     - PKI_PASSWORD: 'r00tSiveo*'
      - SSL_CONF_FILE: ''
-     - GLPI_DBHOST: ''
-     - GLPI_DBPORT: ''
-     - GLPI_DBUSER: ''
-     - GLPI_DBPASSWD: ''
-     - GLPI_DBNAME: ''
+     - GLPI_DBHOST: 'wva-mmc.siveo.lan'
+     - GLPI_DBPORT: '3306'
+     - GLPI_DBUSER: 'root'
+     - GLPI_DBPASSWD: 'r00tSiveo*'
+     - GLPI_DBNAME: 'glpi'
      - CREATE_ENTITY: ''
+     - PACKAGESERVER_UUID: ''
+     - UUID: ''
+     - UUID_IMAGING: ''
+     - GLPI_ENTITY_ID: ''
+     - PULSEMAIN_IP: 'wva-mmc.siveo.lan'
+     - ROOT_PASSWORD: 'r00tSiveo*'
+     - DBHOST: ''
+     - DBPORT: ''
+     - DBADMINUSER: ''
+     - DBADMINPASSWD: ''
 
    roles:
      - config_/guacamole_pulse
