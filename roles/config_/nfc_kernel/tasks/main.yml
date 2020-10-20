@@ -3,12 +3,17 @@
  - name: shell
    shell: '/bin/cp -fv /usr/share/doc/mmc/contrib/imaging-server/exports /etc/'
 
- # - name: restarted service
- #   systemd:
- #     name: nfs-kernel-server
- #     state: restarted
- #   when:
- #     - ansible_distribution == "Debian"
+ - name: Create a directory if it does not exist
+   file:
+     path: /var/lib/pulse2/imaging/postinst
+     state: directory
+
+ - name: restarted service
+   systemd:
+     name: nfs-kernel-server
+     state: restarted
+   when:
+     - ansible_distribution == "Debian"
 
  - name: restarted Service
    systemd:
