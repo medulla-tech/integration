@@ -46,11 +46,70 @@
  - name: shell
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
 
-## Ne sert à rien pour le moment tant car ansible ne fait que les ars, sera utile une fois que ansible configurera pp
+##
  - name: stman
    shell: stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
    when:
      - XMPP_DOMAIN == 'pulse'
+
+#######DELEGATE TO
+
+ - name: shell stman
+   shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   delegate_to: pulse
+   when:
+     - SHARE_ADDED == '0'
+     - XMPP_DOMAIN != 'pulse'
+
+ - pause:
+     seconds: 20
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell xmlstarlet
+   shell: '{{ SHARE_ADDED }}'
+   register: xmlout
+   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     SHARE_ADDED: "{{ xmlout.stdout }}"
+   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell stman
+   shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   delegate_to: pulse
+   when:
+     - SHARE_ADDED == '0'
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: shell stman
+   shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   delegate_to: pulse
+   when:
+     - SHARE_ADDED == '0'
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SHARE_ADDED
+   set_fact:
+     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+##### END DELEGATE TO
 
  - name: restarted syncthing@syncthing
    systemd:
