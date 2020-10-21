@@ -9,6 +9,28 @@
      state: present
      key: "{{ lookup('file', '{{ key }}') }}"
 
+#get ip
+
+ - name: Get IP_ADDRESS
+   shell: ip addr show {{ INTERFACE }} | grep -w inet | awk '{print $2}' | cut -d "/" -f 1
+   register: resultip
+
+ - name: set IP_ADDRESS
+   set_fact:
+     IP_ADDRESS: "{{ resultip.stdout }}"
+
+#get ip
+
+ - name: Get IP_REMOTE_SERVER
+   shell: ip addr show {{ INTERFACE_TO_PULSE }} | grep -w inet | awk '{print $2}' | cut -d "/" -f 1
+   register: ipadressout
+
+ - name: set IP_REMOTE_SERVER
+   set_fact:
+     IP_REMOTE_SERVER: '{{ ipadressout.stdout }}'
+
+#
+
 #CONFIGURE ejabberd
 
  - name: install_ejabberd_rh
