@@ -174,23 +174,9 @@
 
 # TO DELEGATE
  - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    delegate_to: pulse
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   delegate_to: pulse
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: recup id pulsemain and sshcommand
-   shell: '{{ PULSEMAIN_DEVICE_ID }}'
    register: resid
-   delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
 
@@ -200,6 +186,9 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
+
+ - debug:
+     msg: '{{ PULSEMAIN_DEVICE_ID }}'
 
  - name: xmlstarlet
    shell: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
