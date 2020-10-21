@@ -93,6 +93,7 @@
        </Location>
      dest: '{{ SYNCTHING_APACHE_PATH }}'
    delegate_to: pulse
+   ignore_errors: yes
    when:
      - file_details.stat.exists
 
@@ -114,6 +115,7 @@
        </Location>
      dest: '{{ SYNCTHING_APACHE_PATH }}'
    delegate_to: pulse
+   ignore_errors: yes
    when:
      - file_details.stat.exists
 
