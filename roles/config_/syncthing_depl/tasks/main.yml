@@ -56,6 +56,84 @@
    when:
      - ansible_distribution != "Debian"
 
+#######START DELEGATE TO
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/apache2/conf-available/syncthing.conf'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/apache2/conf-available
+   register: file_details
+   delegate_to: pulse
+
+ - name: write in file
+   lineinfile:
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     line: '{{ item }}'
+   with_items:
+     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://${XMPP_DOMAIN}/syncthing-depl/"
+     - "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
+     - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
+     - "    Require all granted"
+     - "</Location>\n"
+   delegate_to: pulse
+   ignore_errors: yes
+   when:
+     - file_details.stat.exists
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/httpd/conf.d
+   register: file_details
+   delegate_to: pulse
+
+ - name: write in file
+   lineinfile:
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     line: '{{ item }}'
+   with_items:
+     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://${XMPP_DOMAIN}/syncthing-depl/"
+     - "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
+     - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
+     - "    Require all granted"
+     - "</Location>\n"
+   delegate_to: pulse
+   ignore_errors: yes
+   when:
+     - file_details.stat.exists
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: reload apache2
+   systemd:
+     name: apache2
+     state: reloaded
+   delegate_to: pulse
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set reload httpd
+   systemd:
+     name: httpd
+     state: reloaded
+   delegate_to: pulse
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == 'Rhel'
+     - XMPP_DOMAIN != 'pulse'
+
+#######END DELEGATE TO
+
 # Stop syncthing service
 
  - name: stop service syncthing@syncthing-depl
