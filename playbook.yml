@@ -71,6 +71,8 @@
      - UUID: ''
      - UUID_IMAGING: ''
      - GLPI_ENTITY_ID: ''
+     - INTERFACE_TO_PULSE: 'ens192'
+     - INTERFACE: 'ens192'
 
    roles:
 
