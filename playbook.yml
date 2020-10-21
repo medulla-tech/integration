@@ -20,6 +20,10 @@
      - TEMP_PASS_MYSQL: siveo
      - SERVER: "pulse"
      - mysql_user: root
+     - DBHOST: 'wva-mmc.siveo.lan'
+     - DBPORT: '3306'
+     - DBADMINUSER: 'root'
+     - DBADMINPASSWD: 'r00tSiveo*'
      - RELAY_CONFIG_FILE: '/etc/pulse-xmpp-agent/relayconf.ini'
      - PLUGINLIST: ''
      - SSH_COMMAND: ''

@@ -492,7 +492,7 @@
 
  - name: set MAX_ID
    set_fact:
-     MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -s xmppmaster
+     MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} -s xmppmaster
    delegate_to: pulse
 
  - name: shell MAX_ID
@@ -536,7 +536,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: set SSH_COMMAND
-   shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');" | mysql xmppmaster
+   shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -546,7 +546,7 @@
 
  - name: set MAX_ID
    set_fact:
-     MAX_ID: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -s xmppmaster
+     MAX_ID: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} -s xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -581,7 +581,7 @@
 
  - name: set RELAYSERVER_ID
    set_fact:
-     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -s xmppmaster
+     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} -s xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -601,7 +601,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: set SSH_COMMAND
-   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql xmppmaster
+   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -619,27 +619,27 @@
      - set RELAY_CONFIGURED
 
  - name: echo
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', 1);" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', 1);" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
  - name: echo
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', 1);" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', 1);" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
  - name: echo
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', 1);" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', 1);" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
  - name: echo
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', 1);" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', 1);" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
  - name: echo
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', 1);" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', 1);" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
@@ -648,7 +648,7 @@
 
  - name: set RELAYSERVER_ID
    set_fact:
-     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -s xmppmaster
+     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} -s xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -668,31 +668,31 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql xmppmaster
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{DBHOST}} -P {{DBPORT}} -u{{DBADMINUSER}} -p{{DBADMINPASSWD}} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
