@@ -503,6 +503,9 @@
    set_fact:
      MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell MAX_ID
    shell: '{{ MAX_ID }}'
@@ -537,6 +540,7 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
 ##_config_relay_server
 # Add the relayserver to the cluster
@@ -547,6 +551,7 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell MAX_ID
    shell: '{{ MAX_ID }}'
@@ -582,6 +587,7 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell RELAYSERVER_ID
    shell: '{{ RELAYSERVER_ID }}'
@@ -602,6 +608,7 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
 # Create the substitutes configuration rules
 
@@ -669,30 +676,35 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
 
 # Enable autoupdate by relay servers
@@ -703,12 +715,14 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell
    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: set SSH_COMMAND
    set_fact:
@@ -716,12 +730,14 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
  - name: shell
    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
 # ----------------
 
@@ -764,5 +780,6 @@
    delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
 
 # _END
