@@ -11,22 +11,22 @@
 
  - name: copy file
    lineinfile:
-     line: "[mysql]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     line: "[mysql]\nuser={{ DBADMINUSER }}\npassword={{ DBADMINPASSWD }}"
      dest: /root/.my.cnf
 
  - name: copy file
    lineinfile:
-     line: "\n[mysqladmin]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     line: "\n[mysqladmin]\nuser={{ DBADMINUSER }}\npassword={{ DBADMINPASSWD }}"
      dest: /root/.my.cnf
 
  - name: copy file
    lineinfile:
-     line: "\n[mysqlcheck]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     line: "\n[mysqlcheck]\nuser={{ DBADMINUSER }}\npassword={{ DBADMINPASSWD }}"
      dest: /root/.my.cnf
 
  - name: copy file
    lineinfile:
-     line: "\n[mysqldump]\nuser={{ mysql_user }}\npassword={{ ROOT_PASSWORD }}"
+     line: "\n[mysqldump]\nuser={{ DBADMINUSER }}\npassword={{ DBADMINPASSWD }}"
      dest: /root/.my.cnf
 
  - name: restart mariadb
