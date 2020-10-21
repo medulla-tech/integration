@@ -83,13 +83,15 @@
      path: /etc/apache2/conf-available
    register: file_details
    delegate_to: pulse
+   when:
+     - ansible_distribution == "Debian"
 
  - name: write in file
    lineinfile:
      dest: '{{ SYNCTHING_APACHE_PATH }}'
      line: '{{ item }}'
    with_items:
-     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://${XMPP_DOMAIN}/syncthing-depl/"
+     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
      - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "    Require all granted"
@@ -99,19 +101,22 @@
    when:
      - file_details.stat.exists
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "Debian"
 
  - name: Ansible check file exists example.
    stat:
      path: /etc/httpd/conf.d
    register: file_details
    delegate_to: pulse
+   when:
+     - ansible_distribution == "CentOS"
 
  - name: write in file
    lineinfile:
      dest: '{{ SYNCTHING_APACHE_PATH }}'
      line: '{{ item }}'
    with_items:
-     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://${XMPP_DOMAIN}/syncthing-depl/"
+     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
      - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "    Require all granted"
@@ -121,6 +126,12 @@
    when:
      - file_details.stat.exists
      - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
+
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/apache2
+   register: service_status
+   delegate_to: pulse
 
  - name: reload apache2
    systemd:
@@ -130,6 +141,12 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
      - XMPP_DOMAIN != 'pulse'
+     - service_status.stat.exists
+
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/httpd
+   register: service_status
+   delegate_to: pulse
 
  - name: set reload httpd
    systemd:
@@ -139,6 +156,7 @@
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == 'Rhel'
      - XMPP_DOMAIN != 'pulse'
+     - service_status.stat.exists
 
 #######END DELEGATE TO
 
