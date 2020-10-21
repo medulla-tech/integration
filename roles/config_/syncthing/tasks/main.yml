@@ -62,34 +62,90 @@
    when:
      - ansible_distribution != "Debian"
 
+## IF XMPP_DOMAIN != PULSE
+
+#Verifie
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/apache2/conf-available/syncthing.conf'
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: set SYNCTHING_APACHE_PATH
+   set_fact:
+     SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
+   when:
+     - ansible_distribution != "Debian"
+
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/apache2/conf-available
+   register: file_details
+   delegate_to: pulse
+
  - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
    copy:
      content: |
-       ProxyPass /syncthing/ http://localhost:8384/
-       <Location /syncthing/>
-           ProxyPassReverse http://localhost:8384/
-           Require all granted
-       </Location>
        ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
        <Location /syncthing-{{ XMPP_DOMAIN }}/>
            ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
            Require all granted
        </Location>
      dest: '{{ SYNCTHING_APACHE_PATH }}'
+   delegate_to: pulse
+   when:
+     - file_details.stat.exists
+
+## for Rhel
+
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/httpd/conf.d
+   register: file_details
+   delegate_to: pulse
+
+ - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
+   copy:
+     content: |
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           Require all granted
+       </Location>
+     dest: '{{ SYNCTHING_APACHE_PATH }}'
+   delegate_to: pulse
+   when:
+     - file_details.stat.exists
+
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/apache2
+   register: service_status
+   delegate_to: pulse
 
  - name: reload systemd
    systemd:
      name: apache2
      state: reloaded
+   delegate_to: pulse
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+     - service_status.stat.exists
+
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/httpd
+   register: service_status
+   delegate_to: pulse
 
  - name: reload systemd
    systemd:
      name: httpd
      state: reloaded
+   delegate_to: pulse
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - service_status.stat.exists
+
+## end delegate to
 
  - name: start syncthing
    systemd:
@@ -114,34 +170,42 @@
 
 # Find pulsemain device id
 
+# TO DELEGATE
  - name: set SSH_COMMAND
    set_fact:
      SSH_COMMAND: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+   delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: recup id pulsemain and sshcommand
    shell: '{{ PULSEMAIN_DEVICE_ID }}'
    register: resid
+   delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   delegate_to: pulse
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: xmlstarlet
    shell: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+   delegate_to: pulse
    when:
      - XMPP_DOMAIN != 'pulse'
+#END DELEGATE TO
+
 
     # Disable use of syncthing relays and local announce
 
