@@ -54,7 +54,7 @@
      - LOCAL_DEVICE_ID: ''
      - SHARE_ADDED: ''
      - ENABLE_CHANGE_PASS_CENT: 'true'
-     - PKI_PASSWORD: ''
+     - PKI_PASSWORD: 'siveo'
      - SSL_CONF_FILE: ''
      - GLPI_DBHOST: 'wva-mmc.siveo.lan'
      - GLPI_DBPORT: '3306'
