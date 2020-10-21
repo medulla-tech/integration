@@ -269,15 +269,90 @@
    set_fact:
      GUACAMOLE_APACHE_PATH: '/etc/apache2/conf-available/guacamole.conf'
    when:
-     - ansible_distribution == "Debian"
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
  - name: set GUACAMOLE_ROOT_PASSWORD
    set_fact:
      GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole.conf'
    when:
-     - ansible_distribution != "Debian"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+
+#### IF INSTALL_TYPE=P
+#######################################
+
+ - name: set xmppDomain = 1
+   set_fact:
+     HOSTNAME_F: "wva-mmc.siveo.lan"
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: copy
+   copy:
+     content: |
+        <Location /guacamole/>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/
+        </Location>
+        <Location /guacamole/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
+        </Location>
+        SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
+        CustomLog  /var/log/apache2/guac.log common env=!dontlog
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE == "p"
+
+ - name: copy
+   copy:
+     content: |
+        <Location /guacamole/>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ HOSTNAME_F }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ HOSTNAME_F }}:8081/guacamole/
+        </Location>
+        <Location /guacamole/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ HOSTNAME_F }}:8081/guacamole/websocket-tunnel
+        </Location>
+        SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
+        CustomLog  /var/log/httpd/guac.log common env=!dontlog
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+   when:
+     - ansible_distribution == "CentOS"
+     - INSTALL_TYPE == "p"
+
+ - name: a2enconf
+   shell: 'a2enconf guacamole.conf'
+   when:
+     - ansible_distribution == "CentOS"
+     - INSTALL_TYPE == "p"
+
+######## IF INSTALL_TYPE != P
+##################################
 
 #else INSTALL_TYPE != p
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/apache2/conf-available
+   register: file_details
+   delegate_to: pulse
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
@@ -300,22 +375,75 @@
             ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+     dest: '/etc/apache2/conf-available/guacamole.conf'
+   delegate_to: pulse
    when:
      - INSTALL_TYPE != "p"
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+     - file_details.stat.exists
+
+ - name: Ansible check file exists example.
+   stat:
+     path: /etc/httpd/conf.d
+   register: file_details
+   delegate_to: pulse
+
+ - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+   copy:
+     content: |
+        <Location /guacamole-{{ XMPP_DOMAIN }}/>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ XMPP_DOMAIN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ XMPP_DOMAIN }}:8081/guacamole/
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
+        </Location>
+        <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
+        </Location>
+     dest: '/etc/httpd/conf.d/guacamole.conf'
+   delegate_to: pulse
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != "p"
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - file_details.stat.exists
 
 # if debian
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/apache2
+   register: service_status
+   delegate_to: pulse
 
  - name: restart systemdctl apache
    systemd:
      name: apache2
      state: restarted
+   delegate_to: pulse
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
+     - INSTALL_TYPE != "p"
+     - service_status.stat.exists
+
+ - name: Check if Service Exists
+   stat: path=/etc/init.d/httpd
+   register: service_status
+   delegate_to: pulse
 
  - name: restart systemdctl apache
    systemd:
      name: httpd
      state: restarted
+   delegate_to: pulse
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - INSTALL_TYPE != "p"
+     - service_status.stat.exists
