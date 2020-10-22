@@ -1313,7 +1313,7 @@
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: "{{ result.localdeviceid }}"
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
 ##########################################################
 #                         Checks                         #
