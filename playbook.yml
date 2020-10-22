@@ -104,7 +104,6 @@
      - config_/syncthing_share_baseremoteagent
      - config_/syncthing_share_downloads
      - config_/syncthing_depl
-     - config_/mysql_access
 #     - config_/mysql_server
      - config_/ssh_server
      - config_relay_server
