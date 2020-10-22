@@ -242,7 +242,7 @@
 
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/applicationdeploymentjson.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -292,7 +292,7 @@
 
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfileexpert.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfileexpert.ini.local'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -342,7 +342,7 @@
 
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfile.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/downloadfile.ini.local'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -392,7 +392,7 @@
 
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -420,7 +420,7 @@
 # Update vnc port to be used on clients if defined
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
 
  - name: echo crudini
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
@@ -458,7 +458,7 @@
 # Update ssh port of reverse ssh server
  - name: set PLUGIN_CONFIG_FILE
    set_fact:
-     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/reverse_ssh_on.ini'
+     PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/reverse_ssh_on.ini.local'
 
  - name: echo crudini
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
