@@ -1428,7 +1428,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-     seconds: 20
+     seconds: 40
 
 ##### END DELEGATE TO
 
@@ -1606,7 +1606,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-     seconds: 20
+     seconds: 40
 
 ##### END DELEGATE TO
 
@@ -1809,7 +1809,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-     seconds: 20
+     seconds: 40
 
 ##### END DELEGATE TO
 
