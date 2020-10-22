@@ -54,7 +54,7 @@
  - name: shell stman
    shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -65,28 +65,28 @@
  - name: set SHARE_ADDED
    set_fact:
      SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell xmlstarlet
    shell: '{{ SHARE_ADDED }}'
    register: xmlout
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
      SHARE_ADDED: "{{ xmlout.stdout }}"
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell stman
    shell: stman folder unshare pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -94,7 +94,7 @@
  - name: shell stman
    shell: stman folder share pulsemaster_bootmenus {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -102,7 +102,7 @@
  - name: set SHARE_ADDED
    set_fact:
      SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 

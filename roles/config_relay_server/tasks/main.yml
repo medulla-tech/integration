@@ -44,21 +44,18 @@
 # IF XMPP_DOMAIN != pulse
 # Obtain MASTER_PASSWORD from Pulse main server
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password'
+ - name: crudini get connection password
+   shell: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password'
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: crudiniout
    when:
      - XMPP_DOMAIN != 'pulse'
 
-# - name: set MASTER_PASSWORD
-#   set_fact:
-#     MASTER_PASSWORD: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-#   when:
-#     - XMPP_DOMAIN != 'pulse'
-
- - name: create lowercase 8 character name for Kubernetes pod name
+ - name: set master password
    set_fact:
-     MASTER_PASSWORD: "{{ PULSEMAIN_IP }}{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+     MASTER_PASSWORD: '{{ crudiniout.stdout }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Register master
  - name: ejabctl register master
@@ -78,7 +75,7 @@
 # Copy manage_scheduler from main pulse
 
 # Register master
- - name: ejabctl register master
+ - name: copy manage_scheduler.ini from pulsemain
    shell: "scp {{ PULSEMAIN_IP }}:/etc/pulse-xmpp-agent/manage_scheduler.ini /etc/pulse-xmpp-agent/manage_scheduler.ini"
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -165,7 +162,7 @@
    shell: grep -cx "{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}" /etc/hosts
    ignore_errors: yes
    register: grepresult
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -179,7 +176,7 @@
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - RES_GREP == "0"
      - XMPP_DOMAIN != 'pulse'
@@ -190,7 +187,7 @@
    shell: grep -cx "{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}" /etc/hosts
    ignore_errors: yes
    register: grepresult
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -204,7 +201,7 @@
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - RES_GREP == "0"
      - XMPP_DOMAIN != 'pulse'
@@ -481,28 +478,28 @@
 # First wait a few minutes until the relay server is configured
  - pause:
      minutes: 2
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: Get hostname
    shell: hostname -s
    register: result
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set xmppDomain = 1
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set MAX_ID
    set_fact:
      MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -510,34 +507,34 @@
  - name: shell MAX_ID
    shell: '{{ MAX_ID }}'
    register: outMAX_ID
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set MAX_ID
    set_fact:
      MAX_ID: '{{ outMAX_ID.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell max_id+1
    shell: echo $(({{ MAX_ID }}+1))
    register: addition
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set CLUSTER_ID
    set_fact:
      CLUSTER_ID: '{{ addition.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set SSH_COMMAND
    shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -548,7 +545,7 @@
  - name: set MAX_ID
    set_fact:
      MAX_ID: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -556,35 +553,35 @@
  - name: shell MAX_ID
    shell: '{{ MAX_ID }}'
    register: maxid
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set MAX_ID
    set_fact:
      MAX_ID: '{{ maxid.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell addition MAX_ID+1
    shell: echo $(({{ MAX_ID }}+1))
    register: addition
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set MAX_ID
    set_fact:
      MAX_ID: '{{ addition.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -592,20 +589,20 @@
  - name: shell RELAYSERVER_ID
    shell: '{{ RELAYSERVER_ID }}'
    register: relayserverid
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: '{{ relayserverid.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set SSH_COMMAND
    shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -653,55 +650,55 @@
  - name: set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell RELAYSERVER_ID
    shell: '{{ RELAYSERVER_ID }}'
    register: relayserverid
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: '{{ relayserverid.stdout }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell mysql command
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -712,14 +709,14 @@
  - name: set SSH_COMMAND
    set_fact:
      SSH_COMMAND: 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell
    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -727,14 +724,14 @@
  - name: set SSH_COMMAND
    set_fact:
      SSH_COMMAND: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: shell
    shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -777,7 +774,7 @@
      state: present
      key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
      path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"

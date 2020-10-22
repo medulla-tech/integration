@@ -23,90 +23,90 @@
 #drop database
 
  - name: DROP DATABASE
-   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot'
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}'
    when:
      - ansible_distribution != "CentOS"
 
  - name: DROP DATABASE
-   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot -p{{ DBADMINPASSWD }}'
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}'
    when:
      - ansible_distribution == "CentOS"
 
 #drop user
 
  - name: DROP USER
-   shell: echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
+   shell: echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution != "CentOS"
 
  - name: DROP USER
-   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u root -p{{ DBADMINPASSWD }}
+   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
  - name: DROP USER
-   shell: echo "FLUSH PRIVILEGES;" | mysql -u root -p{{ DBADMINPASSWD }}
+   shell: echo "FLUSH PRIVILEGES;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
 #create database
 
  - name: CREATE DATABASE
-   shell: echo "CREATE DATABASE guacamole;" | mysql -uroot
+   shell: echo "CREATE DATABASE guacamole;" | -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution != "CentOS"
 
  - name: CREATE DATABASE
-   shell: echo "CREATE DATABASE guacamole;" | mysql -u root -p{{ DBADMINPASSWD }}
+   shell: echo "CREATE DATABASE guacamole;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
 #create user
 
  - name: CREATE USER
-   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}';" | mysql -uroot
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution != "CentOS"
 
  - name: CREATE USER
-   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}';" | mysql -u root -p{{ DBADMINPASSWD }}
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
 #grant
 
  - name: GRANT
-   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution != "CentOS"
 
  - name: GRANT
-   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u root -p{{ DBADMINPASSWD }}
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
 # if debian version 8
 
  - name: DROP USER
-   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
+   shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
    when: ansible_distribution_major_version == '8'
 
  - name: DROP USER
-   shell: "mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
+   shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version == '8'
 
  - name: DROP USER
-   shell: "mysql -uroot -p{{ ROOT_PASSWORD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
+   shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
    when: ansible_distribution_major_version != '8'
 
  - name: DROP USER
-   shell: "mysql -uroot -p{{ ROOT_PASSWORD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
+   shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version != '8'
 
 #
 
  - name: SET
-   shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
+   shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole
 
 #
 
@@ -352,7 +352,7 @@
    stat:
      path: /etc/apache2/conf-available
    register: file_details
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
@@ -376,7 +376,7 @@
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
      dest: '/etc/apache2/conf-available/guacamole.conf'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != "p"
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
@@ -386,7 +386,7 @@
    stat:
      path: /etc/httpd/conf.d
    register: file_details
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
    copy:
@@ -410,7 +410,7 @@
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
      dest: '/etc/httpd/conf.d/guacamole.conf'
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
      - INSTALL_TYPE != "p"
@@ -421,13 +421,13 @@
  - name: Check if Service Exists
    stat: path=/etc/init.d/apache2
    register: service_status
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: restart systemdctl apache
    systemd:
      name: apache2
      state: restarted
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
      - INSTALL_TYPE != "p"
@@ -436,13 +436,13 @@
  - name: Check if Service Exists
    stat: path=/etc/init.d/httpd
    register: service_status
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: restart systemdctl apache
    systemd:
      name: httpd
      state: restarted
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
      - INSTALL_TYPE != "p"
