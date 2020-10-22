@@ -1,0 +1,43 @@
+---
+
+ - name: "apache restart"
+   service:
+     name: "httpd"
+     state: "restarted"
+   when:
+     ansible_distribution == "CentOS"
+
+ - name: "apache restart"
+   service:
+     name: "httpd"
+     state: "restarted"
+   when:
+     ansible_distribution == "CentOS"
+
+ - name: "php restart"
+   service:
+     name: "php"
+     state: "restarted"
+   when:
+     ansible_distribution == "CentOS"
+
+ - name: "start mysql"
+   service:
+     name: "mysqld"
+     state: "started"
+   when:
+     - ansible_distribution == "CentOS"
+
+ - name: "start mysql"
+   systemd:
+     state: "started"
+     name: "mariadb"
+   when:
+     - ansible_distribution == "Rhel"
+
+ - name: "restart mysqld"
+   service:
+     name: "mysqld"
+     state: "restarted"
+   when:
+     - ansible_distribution == "CentOS"
