@@ -580,7 +580,7 @@
 
  - name: set CLUSTER_ID
    set_fact:
-     CLUSTER_ID: {{ MAX_ID | int + 1 }}
+     CLUSTER_ID: "{{ MAX_ID | int + 1 }}"
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
