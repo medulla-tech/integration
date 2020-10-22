@@ -87,19 +87,19 @@
 
 # if debian version 8
 
- - name: DROP USER
+ - name: Create schema
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql;"
    when: ansible_distribution_major_version == '8'
 
- - name: DROP USER
+ - name: Create admin user
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version == '8'
 
- - name: DROP USER
+ - name: Create schema
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql;"
    when: ansible_distribution_major_version != '8'
 
- - name: DROP USER
+ - name: Create admin user
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version != '8'
 
