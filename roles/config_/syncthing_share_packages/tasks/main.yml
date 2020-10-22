@@ -20,16 +20,21 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
- - name: delete file if present
+ - name: delete /var/lib/syncthing/packages if present
    file:
      path: /var/lib/syncthing/packages
      state: absent
 
- - name: create file
+ - name: create /var/lib/syncthing/packages
    file:
      path: /var/lib/syncthing/packages
      state: directory
      mode: '0755'
+
+ - name: create /var/lib/pulse2/packages
+   file:
+     path: /var/lib/pulse2/packages
+     state: directory
 
  - name: install acl
    apt:
