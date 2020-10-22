@@ -1381,7 +1381,6 @@
  - name: setfacl on packages
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
 
-##
  - name: Create packages syncthing share on main pulse
    shell: stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
    when:
@@ -1485,47 +1484,89 @@
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-
- - name: shell
-   shell: '{{ LOCAL_DEVICE_ID }}'
-   register: deviceid
+ - name: get local device-id
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   register: localdeviceid
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: delete file if present
+##########################################################
+#                         Checks                         #
+##########################################################
+
+ - name: Check if share is already configured
+   shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: xmlout
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SHARE_CONFIGURED
+   set_fact:
+     SHARE_CONFIGURED: "{{ xmlout.stdout }}"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: Unshare baseremoteagent folder from main pulse
+   shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+ - pause:
+     seconds: 20
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: Remove /var/lib/pulse2/xmpp_baseremoteagent if present
+   file:
+     path: /var/lib/pulse2/xmpp_baseremoteagent
+     state: absent
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+##########################################################
+
+ - name: delete /var/lib/syncthing/baseremoteagent if present
    file:
      path: /var/lib/syncthing/baseremoteagent
      state: absent
 
- - name: create file
+ - name: create /var/lib/pulse2/xmpp_baseremoteagent
    file:
      path: /var/lib/pulse2/xmpp_baseremoteagent
      state: directory
-     mode: '0755'
+     owner: syncthing
+     group: syncthing
 
- - name: chown -R
-   shell: 'chown -R syncthing: /var/lib/pulse2/xmpp_baseremoteagent'
+ - name: install acl
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - acl
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: shell
+ - name: setfacl on xmpp_baseremoteagent
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
 
- - name: shell
+ - name: setfacl on xmpp_baseremoteagent
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
 
-##
- - name: stman
+ - name: Create baseremoteagent syncthing share on main pulse
    shell: stman folder add --label baseremoteagent --foldertype readonly /var/lib/pulse2/xmpp_baseremoteagent/ pulsemaster_baseremoteagent
    when:
      - XMPP_DOMAIN == 'pulse'
 
 #######DELEGATE TO
 
- - name: shell stman
+ - name: Share baseremoteagent folder to local relay from main pulse
    shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1536,28 +1577,19 @@
  - pause:
      seconds: 20
 
+ - name: Check if share is added
+   shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: xmlout
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell xmlstarlet
-   shell: '{{ SHARE_ADDED }}'
-   register: xmlout
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
      SHARE_ADDED: "{{ xmlout.stdout }}"
-   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell stman
+ - name: If share is not added, unshare packages folder from main pulse
    shell: stman folder unshare pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1565,7 +1597,7 @@
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell stman
+ - name: Re-share packages folder to local relay from main pulse
    shell: stman folder share pulsemaster_baseremoteagent {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1573,46 +1605,36 @@
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
 
- - name: set SHARE_ADDED
-   set_fact:
-     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_baseremoteagent']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
+ - pause:
+     seconds: 20
 
 ##### END DELEGATE TO
 
- - name: restarted syncthing@syncthing
+ - name: Stop syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: stopped
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: Check if d folder is empty before proceeding
-   find:
-     paths: '/var/lib/syncthing/baseremoteagent/'
-   register: filesFound
-
- - name: Move foo to bar
-   command: mv /var/lib/syncthing/baseremoteagent/.st*  /var/lib/pulse2/xmpp_baseremoteagent/
+ - name: Move baseremoteagent folder from syncthing home
+   command: mv /var/lib/syncthing/baseremoteagent/.stfolder  /var/lib/pulse2/xmpp_baseremoteagent/
    when:
      - XMPP_DOMAIN != 'pulse'
-     - filesFound.matched > 0
 
- - name: delete file if present
+ - name: Delete baseremoteagent folder from syncthing home
    file:
      path: /var/lib/syncthing/baseremoteagent
      state: absent
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell
+ - name: Change path to baseremoteagent folder in syncthing config file
    shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_baseremoteagent']/@path" -v "/var/lib/pulse2/xmpp_baseremoteagent" /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: restarted syncthing@syncthing
+ - name: Restart syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: restarted
@@ -1640,28 +1662,73 @@
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-
- - name: shell
-   shell: ' {{ LOCAL_DEVICE_ID }} '
-   register: deviceid
+ - name: get local device-id
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   register: localdeviceid
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: delete file if present
+##########################################################
+#                         Checks                         #
+##########################################################
+
+ - name: Check if share is already configured
+   shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: xmlout
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set SHARE_CONFIGURED
+   set_fact:
+     SHARE_CONFIGURED: "{{ xmlout.stdout }}"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: Unshare downloads folder from main pulse
+   shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
+   ignore_errors: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+ - pause:
+     seconds: 20
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: Remove /var/lib/pulse2/clients if present
+   file:
+     path: /var/lib/pulse2/clients
+     state: absent
+   when:
+     - SHARE_CONFIGURED == '1'
+     - XMPP_DOMAIN != 'pulse'
+
+##########################################################
+
+ - name: delete /var/lib/syncthing/downloads if present
    file:
      path: /var/lib/syncthing/downloads
      state: absent
 
- - name: create file
+ - name: create /var/lib/pulse2/clients
    file:
      path: /var/lib/pulse2/clients
      state: directory
+     owner: syncthing
+     group: syncthing
+
+ - name: create file
+   file:
+     path: /var/lib/pulse2/clients/.stfolder
+     state: directory
      mode: '0755'
+     owner: syncthing
+     group: syncthing
 
  - name: write in .stignore
    copy:
@@ -1677,36 +1744,32 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: create file
-   file:
-     path: /var/lib/pulse2/clients/.stfolder
-     state: directory
-     mode: '0755'
-
  - name: chown
-   shell: 'chown syncthing: /var/lib/pulse2/clients'
+   shell: 'chown syncthing: /var/lib/pulse2/clients/.stignore'
 
- # - name: chown
- #   shell: 'chown -R syncthing: /var/lib/pulse2/clients/{lin,win,mac,pulse-*.tar.gz,style.css,.st*}'
+ - name: install acl
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - acl
+   when:
+     - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: chown
-   shell: 'chown -R syncthing: /var/lib/pulse2/clients/.st*'
+ - name: setfacl on clients
+   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/
 
- - name: shell
-   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/.st*
+ - name: setfacl on clients
+   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/
 
- - name: shell
-   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/.st*
-
-##
- - name: stman
+ - name: Create baseremoteagent syncthing share on main pulse
    shell: stman folder add --label downloads --foldertype readonly /var/lib/pulse2/clients/ pulsemaster_downloads
    when:
      - XMPP_DOMAIN == 'pulse'
 
 #######DELEGATE TO
 
- - name: shell stman
+ - name: Share downloads folder to local relay from main pulse
    shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1717,28 +1780,19 @@
  - pause:
      seconds: 20
 
+ - name: Check if share is added
+   shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: xmlout
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
  - name: set SHARE_ADDED
    set_fact:
-     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell xmlstarlet
-   shell: '{{ SHARE_ADDED }}'
-   register: xmlout
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
      SHARE_ADDED: "{{ xmlout.stdout }}"
-   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell stman
+ - name: If share is not added, unshare downloads folder from main pulse
    shell: stman folder unshare pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1746,7 +1800,7 @@
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell stman
+ - name: Re-share downloads folder to local relay from main pulse
    shell: stman folder share pulsemaster_downloads {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1754,46 +1808,36 @@
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
 
- - name: set SHARE_ADDED
-   set_fact:
-     SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_downloads']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
+ - pause:
+     seconds: 20
 
 ##### END DELEGATE TO
 
- - name: restarted syncthing@syncthing
+ - name: Stop syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: stopped
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: Check if d folder is empty before proceeding
-   find:
-     paths: '/var/lib/syncthing/downloads/'
-   register: filesFound
-
- - name: Move foo to bar
-   command: mv /var/lib/syncthing/downloads/.st*  /var/lib/pulse2/clients/
+ - name: Move downloads folder from syncthing home
+   command: mv /var/lib/syncthing/downloads/.stfolder  /var/lib/pulse2/clients/
    when:
      - XMPP_DOMAIN != 'pulse'
-     - filesFound.matched > 0
 
- - name: delete file if present
+ - name: Delete downloads folder from syncthing home
    file:
      path: /var/lib/syncthing/downloads
      state: absent
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: shell
-   shell: xmlstarlet ed --inplace -u "configuration/folder[@id="pulsemaster_downloads"]/@path" -v "/var/lib/pulse2/clients" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: Change path to downloads folder in syncthing config file
+   shell: xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_downloads']/@path" -v "/var/lib/pulse2/clients" /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: restarted syncthing@syncthing
+ - name: Restart syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: restarted
