@@ -1361,14 +1361,6 @@
      path: /var/lib/syncthing/pulsemaster_packages
      state: absent
 
- - name: create /var/lib/syncthing/pulsemaster_packages
-   file:
-     path: /var/lib/syncthing/pulsemaster_packages
-     state: directory
-     owner: syncthing
-     group: syncthing
-     mode: '0755'
-
  - name: create /var/lib/pulse2/packages
    file:
      path: /var/lib/pulse2/packages
@@ -1406,7 +1398,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-     seconds: 20
+     seconds: 30
 
  - name: Check if share is added
    shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
