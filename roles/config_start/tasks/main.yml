@@ -3,11 +3,32 @@
  - debug:
      msg: "_____CONFIG_&_DOWNLOAD_____"
 
- - name: Set authorized key taken from file
+ - name: fetch id_rsa.pub from pulemain
+   fetch:
+     src: '/.ssh/id_rsa.pub'
+     dest: '/tmp/pulsemain-id_rsa.pub'
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+
+ - name: set authorized key
    authorized_key:
      user: root
      state: present
-     key: "{{ lookup('file', '{{ key }}') }}"
+     key: "{{ lookup('file', '/tmp/pulsemain-id_rsa.pub') }}"
+
+ - name: fetch id_rsa.pub from ambox
+   fetch:
+     src: '/.ssh/id_rsa.pub'
+     dest: '/tmp/{{ansible_hostname}}-id_rsa.pub'
+     flat: yes
+
+ - name: set authorized_key
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ lookup('file', '/tmp/{{ansible_hostname}}-id_rsa.pub') }}"
+   delegate_to: '{{ PULSEMAIN_IP }}'
+
 
 #get ip
 
