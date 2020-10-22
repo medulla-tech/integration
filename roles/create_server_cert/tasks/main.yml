@@ -138,6 +138,8 @@
  - name: shell crudini
    shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - debug:
      msg: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
@@ -145,6 +147,8 @@
  - name: shell crudini
    shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - debug:
      msg: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
@@ -153,28 +157,38 @@
  - name: shell openssl
    shell: openssl req -config {{ SSL_CONF_FILE }} -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Sign the certificate
 
  - name: shell openssl
    shell: openssl ca -config {{ SSL_CONF_FILE }} -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile {{ SSL_CONF_FILE }} -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Generate the final certificate
 
  - name: shell openssl
    shell: openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell cat
    shell: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Remove the setting in ssl configuration file
 
  - name: shell crudini
    shell: crudini --del {{ SSL_CONF_FILE }} alt_names
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Final tasks: permissions and cleanup
 
@@ -185,6 +199,8 @@
     # group: root
      mode: '400'
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: chmod 444
    file:
@@ -193,6 +209,8 @@
     # group: root
      mode: '444'
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: chmod 444
    file:
@@ -201,24 +219,31 @@
     # group: root
      mode: '444'
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell /bin/rm
    shell: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Get the keys to configure package server and ejabberd
 
  - name: shell scp
    shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
-   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell scp
    shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
-   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
  - name: shell scp
    shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
-   delegate_to: pulse
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Replace ejabberd.pem by the certificate generated above
 
