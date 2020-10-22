@@ -3,9 +3,9 @@
  - debug:
      msg: "_____CONFIG_&_DOWNLOAD_____"
 
- - name: fetch id_rsa.pub from pulemain
+ - name: fetch id_rsa.pub from pulsemain
    fetch:
-     src: '/.ssh/id_rsa.pub'
+     src: '/root/.ssh/id_rsa.pub'
      dest: '/tmp/pulsemain-id_rsa.pub'
      flat: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -18,7 +18,7 @@
 
  - name: fetch id_rsa.pub from ambox
    fetch:
-     src: '/.ssh/id_rsa.pub'
+     src: '/root/.ssh/id_rsa.pub'
      dest: '/tmp/{{ansible_hostname}}-id_rsa.pub'
      flat: yes
 
