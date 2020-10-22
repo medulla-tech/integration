@@ -1356,9 +1356,9 @@
 
 ##########################################################
 
- - name: delete /var/lib/syncthing/pulsemaster_packages if present
+ - name: delete /var/lib/syncthing/packages if present
    file:
-     path: /var/lib/syncthing/pulsemaster_packages
+     path: /var/lib/syncthing/packages
      state: absent
 
  - name: create /var/lib/pulse2/packages
@@ -1398,7 +1398,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-     seconds: 30
+     seconds: 20
 
  - name: Check if share is added
    shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
@@ -1441,13 +1441,13 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: Move packages folder from syncthing home
-   command: mv /var/lib/syncthing/pulsemaster_packages/.st*  /var/lib/pulse2/packages/
+   command: mv /var/lib/syncthing/packages/.st*  /var/lib/pulse2/packages/
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: Delete packages folder from syncthing home
    file:
-     path: /var/lib/syncthing/pulsemaster_packages
+     path: /var/lib/syncthing/packages
      state: absent
    when:
      - XMPP_DOMAIN != 'pulse'
