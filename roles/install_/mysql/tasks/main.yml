@@ -67,45 +67,29 @@
  #     - ansible_distribution == "CentOS"
 
         #SECURE THE INSTALL
+ - name: delete dire
+   file:
+     path: /var/lib/mysql
+     state: absent
 
- - name: edit /.my.cnf
-   copy:
-     content: |
-       [mysql]
-       user={{ DBADMINUSER }}
-       password={{ DBADMINPASSWD }}
-     dest: /root/.my.cnf
-   when:
-     - ansible_distribution == "Debian"
+ - name: mysql_install_db
+   shell: mysql_install_db
+
+ - name: mysql_install_db
+   shell: "chown -R mysql: /var/lib/mysql/"
+
+ - name: restart mariadb
+   service:
+     name: mariadb
+     state: restarted
 
  - name: enabled centos password
    shell: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
    when:
      - ansible_distribution == "CentOS"
-     - ENABLE_CHANGE_PASS_CENT == 'true'
-
- - name: restart mariadb
-   service:
-     name: mariadb
-     state: restarted
 
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
-   shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ DBADMINPASSWD }}') WHERE User='{{ DBADMINUSER }}'" | mysql -u root -p{{ ROOT_PASSWORD }}
-
- - name: edit /.my.cnf
-   copy:
-     content: |
-       [mysql]
-       user={{ DBADMINUSER }}
-       password={{ DBADMINPASSWD }}
-     dest: /root/.my.cnf
-   when:
-     - ansible_distribution == "CentOS"
-
- - name: restart mariadb
-   service:
-     name: mariadb
-     state: restarted
+   shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ DBADMINPASSWD }}') WHERE User='{{ DBADMINUSER }}'" | mysql -u root -p{{ DBADMINPASSWD }}
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"
@@ -114,10 +98,10 @@
    shell: echo "DELETE FROM mysql.user WHERE User='{{ DBADMINUSER }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"
 
  - name: settings for mysql-server DELETE FROM mysql.user WHERE User=''"
-   shell: echo "DELETE FROM mysql.user WHERE User=''" | mysql -u {{ DBADMINUSER }} -p"{{ ROOT_PASSWORD }}"
+   shell: echo "DELETE FROM mysql.user WHERE User=''" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"
 
  - name: settings for mysql-server DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
-   shell: echo "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" | mysql -u {{ DBADMINUSER }} -p"{{ ROOT_PASSWORD }}"
+   shell: echo "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"
 
  - name: settings for mysql-server FLUSH PRIVILEGES
-   shell: echo "FLUSH PRIVILEGES" | mysql -u {{ DBADMINUSER }} -p"{{ ROOT_PASSWORD }}"
+   shell: echo "FLUSH PRIVILEGES" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"
