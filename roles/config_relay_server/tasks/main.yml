@@ -75,8 +75,19 @@
 # Copy manage_scheduler_relay from main pulse
 
 # Register master
- - name: copy manage_scheduler_relay.ini from pulsemain
-   shell: "scp {{ PULSEMAIN_IP }}:/etc/pulse-xmpp-agent/manage_scheduler_relay.ini /etc/pulse-xmpp-agent/manage_scheduler_relay.ini"
+ - name: fetch manage_scheduler_relay.ini from pulsemain
+   fetch:
+     src: "/etc/pulse-xmpp-agent/manage_scheduler_relay.ini"
+     dest: "/tmp/{{ansible_hostname}}-manage_scheduler_relay.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy manage_scheduler_relay.ini
+   copy:
+     src: "/tmp/{{ansible_hostname}}-manage_scheduler_relay.ini"
+     dest: "/etc/pulse-xmpp-agent/manage_scheduler_relay.ini"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -235,8 +246,19 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -274,8 +296,19 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -313,8 +346,19 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -352,8 +396,19 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo scp
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -379,8 +434,19 @@
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_VNC_PORT != ''
 
- - name: echo scp
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
@@ -406,8 +472,19 @@
      - XMPP_DOMAIN == 'pulse'
      - REVERSE_SSH_PORT != ''
 
- - name: echo scp
-   shell: 'scp {{ PULSEMAIN_IP }}:{{ PLUGIN_CONFIG_FILE }} {{ PLUGIN_CONFIG_FILE }}'
+ - name: fetch {{ PLUGIN_CONFIG_FILE }} from pulsemain
+   fetch:
+     src: "{{ PLUGIN_CONFIG_FILE }}"
+     dest: "/tmp/{{ansible_hostname}}-temp.ini"
+     flat: yes
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ PLUGIN_CONFIG_FILE }}
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.ini"
+     dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 

@@ -208,17 +208,35 @@
 
 # Get the keys to configure package server and ejabberd
 
- - name: shell scp
-   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
+ - name: fetch /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem from pulsemain
+   fetch:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "/tmp/{{ansible_hostname}}-temp.pem"
+     flat: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
- - name: shell scp
-   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
-   delegate_to: '{{ PULSEMAIN_IP }}'
+ - name: copy {{ SERVER_FQDN }}.pem to /etc/mmc/pulse2/package-server/keys/cacert.pem
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.pem"
+     dest: "/etc/mmc/pulse2/package-server/keys/cacert.pem"
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
- - name: shell scp
-   shell: scp {{ PULSEMAIN_IP }}:/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
-   delegate_to: '{{ PULSEMAIN_IP }}'
+ - name: copy {{ SERVER_FQDN }}.pem to /etc/mmc/pulse2/package-server/keys/privkey.pem
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.pem"
+     dest: "/etc/mmc/pulse2/package-server/keys/privkey.pem"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: copy {{ SERVER_FQDN }}.pem to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   copy:
+     src: "/tmp/{{ansible_hostname}}-temp.pem"
+     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+   when:
+     - XMPP_DOMAIN != 'pulse'
 
 # Replace ejabberd.pem by the certificate generated above
 
