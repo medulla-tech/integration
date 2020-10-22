@@ -1365,6 +1365,8 @@
    file:
      path: /var/lib/syncthing/pulsemaster_packages
      state: directory
+     owner: syncthing
+     group: syncthing
      mode: '0755'
 
  - name: create /var/lib/pulse2/packages
