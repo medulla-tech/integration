@@ -72,11 +72,11 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
-# Copy manage_scheduler from main pulse
+# Copy manage_scheduler_relay from main pulse
 
 # Register master
- - name: copy manage_scheduler.ini from pulsemain
-   shell: "scp {{ PULSEMAIN_IP }}:/etc/pulse-xmpp-agent/manage_scheduler.ini /etc/pulse-xmpp-agent/manage_scheduler.ini"
+ - name: copy manage_scheduler_relay.ini from pulsemain
+   shell: "scp {{ PULSEMAIN_IP }}:/etc/pulse-xmpp-agent/manage_scheduler_relay.ini /etc/pulse-xmpp-agent/manage_scheduler_relay.ini"
    when:
      - XMPP_DOMAIN != 'pulse'
 
