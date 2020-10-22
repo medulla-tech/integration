@@ -71,30 +71,4 @@
      - GLPI_ENTITY_ID: ''
 
    roles:
-
-#INSTALL_MULTSITE_DEPENDENCIES
-#     - config_repo_pulse
-     - config_start
-#
-#INSTALL_MULTSITE_DEPENDENCIES
-     - install_/apache2_php
-     - install_/php
-#
-#INSTALL_MULTSITE
-     - install_/multisite
-#
-#INSTALL_MULTSITE_DEPENDENCIES_AGAIN
-     - install_/mysql
-     - install_/xmpp
-     - config_/xmpp
-     - install_/guacamole
-     - config_/guacamole
-     - install_/syncthing
-     - config_/syncthing
-     - config_/syncthing_share_packages
-     - config_/syncthing_share_baseremoteagent
-     - config_/syncthing_share_downloads
-     - config_/syncthing_depl
-     - config_/ssh_server
-     - config_relay_server
-     - create_server_cert
+     - pulse4ambx
