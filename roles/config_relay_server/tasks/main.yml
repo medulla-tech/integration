@@ -659,11 +659,6 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('monitoring', 'master_mon@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   when:
-     - XMPP_DOMAIN == 'pulse'
-
 # ------------
 #DLEGATE TO
 
@@ -697,13 +692,6 @@
 
  - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-     - ansible_distribution == "CentOS"
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('monitoring', 'master_mon@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
