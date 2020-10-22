@@ -1356,14 +1356,14 @@
 
 ##########################################################
 
- - name: delete /var/lib/syncthing/packages if present
+ - name: delete /var/lib/syncthing/pulsemaster_packages if present
    file:
-     path: /var/lib/syncthing/packages
+     path: /var/lib/syncthing/pulsemaster_packages
      state: absent
 
- - name: create /var/lib/syncthing/packages
+ - name: create /var/lib/syncthing/pulsemaster_packages
    file:
-     path: /var/lib/syncthing/packages
+     path: /var/lib/syncthing/pulsemaster_packages
      state: directory
      mode: '0755'
 
@@ -1447,13 +1447,13 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: Move packages folder from syncthing home
-   command: mv /var/lib/syncthing/packages/.st*  /var/lib/pulse2/packages/
+   command: mv /var/lib/syncthing/pulsemaster_packages/.st*  /var/lib/pulse2/packages/
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: Delete packages folder from syncthing home
    file:
-     path: /var/lib/syncthing/packages
+     path: /var/lib/syncthing/pulsemaster_packages
      state: absent
    when:
      - XMPP_DOMAIN != 'pulse'
