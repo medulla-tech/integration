@@ -28,7 +28,7 @@
      - ansible_distribution != "CentOS"
 
  - name: DROP DATABASE
-   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot -p{{ ROOT_PASSWORD }}'
+   shell: 'echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot -p{{ DBADMINPASSWD }}'
    when:
      - ansible_distribution == "CentOS"
 
@@ -40,12 +40,12 @@
      - ansible_distribution != "CentOS"
 
  - name: DROP USER
-   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u root -p{{ ROOT_PASSWORD }}
+   shell: echo "DELETE FROM mysql.user WHERE user='guacamole';" | mysql -u root -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
  - name: DROP USER
-   shell: echo "FLUSH PRIVILEGES;" | mysql -u root -p{{ ROOT_PASSWORD }}
+   shell: echo "FLUSH PRIVILEGES;" | mysql -u root -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -57,19 +57,19 @@
      - ansible_distribution != "CentOS"
 
  - name: CREATE DATABASE
-   shell: echo "CREATE DATABASE guacamole;" | mysql -u root -p{{ ROOT_PASSWORD }}
+   shell: echo "CREATE DATABASE guacamole;" | mysql -u root -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
 #create user
 
  - name: CREATE USER
-   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -uroot
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}';" | mysql -uroot
    when:
      - ansible_distribution != "CentOS"
 
  - name: CREATE USER
-   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}';" | mysql -u root -p{{ ROOT_PASSWORD }}
+   shell: echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}';" | mysql -u root -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -81,7 +81,7 @@
      - ansible_distribution != "CentOS"
 
  - name: GRANT
-   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u root -p{{ ROOT_PASSWORD }}
+   shell: echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -u root -p{{ DBADMINPASSWD }}
    when:
      - ansible_distribution == "CentOS"
 
@@ -232,7 +232,7 @@
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"" /etc/tomcat/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/tomcat/server.xml
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == "CentOS"
@@ -246,7 +246,7 @@
 
  - name: shell
    shell: |
-     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"" /etc/tomcat/server.xml
+     xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/tomcat/server.xml
    when:
      - INSTALL_TYPE != "p"
      - ansible_distribution == "CentOS"
