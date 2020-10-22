@@ -1341,7 +1341,7 @@
      - XMPP_DOMAIN != 'pulse'
 
  - pause:
-   seconds: 20
+     seconds: 20
    when:
      - SHARE_CONFIGURED == '1'
      - XMPP_DOMAIN != 'pulse'
