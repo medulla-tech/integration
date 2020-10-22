@@ -570,9 +570,9 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: set MAX_ID
-   set_fact:
-     MAX_ID: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+ - name: get MAX_ID
+   shell: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   register: maxid
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -580,7 +580,7 @@
 
  - name: set CLUSTER_ID
    set_fact:
-     CLUSTER_ID: "{{ MAX_ID | int + 1 }}"
+     CLUSTER_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
@@ -595,9 +595,24 @@
 ##_config_relay_server
 # Add the relayserver to the cluster
 
- - name: set MAX_ID
+ - name: get MAX_ID
+   shell: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   register: maxid
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
+
+ - name: set NEXT_ID
    set_fact:
-     MAX_ID: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+     NEXT_ID: "{{ maxid.stdout | int + 1 }}"
+   when:
+     - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
+
+ - name: get RELAYSERVER_ID
+   shell: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   register: relayserverid
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -605,14 +620,13 @@
 
  - name: set RELAYSERVER_ID
    set_fact:
-     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
+     RELAYSERVER_ID: "{{ relayserverid.stdout }}"
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
  - name: insert into has_cluster_ars
-   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID | int + 1 }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -620,95 +634,76 @@
 
 # Create the substitutes configuration rules
 
- - name: set RELAYSERVER_ID
-   set_fact:
-     RELAYSERVER_ID: echo 'SELECT count(*) FROM relayserver;' | mysql -s xmppmaster
-   when:
-     - XMPP_DOMAIN == 'pulse'
-   notify:
-     - pulse-xmpp-agent-relay restart
-     - pause
-     - set RELAY_CONFIGURED
-
- - name: echo
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: echo
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: echo
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: echo
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: echo
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: create substituteconf records
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('monitoring', 'master_mon@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # ------------
 #DLEGATE TO
 
- - name: set RELAYSERVER_ID
-   set_fact:
-     RELAYSERVER_ID: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell RELAYSERVER_ID
-   shell: '{{ RELAYSERVER_ID }}'
-   register: relayserverid
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: set RELAYSERVER_ID
-   set_fact:
-     RELAYSERVER_ID: '{{ relayserverid.stdout }}'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: shell mysql command
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: shell mysql command
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: shell mysql command
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: shell mysql command
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: shell mysql command
+ - name: create substituteconf records
    shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+     - ansible_distribution == "CentOS"
+
+ - name: create substituteconf records
+   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('monitoring', 'master_mon@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
