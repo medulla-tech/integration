@@ -1409,7 +1409,6 @@
  - name: Check if share is added
    shell: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: xmlout
-   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
