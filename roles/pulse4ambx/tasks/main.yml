@@ -1448,11 +1448,6 @@
      - XMPP_DOMAIN != 'pulse'
 
  - name: Move packages folder from syncthing home
-   command: mv /var/lib/syncthing/packages/*  /var/lib/pulse2/packages/
-   when:
-     - XMPP_DOMAIN != 'pulse'
-
- - name: Move packages folder from syncthing home
    command: mv /var/lib/syncthing/packages/.st*  /var/lib/pulse2/packages/
    when:
      - XMPP_DOMAIN != 'pulse'
