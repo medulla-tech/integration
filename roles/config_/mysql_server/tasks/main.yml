@@ -1,16 +1,9 @@
 ---
 
- - name: test
-   shell: 'echo "SET GLOBAL event_scheduler = ON" | mysql -uroot'
+ - name: set event_scheduler on
+   shell: 'echo "SET GLOBAL event_scheduler = ON" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }}'
    when:
-     - ansible_distribution == "Debian"
-
- - name: Check for event_scheduler setting
-   lineinfile:
-     line: "event_scheduler = ON"
-     dest: /root/.my.cnf
-   when:
-     - ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: creat 99-pulse.cnf
    file:
@@ -18,6 +11,7 @@
      path: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -25,6 +19,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -32,6 +27,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -39,6 +35,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -46,6 +43,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -53,6 +51,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -60,6 +59,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -67,6 +67,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -74,6 +75,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -81,6 +83,7 @@
      dest: /etc/mysql/mariadb.conf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Debian"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: Create pulse-99.cnf
    file:
@@ -88,6 +91,7 @@
      state: touch
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -95,6 +99,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -102,6 +107,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -109,6 +115,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -116,6 +123,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -123,6 +131,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -130,6 +139,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -137,6 +147,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -144,6 +155,7 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
 
  - name: copy data
    lineinfile:
@@ -151,3 +163,4 @@
      dest: /etc/my.cnf.d/99-pulse.cnf
    when:
      - ansible_distribution == "Mageia" or ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
+     - XMPP_DOMAIN == 'pulse'
