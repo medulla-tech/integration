@@ -3,10 +3,16 @@
  - debug:
      msg: "_____CONFIG_&_DOWNLOAD_____"
 
+ - name: verify if ssh key exist
+   stat:
+     path: /root/.ssh/id_rsa.pub
+   register: sshkey
+
  - name: generate ssh keys
    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
    when:
      - XMPP_DOMAIN != 'pulse'
+     - not sshkey.stat.exists
 
  - name: fetch id_rsa.pub from pulsemain
    fetch:
