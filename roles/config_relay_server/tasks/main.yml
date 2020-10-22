@@ -609,7 +609,7 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: set SSH_COMMAND
+ - name: insert into cluster_ars
    shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ MULTISITE_ENTITY }}// /_','{{ MULTISITE_ENTITY }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
@@ -677,7 +677,7 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: set SSH_COMMAND
+ - name: insert into has_cluster_ars
    shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ MAX_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
@@ -783,31 +783,15 @@
 
 # Enable autoupdate by relay servers
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
+ - name: crudini set autoupdatebyrelay
+   shell: 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: shell
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-     - ansible_distribution == "CentOS"
-
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - XMPP_DOMAIN != 'pulse'
-     - ansible_distribution == "CentOS"
-
- - name: shell
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+ - name: crudini set autoupdatebyrelay
+   shell: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
