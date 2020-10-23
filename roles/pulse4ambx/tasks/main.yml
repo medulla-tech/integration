@@ -3301,8 +3301,8 @@
  - debug:
      msg: "______________________________"
 
- - name: 
-   shell: [ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
+ - name: Add compress and delaycompess lines in pulse-xmpp-agent-relay logrotate file
+   shell: '[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed "/^}$/i  \    compress\n    delaycompress" -i /etc/logrotate.d/pulse-xmpp-agent-relay'
 
 #######################################################
  - debug:
@@ -3319,7 +3319,7 @@
 
  - name: copy /var/lib/pulse2/packages/ to /telediffusion/4
    copy:
-     src: {{ item.src }}
+     src: '{{ item.src }}'
      dest: /telediffusion/4
    with_items:
      - /var/lib/pulse2/packages/*
