@@ -581,7 +581,7 @@
  - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
    lineinfile:
      line: 'GUACAMOLE_HOME=/etc/guacamole'
-     path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
+     path: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
@@ -589,7 +589,7 @@
  - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
    lineinfile:
      line: '# Guacamole env variable'
-     path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
+     path: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
