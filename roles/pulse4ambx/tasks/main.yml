@@ -116,7 +116,7 @@
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
- - name: Create a directory if it does not exist
+ - name: Create a directory /etc/systemd/system/httpd.service.d if it does not exist
    file:
      path: /etc/systemd/system/httpd.service.d
      state: directory
@@ -124,7 +124,7 @@
    when:
      - ansible_distribution == "CentOS"
 
- - name: Create nopt.conf
+ - name: Create /etc/systemd/system/httpd.service.d/nopt.conf
    file:
      path: /etc/systemd/system/httpd.service.d/nopt.conf
      state: touch
@@ -132,7 +132,8 @@
    when:
      - ansible_distribution == "CentOS"
 
- - copy:
+ - name: copy [Service]\nPrivateTmp=false in /etc/systemd/system/httpd.service.d/nopt.conf
+   copy:
      content: "[Service]\nPrivateTmp=false"
      dest: /etc/systemd/system/httpd.service.d/nopt.conf
    when:
@@ -140,7 +141,7 @@
 
         #SERVICES RESTART
 
- - name: shell daemon-reload
+ - name: systemctl daemon-reload
    shell: systemctl daemon-reload
 
  - name: restart apache2
@@ -168,7 +169,7 @@
      msg: "___________________________"
 
        #INSTALL PHP
- - name: desinstall_php_mysql
+ - name: uninstall_php_mysql
    yum:
      update_cache: yes
      pkg:
@@ -258,7 +259,7 @@
 
         #SERVICES RESTART
 
- - name: enabled php-fpm cent
+ - name: enabled php-fpm
    systemd:
      enabled: yes
      name: php-fpm
@@ -272,7 +273,8 @@
    when:
      - ansible_distribution == "CentOS"
 
- - set_fact:
+ - name: set V_PHP_TEST_CENT (version of php in variable)
+   set_fact:
      V_PHP_TEST_CENT: "{{ version.stdout }}"
    when:
      - ansible_distribution == "CentOS"
@@ -285,7 +287,7 @@
  - debug:
      msg: "___________________________"
 
- - name: install_multisite_cent
+ - name: install_multisite_cent (package pulse-xmpp-agent-relay)
    yum:
      name: "{{ packages_cent }}"
      update_cache: yes
@@ -304,7 +306,7 @@
  - debug:
      msg: "___________________________"
 
- - name: install_mysql_rh
+ - name: install_mysql
    yum:
      update_cache: yes
      state: latest
@@ -315,7 +317,7 @@
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
- - name: start mysqld rh
+ - name: start mysqld
    systemd:
      name: mariadb
      state: started
@@ -324,7 +326,7 @@
 
         #SECURE THE INSTALL
 
- - name: delede dir
+ - name: delede /var/lib/mysql
    file:
      path: /var/lib/mysql
      state: absent
@@ -332,10 +334,10 @@
  - name: mysql_install_db
    shell: mysql_install_db
 
- - name: chown
+ - name: chown -R mysql: /var/lib/mysql/
    shell: "chown -R mysql: /var/lib/mysql/"
 
- - name: restart service
+ - name: restart service mariadb
    service:
      name: mariadb
      state: restarted
@@ -370,12 +372,12 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
 
- - name: start auto ejabberd
+ - name: enable ejabberd
    service:
      name: ejabberd
      enabled: yes
@@ -387,7 +389,7 @@
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
- - name: usermod rhel ejabberd
+ - name: usermod rhel ejabberd -d /var/lib/ejabberd
    shell: "usermod ejabberd -d /var/lib/ejabberd"
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
@@ -399,17 +401,17 @@
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
- - name: usermod rhel or Mageia ejabberd
+ - name: sed -i /etc/ejabberd/ejabberd.yml usermod ejabberd
    shell: 'sed -i "s/localhost/{{ XMPP_DOMAIN }}/" /etc/ejabberd/ejabberd.yml'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
- - name: usermod rhel or Mageia ejabberd
+ - name: sed -i /etc/ejabberd/ejabberd.yml usermod ejabberd
    shell: 'sed -i "/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - "root@{{ XMPP_DOMAIN }}"" /etc/ejabberd/ejabberd.yml'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
- - name: usermod rhel or Mageia ejabberd
+ - name: sed -i /etc/ejabberd/ejabberd.yml usermod ejabberd
    shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
@@ -432,7 +434,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
@@ -441,7 +443,7 @@
      name: ejabberd
      state: stopped
 
- - name: shell
+ - name: shell /bin/rm -rf /var/lib/ejabberd/*
    shell: "/bin/rm -rf /var/lib/ejabberd/*"
 
 # else Debian
@@ -458,12 +460,12 @@
    when:
      - ansible_distribution != "Debian"
 
- - name: shell
+ - name: shell /bin/cp -fv /var/lib/ejabberd/.erlang.cookie /root/.erlang.cookie
    shell: "/bin/cp -fv /var/lib/ejabberd/.erlang.cookie /root/.erlang.cookie"
    when:
      - ansible_distribution != "Debian"
 
- - name: Change file ownership, group
+ - name: Change file ownership, group of /root/.erlang.cookie
    file:
      path: /root/.erlang.cookie
      owner: root
@@ -476,7 +478,7 @@
    when:
      - ansible_distribution != "Debian"
 
- - name: ejabctl register master
+ - name: ejabctl register master root
    shell: ejabberdctl register root {{ XMPP_DOMAIN }} "{{ ROOT_PASSWORD }}"
    when:
      - ansible_distribution != "Debian"
@@ -488,7 +490,7 @@
 
     # Configure a few details
 
- - name: shell multiline sed -i
+ - name: shell multiline sed -i /etc/ejabberd/ejabberd.yml
    shell: |
     sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
@@ -503,7 +505,7 @@
     sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
 
- - name: shell multiline sed -i
+ - name: shell multiline sed -i /etc/ejabberd/ejabberd.yml
    shell: |
     sed -i '/^[[:space:]]*subject.*/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
     sed -i  '/^[[:space:]]*body.*/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
@@ -513,7 +515,7 @@
 
     # Add the necessary modules
 
- - name: shell multiline sed -i
+ - name: shell multiline sed -i /etc/ejabberd/ejabberd.yml
    shell: |
     sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
@@ -534,7 +536,7 @@
  - debug:
      msg: "___________________________"
 
- - name: Install packages
+ - name: Install packages for guacamole
    yum:
      pkg:
        - guacamole
@@ -556,33 +558,38 @@
    when:
      - ansible_distribution == "CentOS"
 
- - set_fact:
+ - name: set version of tomcat in V_TOMCAT_TEST_CENT
+   set_fact:
      V_TOMCAT_TEST_CENT: "{{ versionTC.stdout }}"
    when:
      - ansible_distribution == "CentOS"
 
 #RHEL or CentOS
- - name: Check that the tomcat exists
+ - name: Check if /etc/default/{{ V_TOMCAT_TEST_CENT }} exist
    stat:
      path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
    register: stat_result
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
- - name: after Check
+ - name: after Check echo "" in /etc/default/{{ V_TOMCAT_TEST_CENT }}
    shell: 'echo "" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
 
- - name: after CheckS
-   shell: 'echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
+ - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
+   lineinfile:
+     line: 'GUACAMOLE_HOME=/etc/guacamole'
+     path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
 
- - name: after Check
-   shell: 'echo "# Guacamole env variable" >> /etc/default/{{ V_TOMCAT_TEST_CENT }}'
+ - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
+   lineinfile:
+     line: '# Guacamole env variable'
+     path: /etc/default/{{ V_TOMCAT_TEST_CENT }}
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
@@ -626,7 +633,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
@@ -634,11 +641,12 @@
    set_fact:
      GUACAMOLE_ROOT_PASSWORD: 'pwgen --secure 40 1'
 
- - stat:
+ - name: check if /etc/guacamole/guacamole.properties.bak exist
+   stat:
      path: /etc/guacamole/guacamole.properties.bak
    register: stfile
 
- - name: shell
+ - name: shell /bin/cp /etc/guacamole/guacamole.properties /etc/guacamole/guacamole.properties.bak
    shell: "/bin/cp /etc/guacamole/guacamole.properties /etc/guacamole/guacamole.properties.bak"
    when: stfile.stat.isreg is not defined
 
@@ -700,18 +708,20 @@
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql;"
    when: ansible_distribution_major_version != '8'
 
- - name: SET
+ - name: SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}'
    shell: echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole
 
- - stat:
+ - name: check if /etc/guacamole/guacamole.properties.bak is defined
+   stat:
      path: /etc/guacamole/guacamole.properties.bak
    register: stfiletwo
 
- - name: shell
+ - name: shell /bin/cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties
    shell: "/bin/cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties"
    when: stfiletwo.stat.isreg is defined
 
- - stat:
+ - name: check if /etc/guacamole/lib is defined
+   stat:
      path: /etc/guacamole/lib
    register: std
 
@@ -723,7 +733,7 @@
      - stfiletwo.stat.isdir is defined
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
- - name: shell
+ - name: shell /bin/cp -f /usr/share/java/mysql-connector-java.jar /etc/guacamole/lib/
    shell: "/bin/cp -f /usr/share/java/mysql-connector-java.jar /etc/guacamole/lib/"
    when:
      - stfiletwo.stat.isdir is defined
@@ -732,21 +742,21 @@
 
 #wirte in file guacamole.properties
 
- - name: shell
+ - name: shell sed -i in /etc/guacamole/guacamole.properties
    shell: "sed -i '/^basic-user-mapping.*$/d' /etc/guacamole/guacamole.properties"
 
- - name: shell
+ - name: shell sed -i in /etc/guacamole/guacamole.properties
    shell: "sed -i '/^mysql-.*$/d' /etc/guacamole/guacamole.properties"
 
- - name: shell
+ - name: shell sed -i in /etc/guacamole/guacamole.properties
    shell: "sed -i '/^lib-directory:.*$/d' /etc/guacamole/guacamole.properties"
 
- - name: shell
+ - name: shell sed -i in /etc/guacamole/guacamole.properties
    shell: "sed -i '/^noauth-config:.*$/d' /etc/guacamole/guacamole.properties"
 
 # wite in file /etc/guacamole/guacamole.properties for all
 
- - name: write in file
+ - name: write mysql parameters in file /etc/guacamole/guacamole.properties
    lineinfile:
      dest: /etc/guacamole/guacamole.properties
      line: '{{ item }}'
@@ -762,19 +772,19 @@
 
     # Setup Tomcat
 
- - name: shell
+ - name: shell sed -i in /etc/tomcat/server.xml
    shell: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat/server.xml
    when:
      - ansible_distribution == "CentOS"
 
- - name: shell
+ - name: shell xmlstarlet /etc/tomcat/server.xml
    shell: |
      xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/tomcat/server.xml
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == "CentOS"
 
- - name: shell
+ - name: shell xmlstarlet /etc/tomcat/server.xml
    shell: |
      xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/tomcat/server.xml
    when:
@@ -803,13 +813,17 @@
    when:
      - INSTALL_TYPE == "p"
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname -f
    set_fact:
      HOSTNAME_F: '{{ hostout.stdout }}'
    when:
      - INSTALL_TYPE == "p"
 
- - name: copy
+ - name: set xmppDomain to hostname -f
+   set_fact:
+     GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole.conf'
+
+ - name: copy <Location /guacamole/>... and <Location /guacamole/websocket-tunnel> in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      content: |
         <Location /guacamole/>
@@ -835,7 +849,7 @@
      - ansible_distribution == "CentOS"
      - INSTALL_TYPE == "p"
 
- - name: a2enconf
+ - name: a2enconf guacamole.conf
    shell: 'a2enconf guacamole.conf'
    when:
      - ansible_distribution == "CentOS"
@@ -852,7 +866,7 @@
    register: file_details
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: Setup Apache write in {{ GUACAMOLE_APACHE_PATH }}
+ - name: copy <Location /guacamole-{{ XMPP_DOMAIN }}/>... and <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>... in {{ GUACAMOLE_APACHE_PATH }}
    copy:
      content: |
         <Location /guacamole-{{ XMPP_DOMAIN }}/>
@@ -873,7 +887,7 @@
             ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
-     dest: '/etc/httpd/conf.d/guacamole.conf'
+     dest: '{{ GUACAMOLE_APACHE_PATH }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
@@ -881,12 +895,12 @@
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
      - file_details.stat.exists
 
- - name: Check if Service Exists
+ - name: Check if Service httpd Exists
    stat: path=/etc/init.d/httpd
    register: service_status
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: restart systemdctl apache
+ - name: restart apache
    systemd:
      name: httpd
      state: restarted
@@ -909,7 +923,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      SERVER: "{{ result.stdout }}"
 
@@ -924,29 +938,29 @@
 
      # Delete syncthing folders if already present
 
- - name: Remove file (delete file)
+ - name: Remove file (delete file) /var/lib/syncthing/.config
    file:
      path: /var/lib/syncthing/.config
      state: absent
 
- - name: Remove file (delete file)
+ - name: Remove file /var/lib/syncthing/Sync
    file:
      path: /var/lib/syncthing/Sync
      state: absent
 
- - name: Remove file (delete file)
+ - name: Remove file /var/lib/syncthing-depl/.config
    file:
      path: /var/lib/syncthing-depl/.config
      state: absent
 
- - name: Remove file (delete file)
+ - name: Remove file /var/lib/syncthing-depl/Sync
    file:
      path: /var/lib/syncthing-depl/Sync
      state: absent
 
      # Create a syncthing unprivileged account for general synch
 
- - name: useradd syncthing
+ - name: Create a syncthing unprivileged account for general synch with home /var/lib/syncthing
    user:
      name: syncthing
      state: present
@@ -955,12 +969,12 @@
      shell: /bin/false
      system: yes
 
- - name: Make sure a service is running
+ - name: Make sure a service is running syncthing@syncthing
    systemd:
      enabled: yes
      name: syncthing@syncthing.service
 
- - name: Make service restarted
+ - name: Make syncthing@syncthing restarted
    systemd:
      state: restarted
      name: syncthing@syncthing.service
@@ -971,7 +985,7 @@
 
      # Create a syncthing unprivileged account for deployment
 
- - name: useradd syncthing
+ - name: Create a syncthing unprivileged account for deployment with home /var/lib/syncthing-depl
    user:
      name: syncthing-depl
      state: present
@@ -980,12 +994,12 @@
      shell: /bin/false
      system: yes
 
- - name: Make sure a service is running
+ - name: Make sure a syncthing@syncthing-depl is running
    systemd:
      enabled: yes
      name: syncthing@syncthing-depl.service
 
- - name: Make service restarted
+ - name: Make syncthing@syncthing-depl restarted
    systemd:
      state: restarted
      name: syncthing@syncthing-depl.service
@@ -996,10 +1010,10 @@
 
 # Create a backup of the config files
 
- - name: create backup
+ - name: create backup /bin/cp /var/lib/syncthing/.config/syncthing/config.xml /var/lib/syncthing/.config/syncthing/config.xml.orig
    shell: "/bin/cp /var/lib/syncthing/.config/syncthing/config.xml /var/lib/syncthing/.config/syncthing/config.xml.orig"
 
- - name: create backup
+ - name: create backup /bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig
    shell: "/bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig"
 
         #INSTALL SYNCTHING_MANAGER
@@ -1041,11 +1055,11 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: set LOCAL_DEVICE_ID
+ - name: set LOCAL_DEVICE_ID (config_syncthing)
    set_fact:
      LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
 
@@ -1065,7 +1079,7 @@
 
 # Configure Apache for syncthing
 
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
+ - name: Setup syncthing write <Location /syncthing/> in {{ SYNCTHING_APACHE_PATH }}
    copy:
      content: |
        ProxyPass /syncthing/ http://localhost:8384/
@@ -1090,7 +1104,7 @@
    when:
      - ansible_distribution != "Debian"
 
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
+ - name: Setup syncthing write <Location /syncthing-{{ XMPP_DOMAIN }}/> in {{ SYNCTHING_APACHE_PATH }}
    lineinfile:
      dest: '{{ SYNCTHING_APACHE_PATH }}'
      line: '{{ item }}'
@@ -1108,13 +1122,13 @@
 
 ## for Rhel
 
- - name: Ansible check file exists example.
+ - name: check if /etc/httpd/conf.d exist
    stat:
      path: /etc/httpd/conf.d
    register: file_details
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: Setup syncthing write in {{ SYNCTHING_APACHE_PATH }}
+ - name: Setup syncthing write <Location /syncthing-{{ XMPP_DOMAIN }}/> in {{ SYNCTHING_APACHE_PATH }}
    copy:
      content: |
        ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
@@ -1129,12 +1143,12 @@
      - file_details.stat.exists
 
 
- - name: Check if Service Exists
+ - name: Check if Service httpd Exists
    stat: path=/etc/init.d/httpd
    register: service_status
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: reload systemd
+ - name: reload httpd
    systemd:
      name: httpd
      state: reloaded
@@ -1145,7 +1159,7 @@
 
 ## end delegate to
 
- - name: start syncthing
+ - name: start syncthing.discosrv
    systemd:
      name: syncthing.discosrv
      state: started
@@ -1154,7 +1168,7 @@
 
 # Stop syncthing service
 
- - name: stop syncthing
+ - name: stop syncthing@syncthing
    systemd:
      name: syncthing@syncthing
      state: stopped
@@ -1176,7 +1190,7 @@
    when:
      - XMPP_DOMAIN != "pulse"
 
- - name: set PULSEMAIN_DEVICE_ID
+ - name: set PULSEMAIN_DEVICE_ID (config_syncthing - delagate_to pulsemain)
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1225,7 +1239,7 @@
 
     # Configure syncthingmanager
 
- - name: get apikey
+ - name: set apikey
    set_fact:
      API_KEY: '$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)'
 
@@ -1234,13 +1248,13 @@
 
 # Change the name to use the same as the XMPP domain
 
- - name: stman device edit
+ - name: stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
    shell: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
 
     # Add device to pool if relay server
     # Add device to pool on pulsemain
 
- - name: stman device add
+ - name: stman device add (config_syncthing - delagate_to pulsemain)
    shell: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
@@ -1263,7 +1277,7 @@
 
 # Add pulsemain to local pool
 
- - name: stman device add
+ - name: stman device add --name --address --introducer (Add pulsemain to local pool)
    shell: stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -1289,7 +1303,7 @@
 
     # Delete the default share
 
- - name: stman folder remove
+ - name: stman folder remove "Default Folder"'
    shell: 'stman folder remove "Default Folder"'
 
 #######################################################
@@ -1304,7 +1318,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
@@ -1375,10 +1389,10 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: setfacl on packages
+ - name: setfacl on packages (-Rdm g:syncthing:rwx /var/lib/pulse2/packages/)
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/packages/
 
- - name: setfacl on packages
+ - name: setfacl on packages (-Rm g:syncthing:rwx /var/lib/pulse2/packages/)
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
 
  - name: Create packages syncthing share on main pulse
@@ -1480,11 +1494,11 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: get local device-id
+ - name: get LOCAL_DEVICE_ID
    shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: localdeviceid
 
@@ -1553,10 +1567,10 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: setfacl on xmpp_baseremoteagent
+ - name: setfacl on xmpp_baseremoteagent (-Rdm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/)
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
 
- - name: setfacl on xmpp_baseremoteagent
+ - name: setfacl on xmpp_baseremoteagent (-Rm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/)
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/xmpp_baseremoteagent/
 
  - name: Create baseremoteagent syncthing share on main pulse
@@ -1658,11 +1672,11 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: get local device-id
+ - name: get LOCAL_DEVICE_ID
    shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: localdeviceid
 
@@ -1722,7 +1736,7 @@
      owner: syncthing
      group: syncthing
 
- - name: create file
+ - name: create file /var/lib/pulse2/clients/.stfolder if not present
    file:
      path: /var/lib/pulse2/clients/.stfolder
      state: directory
@@ -1730,21 +1744,21 @@
      owner: syncthing
      group: syncthing
 
- - name: write in .stignore
+ - name: write in /var/lib/pulse2/clients/.stignore
    copy:
      content: "config\ngenerate-*\nreversessh\n.generation_options"
      dest: /var/lib/pulse2/clients/.stignore
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: write in .stignore
+ - name: write in /var/lib/pulse2/clients/.stignore
    copy:
      content: "reversessh"
      dest: /var/lib/pulse2/clients/.stignore
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: chown
+ - name: chown syncthing /var/lib/pulse2/clients/.stignore
    shell: 'chown syncthing: /var/lib/pulse2/clients/.stignore'
 
  - name: install acl
@@ -1756,10 +1770,10 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: setfacl on clients
+ - name: setfacl on clients (-Rdm g:syncthing:rwx /var/lib/pulse2/clients/)
    shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/
 
- - name: setfacl on clients
+ - name: setfacl on clients (-Rm g:syncthing:rwx /var/lib/pulse2/clients/)
    shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/
 
  - name: Create baseremoteagent syncthing share on main pulse
@@ -1862,15 +1876,15 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
- - name: set LOCAL_DEVICE_ID
+ - name: get LOCAL_DEVICE_ID
    set_fact:
      LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
 
- - name: shell
+ - name: execute LOCAL_DEVICE_ID
    shell: '{{ LOCAL_DEVICE_ID }}'
    register: deviceid
 
@@ -1886,7 +1900,7 @@
 
     # Configure Apache for syncthing-depl
 
- - name: write in file
+ - name: write <Location /syncthing-depl/> in file set LOCAL_DEVICE_ID
    lineinfile:
      dest: '{{ SYNCTHING_APACHE_PATH }}'
      line: '{{ item }}'
@@ -1912,7 +1926,7 @@
    when:
      - ansible_distribution != "Debian"
 
- - name: Ansible check file exists example.
+ - name: check if /etc/httpd/conf.d exist
    stat:
      path: /etc/httpd/conf.d
    register: file_details
@@ -1920,7 +1934,7 @@
    when:
      - ansible_distribution == "CentOS"
 
- - name: write in file
+ - name: write <Location /syncthing-depl-{{ XMPP_DOMAIN }}/> in file {{ SYNCTHING_APACHE_PATH }}
    lineinfile:
      dest: '{{ SYNCTHING_APACHE_PATH }}'
      line: '{{ item }}'
@@ -1937,17 +1951,18 @@
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: Check if Service Exists
-   stat: path=/etc/init.d/apache2
+ - name: Check if Service apache2 Exists
+   stat:
+     path: /etc/init.d/apache2
    register: service_status
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: Check if Service Exists
+ - name: Check if Service httpd Exists
    stat: path=/etc/init.d/httpd
    register: service_status
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: set reload httpd
+ - name: reload httpd
    systemd:
      name: httpd
      state: reloaded
@@ -1968,13 +1983,13 @@
 
 # Use the local discovery server
 
- - name: set PULSEMAIN_DEVICE_ID
+ - name: get PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: 'syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id'
    when:
      - XMPP_DOMAIN == "pulse"
 
- - name:
+ - name: execute PULSEMAIN_DEVICE_ID
    shell: '{{ PULSEMAIN_DEVICE_ID }}'
    register: deviceid
    when:
@@ -1986,13 +2001,13 @@
    when:
      - XMPP_DOMAIN == "pulse"
 
- - name: shell
+ - name: xmlstarlet config global announce server syncthing
    shell: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://localhost:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
      - XMPP_DOMAIN == "pulse"
 
 # else
- - name: get device id
+ - name: get PULSEMAIN_DEVICE_ID
    shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: device
@@ -2005,7 +2020,7 @@
    when:
      - XMPP_DOMAIN != "pulse"
 
- - name: shell
+ - name: xmlstarlet configuration globalAnnounceServer syncthing-depl
    shell: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
      - XMPP_DOMAIN != "pulse"
@@ -2088,7 +2103,7 @@
 
 # Add pulsemain to local pool
 
- - name: stman device add
+ - name: stman device add --name --address --introducer
    shell: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
      - XMPP_DOMAIN != "pulse"
@@ -2114,7 +2129,7 @@
 
 # Delete the default share
 
- - name: stman folder remove
+ - name: stman folder remove "Default Folder"
    shell: 'stman -d depl folder remove "Default Folder"'
 
 # Update relay config
@@ -2123,10 +2138,10 @@
    set_fact:
      RELAY_CONFIG_FILE: '/etc/pulse-xmpp-agent/relayconf.ini.local'
 
- - name: shell
+ - name: shell crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_gui_apikey
    shell: 'crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_gui_apikey "{{ API_KEY }}"'
 
- - name: shell
+ - name: shell crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_gui_apikey
    shell: 'crudini --set {{ RELAY_CONFIG_FILE }} syncthing-deploy syncthing_device_id "{{ LOCAL_DEVICE_ID }}"'
 
  - name: system restart pulse-xmpp-agent-relay service
@@ -2227,7 +2242,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
@@ -2322,7 +2337,7 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: start Service
+ - name: start pulse-package-watching service
    service:
      name: pulse-package-watching
      state: started
@@ -2331,19 +2346,19 @@
 
 # Configuration of relayserver
 
- - name: relayserver crudini 1
+ - name: relayserver crudini connection server
    shell: crudini --set {{ RELAY_CONFIG_FILE }} connection server {{ IP_ADDRESS }}
 
- - name: relayserver crudini 2
+ - name: relayserver crudini connection password
    shell: crudini --set {{ RELAY_CONFIG_FILE }} connection password {{ MASTER_PASSWORD }}
 
- - name: relayserver crudini 3
+ - name: relayserver crudini type guacamole_baseurl
    shell: crudini --set {{ RELAY_CONFIG_FILE }} type guacamole_baseurl "{{ GUACAMOLE_BASEURL }}"
 
- - name: relayserver crudini 4
+ - name: relayserver crudini chat domain
    shell: crudini --set {{ RELAY_CONFIG_FILE }} chat domain {{ XMPP_DOMAIN }}
 
- - name: relayserver crudini 5
+ - name: relayserver crudini jid_01 jidname RS
    shell: crudini --set {{ RELAY_CONFIG_FILE }} jid_01 jidname RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a
 
  - name: relayserver if public_ip != ''
@@ -2353,46 +2368,87 @@
    when:
      - PUBLIC_IP != ''
 
- - name: relayserver
+ - name: relayserver crudini --set --list plugin pluginlist guacamoleconf
    shell: "crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamoleconf"
 
  - name: set RELAY_CONFIG_FILE
    set_fact:
      GUAC_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamoleconf.ini.local'
 
- - name: relayserver
+ - name: relayserver crudini --set  parameters guacamole_dbpasswd
    shell: "crudini --set {{ GUAC_CONFIG_FILE }} parameters guacamole_dbpasswd {{ ROOT_PASSWORD }}"
 
 # Update hosts file
 
 # Update local hosts file with pulse
+ - name: grep {{ IP_ADDRESS }} pulse /etc/hosts
+   shell: grep -cx "{{ IP_ADDRESS }} pulse" /etc/hosts
+   ignore_errors: yes
+   register: grepresult
+   when:
+     - XMPP_DOMAIN == 'pulse'
 
- - name: update local file
+ - name: set RES_GREP
+   set_fact:
+     RES_GREP: '{{ grepresult.stdout }}'
+   when:
+     - XMPP_DOMAIN == 'pulse'
+
+ - name: update local file /etc/hosts
    lineinfile:
      line: "{{ IP_ADDRESS }} pulse\n"
      dest: "/etc/hosts"
    when:
      - XMPP_DOMAIN == 'pulse'
+     - RES_GREP == "0" or RES_GREP == ''
 
 # Update local hosts file to find pulse xmpp domain
- - name: update local file
+ - name: grep {{ PULSEMAIN_IP }} pulse /etc/hosts
+   shell: grep -cx "{{ PULSEMAIN_IP }} pulse" /etc/hosts
+   ignore_errors: yes
+   register: grepresult
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set RES_GREP
+   set_fact:
+     RES_GREP: '{{ grepresult.stdout }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: update local file /etc/hosts
    lineinfile:
      line: "{{ PULSEMAIN_IP }} pulse\n"
      dest: "/etc/hosts"
    when:
      - XMPP_DOMAIN != 'pulse'
+     - RES_GREP == "0" or RES_GREP == ''
 
 # Update local hosts file to find local xmpp domain
- - name: update local file
+ - name: grep {{ IP_ADDRESS }} {{ XMPP_DOMAIN }} /etc/hosts
+   shell: grep -cx "{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}" /etc/hosts
+   ignore_errors: yes
+   register: grepresult
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: set RES_GREP
+   set_fact:
+     RES_GREP: '{{ grepresult.stdout }}'
+   when:
+     - XMPP_DOMAIN != 'pulse'
+
+ - name: update local file /etc/hosts
    lineinfile:
      line: "{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}\n"
      dest: "/etc/hosts"
    when:
      - XMPP_DOMAIN != 'pulse'
+     - RES_GREP == "0" or RES_GREP == ''
 
 ################DELEGATE TO
 
- - name: shell grep
+ - name: grep {{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }} /etc/hosts
    shell: grep -cx "{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}" /etc/hosts
    ignore_errors: yes
    register: grepresult
@@ -2406,18 +2462,18 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: write in /etc/hosts
+ - name: write {{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }} in /etc/hosts if not in
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - RES_GREP == "0"
+     - RES_GREP == "0" or RES_GREP == ''
      - XMPP_DOMAIN != 'pulse'
 
  #2
 
- - name: shell grep
+ - name: grep {{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }} /etc/hosts
    shell: grep -cx "{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}" /etc/hosts
    ignore_errors: yes
    register: grepresult
@@ -2431,13 +2487,13 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: write in /etc/hosts
+ - name: write {{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }} in /etc/hosts if not in
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - RES_GREP == "0"
+     - RES_GREP == "0" or RES_GREP == ''
      - XMPP_DOMAIN != 'pulse'
 
 # Update ssh port to be used on clients if defined
@@ -2449,13 +2505,13 @@
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters clients_ssh_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini plugin pluginlist applicationdeploymentjson
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist applicationdeploymentjson'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2478,14 +2534,14 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist applicationdeploymentjson
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist applicationdeploymentjson'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -2499,13 +2555,13 @@
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters clients_ssh_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini plugin pluginlist downloadfileexpert
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfileexpert'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2528,14 +2584,14 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist downloadfileexpert
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfileexpert'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -2549,13 +2605,13 @@
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters clients_ssh_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini plugin pluginlist downloadfile
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfile'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2578,14 +2634,14 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist downloadfile
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist downloadfile'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -2599,13 +2655,13 @@
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters clients_ssh_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini plugin pluginlist guacamole
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2628,14 +2684,14 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist guacamole
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -2645,13 +2701,13 @@
    set_fact:
      PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/guacamole.ini.local'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist guacamole
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist guacamole'
    when:
      - XMPP_DOMAIN == 'pulse'
      - CLIENTS_VNC_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters clients_vnc_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2666,14 +2722,14 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist reverse_ssh_on
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
    when:
      - XMPP_DOMAIN != 'pulse'
@@ -2683,13 +2739,13 @@
    set_fact:
      PLUGIN_CONFIG_FILE: '/etc/pulse-xmpp-agent/reverse_ssh_on.ini.local'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist reverse_ssh_on
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
    when:
      - XMPP_DOMAIN == 'pulse'
      - REVERSE_SSH_PORT != ''
 
- - name: echo crudini
+ - name: crudini parameters reverseserver_ssh_port
    shell: 'crudini --set {{ PLUGIN_CONFIG_FILE }} parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2704,37 +2760,37 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: copy {{ PLUGIN_CONFIG_FILE }}
+ - name: copy in {{ PLUGIN_CONFIG_FILE }}
    copy:
      src: "/tmp/{{ansible_hostname}}-temp.ini"
      dest: "{{ PLUGIN_CONFIG_FILE }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: echo crudini
+ - name: crudini plugin pluginlist reverse_ssh_on
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} plugin pluginlist reverse_ssh_on'
    when:
      - XMPP_DOMAIN != 'pulse'
 
 # Allow orders coming from registration substitute (used to configure guacamole)
- - name: echo crudini
+ - name: crudini global allow_order master_reg
    shell: 'crudini --set --list {{ RELAY_CONFIG_FILE }} global allow_order master_reg'
 
 # Update default RS if on main pulse and public IP is defined
 
- - name: echo crudini
+ - name: crudini defaultconnection serverip
    shell: 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local defaultconnection serverip {{ PUBLIC_IP }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - PUBLIC_IP != ''
 
- - name: echo crudini
+ - name: crudini parameters serverip
    shell: 'crudini --set /etc/mmc/plugins/assessor_agent.ini.local parameters serverip {{ PUBLIC_IP }}'
    when:
      - XMPP_DOMAIN == 'pulse'
      - PUBLIC_IP != ''
 
- - name: echo crudini
+ - name: crudini parameters serverip
    shell: 'crudini --set /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local parameters serverip {{ PUBLIC_IP }}'
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -2748,7 +2804,7 @@
      - XMPP_DOMAIN == 'pulse'
      - PUBLIC_IP != ''
 
- - name: restart service mmc-agent
+ - name: restart service pulse-xmpp-master-substitute-assessor
    service:
      name: pulse-xmpp-master-substitute-assessor
      state: restarted
@@ -2757,7 +2813,7 @@
      - PUBLIC_IP != ''
 
 # Disable geolocalization
- - name: shell
+ - name: crudini type geolocalisation False
    shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type geolocalisation False
 
 # Enable and start the service
@@ -2766,7 +2822,7 @@
      name: pulse-xmpp-agent-relay
      enabled: yes
 
- - name: restart service mmc-agent
+ - name: restart service pulse-xmpp-agent-relay
    service:
      name: pulse-xmpp-agent-relay
      state: restarted
@@ -2787,13 +2843,13 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
    when:
      - XMPP_DOMAIN != 'pulse'
 
- - name: get MAX_ID
+ - name: get MAX_ID FROM cluster_ars
    shell: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
    register: maxid
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2818,7 +2874,7 @@
 ##_config_relay_server
 # Add the relayserver to the cluster
 
- - name: get MAX_ID
+ - name: get MAX_ID FROM has_cluster_ars
    shell: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
    register: maxid
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2833,7 +2889,7 @@
      - XMPP_DOMAIN != 'pulse'
      - ansible_distribution == "CentOS"
 
- - name: get RELAYSERVER_ID
+ - name: get RELAYSERVER_ID FROM relayserver
    shell: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
    register: relayserverid
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2939,7 +2995,7 @@
 
 # ----------------
 
- - name: Create a directory if it does not exist
+ - name: Create a directory /var/lib/pulse2/file-transfer/.ssh if it does not exist
    file:
      path: /var/lib/pulse2/file-transfer/.ssh
      state: directory
@@ -2955,7 +3011,8 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - file:
+ - name: recurse: yes /var/lib/pulse2/file-transfer/.ssh owner pulsetransfert
+   file:
      path: /var/lib/pulse2/file-transfer/.ssh
      owner: pulsetransfert
      group: pulsetransfert
@@ -2963,7 +3020,8 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - file:
+ - name: chown 700 /var/lib/pulse2/file-transfer/.ssh
+   file:
      path: /var/lib/pulse2/file-transfer/.ssh
      mode: '700'
    when:
@@ -2993,7 +3051,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
@@ -3001,7 +3059,7 @@
    shell: hostname -f
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      SERVER_FQDN: "{{ result.stdout }}"
 
@@ -3013,44 +3071,44 @@
 #when:
 #  - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: crudini alt_names DNS.1 {{ SERVER_FQDN }}
    shell: 'crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}'
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: crudini alt_names DNS.2 {{ XMPP_DOMAIN }}
    shell: 'crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}'
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # Create the key and sign request on Pulse main server
 
- - name: shell
+ - name: openssl config req certificate create the key and sign request on Pulse main server
    shell: openssl req -config {{ SSL_CONF_FILE }} -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # Sign the certificate
 
- - name: shell
+ - name: openssl config ca certificate sign the certificate
    shell: openssl ca -config {{ SSL_CONF_FILE }} -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile {{ SSL_CONF_FILE }} -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # Generate the final certificate
- - name: shell
+ - name: openssl -passin rsa generate the final certificate
    shell: openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    shell: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # Remove the setting in ssl configuration file
 
- - name: shell
+ - name: crudini --del {{ SSL_CONF_FILE }} alt_names
    shell: crudini --del {{ SSL_CONF_FILE }} alt_names
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -3058,7 +3116,7 @@
 # Final tasks: permissions and cleanup
 
 #replace by module file chmod
- - name: chmod 400
+ - name: chmod 400 /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
    file:
      path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
      # owner: root
@@ -3067,7 +3125,7 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: chmod 444
+ - name: chmod 444 /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
    file:
      path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
      # owner: root
@@ -3076,7 +3134,7 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: chmod 444
+ - name: chmod 444 /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    file:
      path: /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
      # owner: root
@@ -3085,24 +3143,24 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    shell: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
 # Get the keys to configure package server and ejabberd
 
- - name: shell
+ - name: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
    shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
    shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: shell
+ - name: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
    shell: /bin/cp /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
    when:
      - XMPP_DOMAIN == 'pulse'
@@ -3111,7 +3169,7 @@
    shell: hostname -s
    register: result
 
- - name: set xmppDomain = 1
+ - name: set xmppDomain to hostname
    set_fact:
      XMPP_DOMAIN: '{{ result.stdout }}'
 
@@ -3120,14 +3178,14 @@
      SSL_CONF_FILE: '/var/lib/pulse2/pki/conf/pulse.cnf'
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: shell crudini
+ - name: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
    shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
    delegate_to: '{{ PULSEMAIN_IP }}'
 
  - debug:
      msg: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.1 {{ SERVER_FQDN }}
 
- - name: shell crudini
+ - name: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
    shell: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
    delegate_to: '{{ PULSEMAIN_IP }}'
 
@@ -3135,35 +3193,35 @@
      msg: crudini --set {{ SSL_CONF_FILE }} alt_names DNS.2 {{ XMPP_DOMAIN }}
 # Create the key and sign request on Pulse main server
 
- - name: shell openssl
+ - name: openssl req -config certificate create the key and sign request on Pulse main server
    shell: openssl req -config {{ SSL_CONF_FILE }} -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: '{{ PULSEMAIN_IP }}'
 
 # Sign the certificate
 
- - name: shell openssl
+ - name: openssl ca config ign the certificate
    shell: openssl ca -config {{ SSL_CONF_FILE }} -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile {{ SSL_CONF_FILE }} -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: '{{ PULSEMAIN_IP }}'
 
 # Generate the final certificate
 
- - name: shell openssl
+ - name: openssl rsa passin generate the final certificate
    shell: openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: shell cat
+ - name: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    shell: cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    delegate_to: '{{ PULSEMAIN_IP }}'
 
 # Remove the setting in ssl configuration file
 
- - name: shell crudini
+ - name: crudini --del {{ SSL_CONF_FILE }} alt_names
    shell: crudini --del {{ SSL_CONF_FILE }} alt_names
    delegate_to: '{{ PULSEMAIN_IP }}'
 
 # Final tasks: permissions and cleanup
 
- - name: chmod 400
+ - name: chmod 400 /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
    file:
      path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
     # owner: root
@@ -3171,7 +3229,7 @@
      mode: '400'
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: chmod 444
+ - name: chmod 444 /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
    file:
      path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
     # owner: root
@@ -3179,7 +3237,7 @@
      mode: '444'
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: chmod 444
+ - name: chmod 444 /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
    file:
      path: /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
     # owner: root
@@ -3187,7 +3245,7 @@
      mode: '444'
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: shell /bin/rm
+ - name: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    shell: /bin/rm /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem
    delegate_to: '{{ PULSEMAIN_IP }}'
 
@@ -3211,10 +3269,10 @@
 
 # Replace ejabberd.pem by the certificate generated above
 
- - name: shell
+ - name: sed -i /etc/ejabberd/ejabberd.yml
    shell: sed -i "s/ejabberd.pem/{{ XMPP_DOMAIN }}.pem/" /etc/ejabberd/ejabberd.yml
 
- - name: restarted
+ - name: restarted ejabberd
    systemd:
      name: ejabberd
      state: restarted
@@ -3243,7 +3301,7 @@
  - debug:
      msg: "______________________________"
 
- - name:
+ - name: [ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
    shell: [ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
 
 #######################################################
