@@ -581,7 +581,7 @@
  - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
    lineinfile:
      line: 'GUACAMOLE_HOME=/etc/guacamole'
-     path: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
+     dest: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
@@ -589,7 +589,7 @@
  - name: after Check write in /etc/default/{{ V_TOMCAT_TEST_CENT }}
    lineinfile:
      line: '# Guacamole env variable'
-     path: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
+     dest: '/etc/default/{{ V_TOMCAT_TEST_CENT }}'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
      - not stat_result.stat.exists
@@ -3319,11 +3319,13 @@
 
  - name: copy /var/lib/pulse2/packages/ to /telediffusion/4
    copy:
-     src: '{{ item.src }}'
+     src: /var/lib/pulse2/packages/*
      dest: /telediffusion/4
-   with_items:
-     - /var/lib/pulse2/packages/*
-     - /var/lib/pulse2/packages/.stfolder/
+
+ - name: copy /var/lib/pulse2/packages/.stfolder/ to /telediffusion/4
+   copy:
+     src: /var/lib/pulse2/packages/.stfolder/
+     dest: /telediffusion/4
 
  - name: setfacl -rdm syncthing /telediffusion/4
    shell: setfacl -Rdm g:syncthing:rwx /telediffusion/4
