@@ -3011,7 +3011,7 @@
    when:
      - XMPP_DOMAIN == 'pulse'
 
- - name: recurse: yes /var/lib/pulse2/file-transfer/.ssh owner pulsetransfert
+ - name: recurse yes /var/lib/pulse2/file-transfer/.ssh owner pulsetransfert
    file:
      path: /var/lib/pulse2/file-transfer/.ssh
      owner: pulsetransfert
