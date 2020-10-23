@@ -3218,3 +3218,67 @@
    systemd:
      name: ejabberd
      state: restarted
+
+#######################################################
+ - debug:
+     msg: "______________________________"
+ - debug:
+     msg: "____FORCE_METH_SCP_TO_PUSH____"
+ - debug:
+     msg: "______________________________"
+
+ - name: crudini parameters pushmethod scp
+   shell: crudini --set /etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local parameters pushmethod scp
+
+ - name: restart pulse-xmpp-agent-relay
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
+
+#######################################################
+ - debug:
+     msg: "______________________________"
+ - debug:
+     msg: "____ACTIV_COMPRESSION_LOGS____"
+ - debug:
+     msg: "______________________________"
+
+[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
+
+#######################################################
+ - debug:
+     msg: "_____________________________"
+ - debug:
+     msg: "____MOVE_PACKAGES_TO_TELD____"
+ - debug:
+     msg: "_____________________________"
+
+ - name: create directory /telediffusion/4
+   file:
+     path: /telediffusion/4
+     state: directory
+
+ - name: copy /var/lib/pulse2/packages/ to /telediffusion/4
+   copy:
+     src: {{ item.src }}
+     dest: /telediffusion/4
+   with_items:
+     - /var/lib/pulse2/packages/*
+     - /var/lib/pulse2/packages/.stfolder/
+
+ - name: setfacl -rdm syncthing /telediffusion/4
+   shell: setfacl -Rdm g:syncthing:rwx /telediffusion/4
+
+ - name: setfacl -rm syncthing /telediffusion/4
+   shell: setfacl -Rm g:syncthing:rwx /telediffusion/4
+
+ - name: mv /var/lib/pulse2 - /tmp/packages.old
+   command: mv /var/lib/pulse2/packages /tmp/packages.old
+
+ - name: Create a symbolic link
+   file:
+     src: /telediffusion/4
+     dest: /var/lib/pulse2/packages
+     owner: syncthing
+     group: syncthing
+     state: link
