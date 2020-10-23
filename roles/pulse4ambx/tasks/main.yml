@@ -3301,7 +3301,7 @@
  - debug:
      msg: "______________________________"
 
- - name: [ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
+ - name: 
    shell: [ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed '/^}$/i  \    compress\n    delaycompress' -i /etc/logrotate.d/pulse-xmpp-agent-relay
 
 #######################################################
