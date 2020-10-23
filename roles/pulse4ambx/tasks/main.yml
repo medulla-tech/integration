@@ -334,7 +334,7 @@
  - name: mysql_install_db
    shell: mysql_install_db
 
- - name: chown -R mysql: /var/lib/mysql/
+ - name: chown -R mysql /var/lib/mysql/
    shell: "chown -R mysql: /var/lib/mysql/"
 
  - name: restart service mariadb
