@@ -1157,20 +1157,6 @@
    register: file_details
    delegate_to: '{{ PULSEMAIN_IP }}'
 
- - name: Setup syncthing write <Location /syncthing-{{ XMPP_DOMAIN }}/> in {{ SYNCTHING_APACHE_PATH }}
-   copy:
-     content: |
-       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
-       <Location /syncthing-{{ XMPP_DOMAIN }}/>
-           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
-           Require all granted
-       </Location>
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   ignore_errors: yes
-   when:
-     - file_details.stat.exists
-
 
  - name: Check if Service httpd Exists
    stat: path=/etc/init.d/httpd
