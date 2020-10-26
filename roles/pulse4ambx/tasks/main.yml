@@ -73,6 +73,9 @@
      url: '{{ PULSE4REPO_URL }}'
      dest: /etc/yum.repos.d/pulse4.repo
 
+ - name: Cleaning yum repo cache
+   command: yum clean all
+
 #get ip
 
  - name: Get IP_ADDRESS
@@ -189,10 +192,11 @@
      msg: "___________________________"
 
        #INSTALL PHP
- - name: uninstall_php_mysql
+ - name: uninstall_php
    yum:
      update_cache: yes
      pkg:
+       - php-common
        - php-mysql
      state: absent
    when:
