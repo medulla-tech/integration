@@ -3304,3 +3304,19 @@
 
  - name: Add compress and delaycompess lines in pulse-xmpp-agent-relay logrotate file
    shell: '[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed "/^}$/i  \    compress\n    delaycompress" -i /etc/logrotate.d/pulse-xmpp-agent-relay'
+
+#######################################################
+ - debug:
+     msg: "______________________________"
+ - debug:
+     msg: "__________FINAL_STEP__________"
+ - debug:
+     msg: "______________________________"
+
+ - pause for 10 seconds before restarting the service:
+     seconds: 10
+
+ - name: restart pulse-xmpp-agent-relay
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
