@@ -3316,7 +3316,7 @@
  - debug:
      msg: "______________________________"
 
- - name: pause for 10 seconds before restarting the service:
+ - pause:
      seconds: 10
 
  - name: restart pulse-xmpp-agent-relay
