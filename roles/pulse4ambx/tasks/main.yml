@@ -53,6 +53,15 @@
    when:
      - XMPP_DOMAIN != 'pulse'
 
+# Configure rbash
+ - name: Create rbash shell
+   file:
+     src: /bin/bash
+     dest: /bin/rbash
+     state: link
+     force: yes
+   no_log: True
+
 # Configure repos
  - name: Download repo file from {{ PULSE4REPO_URL }}
    get_url:
