@@ -1784,11 +1784,11 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: setfacl on clients (-Rdm g:syncthing:rwx /var/lib/pulse2/clients/)
-   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/
+ - name: setfacl on clients (-Rdm g:syncthing:rwx /var/lib/pulse2/clients/.stignore)
+   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/clients/.stignore
 
- - name: setfacl on clients (-Rm g:syncthing:rwx /var/lib/pulse2/clients/)
-   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/
+ - name: setfacl on clients (-Rm g:syncthing:rwx /var/lib/pulse2/clients/.stignore)
+   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/clients/.stignore
 
  - name: Create baseremoteagent syncthing share on main pulse
    shell: stman folder add --label downloads --foldertype readonly /var/lib/pulse2/clients/ pulsemaster_downloads
