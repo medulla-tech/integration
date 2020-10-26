@@ -355,10 +355,10 @@
      path: /var/lib/mysql
      state: absent
 
-- name: delete /root/.my.cnf
-  file:
-    path: /root/.my.cnf
-    state: absent
+ - name: delete /root/.my.cnf
+   file:
+     path: /root/.my.cnf
+     state: absent
 
  - name: mysql_install_db
    shell: mysql_install_db
