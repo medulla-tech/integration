@@ -63,6 +63,11 @@
    no_log: True
 
 # Configure repos
+ - name: Delete old siveo repo
+   file:
+     path: /etc/yum.repos.d/siveo.repo
+     state: absent
+
  - name: Download repo file from {{ PULSE4REPO_URL }}
    get_url:
      url: '{{ PULSE4REPO_URL }}'
