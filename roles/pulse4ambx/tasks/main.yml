@@ -350,7 +350,7 @@
 
         #SECURE THE INSTALL
 
- - name: delede /var/lib/mysql
+ - name: delete /var/lib/mysql
    file:
      path: /var/lib/mysql
      state: absent
