@@ -3282,12 +3282,15 @@
  - debug:
      msg: "______________________________"
  - debug:
-     msg: "____FORCE_METH_SCP_TO_PUSH____"
+     msg: "____CONFIG_SPECIFIQUE_CNAM____"
  - debug:
      msg: "______________________________"
 
  - name: crudini parameters pushmethod scp
    shell: crudini --set /etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local parameters pushmethod scp
+
+ - name: crudini quick_deploy max_size_stanza_xmpp 0
+   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
 
  - name: restart pulse-xmpp-agent-relay
    systemd:
