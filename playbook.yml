@@ -4,9 +4,7 @@
    hosts: relay
    remote_user: root
    vars:
-     - PULSE_REPO_URL: 'https://git.siveo.net'
-     - PULSE_REPO_RPM_URL: 'https://git.siveo.net'
-     - GIT_BRANCH: "integration"
+     - PULSE4REPO_URL: 'https://cnam.siveo.net/pulse4.repo'
      - ROOT_PASSWORD: 'siveo'
      - DRIVERS_PASSWORD: 's3cr3t'
      - DBHOST: 'localhost'
