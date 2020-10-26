@@ -2165,19 +2165,19 @@
  - debug:
      msg: "_____________________________"
 
-- name: Setup port 22 if reversessh port is defined
-  lineinfile:
-    dest: "/etc/ssh/sshd_config"
-    line: "Port 22"
-  when:
-    - REVERSE_SSH_PORT != ''
+ - name: Setup port 22 if reversessh port is defined
+   lineinfile:
+     dest: "/etc/ssh/sshd_config"
+     line: "Port 22"
+   when:
+     - REVERSE_SSH_PORT != ''
 
-- name: Setup alternate SSH port if defined
- lineinfile:
-   dest: "/etc/ssh/sshd_config"
-   line: "Port {{ REVERSE_SSH_PORT }}"
- when:
-   - REVERSE_SSH_PORT != ''
+ - name: Setup alternate SSH port if defined
+   lineinfile:
+     dest: "/etc/ssh/sshd_config"
+     line: "Port {{ REVERSE_SSH_PORT }}"
+   when:
+     - REVERSE_SSH_PORT != ''
 
  - name: restart ssh
    service:
