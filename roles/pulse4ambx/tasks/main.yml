@@ -1394,7 +1394,6 @@
      path: /var/lib/pulse2/packages
      state: absent
    when:
-     - SHARE_CONFIGURED == '1'
      - XMPP_DOMAIN != 'pulse'
 
 ##########################################################
