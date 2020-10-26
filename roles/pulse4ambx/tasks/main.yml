@@ -430,8 +430,8 @@
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "CentOS"
 
- - name: sed -i /etc/ejabberd/ejabberd.yml usermod ejabberd
-   shell: 'sed -i "s/localhost/{{ XMPP_DOMAIN }}/" /etc/ejabberd/ejabberd.yml'
+ - name: Set XMPP domain in ejabberd.yml
+   shell: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
    when:
      - ansible_distribution == "Rhel" or ansible_distribution == "Mageia" or ansible_distribution == "CentOS"
 
