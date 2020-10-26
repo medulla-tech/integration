@@ -1375,9 +1375,9 @@
      path: /var/lib/syncthing/packages
      state: absent
 
- - name: create /var/lib/pulse2/packages
+ - name: create /telediffusion/4 directory
    file:
-     path: /var/lib/pulse2/packages
+     path: /telediffusion/4
      state: directory
 
  - name: install acl
@@ -1389,11 +1389,19 @@
    when:
      - ansible_distribution == "Debian" or ansible_distribution == "Mageia"
 
- - name: setfacl on packages (-Rdm g:syncthing:rwx /var/lib/pulse2/packages/)
-   shell: setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/packages/
+ - name: Fix permissions on telediffusion/4 dir
+   shell: setfacl -Rdm g:syncthing:rwx /telediffusion/4
 
- - name: setfacl on packages (-Rm g:syncthing:rwx /var/lib/pulse2/packages/)
-   shell: setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
+ - name: Fix permissions on telediffusion/4 dir
+   shell: setfacl -Rm g:syncthing:rwx /telediffusion/4
+
+ - name: Create a symbolic link
+   file:
+     src: /telediffusion/4
+     dest: /var/lib/pulse2/packages
+     owner: syncthing
+     group: syncthing
+     state: link
 
  - name: Create packages syncthing share on main pulse
    shell: stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
@@ -3304,42 +3312,3 @@
  - name: Add compress and delaycompess lines in pulse-xmpp-agent-relay logrotate file
    shell: '[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed "/^}$/i  \    compress\n    delaycompress" -i /etc/logrotate.d/pulse-xmpp-agent-relay'
 
-#######################################################
- - debug:
-     msg: "_____________________________"
- - debug:
-     msg: "____MOVE_PACKAGES_TO_TELD____"
- - debug:
-     msg: "_____________________________"
-
- - name: create directory /telediffusion/4
-   file:
-     path: /telediffusion/4
-     state: directory
-
- - name: copy /var/lib/pulse2/packages/ to /telediffusion/4
-   copy:
-     src: /var/lib/pulse2/packages/*
-     dest: /telediffusion/4
-
- - name: copy /var/lib/pulse2/packages/.stfolder/ to /telediffusion/4
-   copy:
-     src: /var/lib/pulse2/packages/.stfolder/
-     dest: /telediffusion/4
-
- - name: setfacl -rdm syncthing /telediffusion/4
-   shell: setfacl -Rdm g:syncthing:rwx /telediffusion/4
-
- - name: setfacl -rm syncthing /telediffusion/4
-   shell: setfacl -Rm g:syncthing:rwx /telediffusion/4
-
- - name: mv /var/lib/pulse2 - /tmp/packages.old
-   command: mv /var/lib/pulse2/packages /tmp/packages.old
-
- - name: Create a symbolic link
-   file:
-     src: /telediffusion/4
-     dest: /var/lib/pulse2/packages
-     owner: syncthing
-     group: syncthing
-     state: link
