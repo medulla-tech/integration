@@ -2165,40 +2165,19 @@
  - debug:
      msg: "_____________________________"
 
+- name: Setup port 22 if reversessh port is defined
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    line: "Port 22"
+  when:
+    - REVERSE_SSH_PORT != ''
 
-# Search if Port 22 is already present. If not, define it
- - name: grep for port22
-   shell: 'grep "^Port 22$" /etc/ssh/sshd_config'
-   register: state_result
-   ignore_errors: yes
-
- - name: set PORT22STAT
-   set_fact:
-     PORT22STAT: state_result.results
-
- - name: config port22 if not
-   shell: sed -i 's/^#[[:space:]]*Port 22$/Port 22/' /etc/ssh/sshd_config
-   when:
-     - PORT22STAT == '' or PORT22STAT == '0'
-
- - name: grep for reverse_port
-   shell: 'grep "^Port {{ REVERSE_SSH_PORT }}$" /etc/ssh/sshd_config'
-   register: state_result
-   ignore_errors: yes
-   when:
-     - REVERSE_SSH_PORT != ''
-
- - name: set REVERSESSH
-   set_fact:
-     REVERSESSH: state_result_reverse.results
-   when:
-     - REVERSE_SSH_PORT != ''
-
- - name: config port22 if not
-   shell: sed -i "/^Port 22$/{p;s/22/{{ REVERSE_SSH_PORT }}/;}" /etc/ssh/sshd_config
-   when:
-     - REVERSESSH == '' or REVERSESSH == '0'
-     - REVERSE_SSH_PORT != ''
+- name: Setup alternate SSH port if defined
+ lineinfile:
+   dest: "/etc/ssh/sshd_config"
+   line: "Port {{ REVERSE_SSH_PORT }}"
+ when:
+   - REVERSE_SSH_PORT != ''
 
  - name: restart ssh
    service:
@@ -3311,4 +3290,3 @@
 
  - name: Add compress and delaycompess lines in pulse-xmpp-agent-relay logrotate file
    shell: '[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed "/^}$/i  \    compress\n    delaycompress" -i /etc/logrotate.d/pulse-xmpp-agent-relay'
-
