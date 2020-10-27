@@ -424,6 +424,14 @@
    set_fact:
      XMPP_DOMAIN: "{{ result.stdout }}"
 
+ - name: Get hostname
+   shell: hostname -f
+   register: result
+
+ - name: set xmppDomain to hostname
+   set_fact:
+     SERVER_FQDN: "{{ result.stdout }}"
+
 
  - name: enable ejabberd
    service:
