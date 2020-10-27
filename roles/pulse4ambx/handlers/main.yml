@@ -1,43 +1,34 @@
 ---
 
- - name: "apache restart"
-   service:
-     name: "httpd"
-     state: "restarted"
-   when:
-     ansible_distribution == "CentOS"
-
- - name: "apache restart"
-   service:
-     name: "httpd"
-     state: "restarted"
-   when:
-     ansible_distribution == "CentOS"
-
- - name: "php restart"
-   service:
-     name: "php"
-     state: "restarted"
-   when:
-     ansible_distribution == "CentOS"
-
- - name: "start mysql"
-   service:
-     name: "mysqld"
-     state: "started"
-   when:
-     - ansible_distribution == "CentOS"
-
- - name: "start mysql"
+ - name: Restart apache
    systemd:
-     state: "started"
-     name: "mariadb"
+     name: httpd
+     state: restarted
+     daemon_reload: yes
    when:
-     - ansible_distribution == "Rhel"
+     - ansible_distribution == 'CentOS'
 
- - name: "restart mysqld"
-   service:
-     name: "mysqld"
-     state: "restarted"
+ - name: Reload apache
+   systemd:
+     name: httpd
+     state: reloaded
+     daemon_reload: yes
    when:
-     - ansible_distribution == "CentOS"
+     - ansible_distribution == 'CentOS'
+
+ - name: Restart php-fpm
+   systemd:
+     name: php-fpm
+     state: restarted
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: Restart mariadb
+   systemd:
+     name: mariadb
+     state: restarted
+
+ - name: Restart relay
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
