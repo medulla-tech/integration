@@ -3336,7 +3336,7 @@
      msg: "______________________________"
 
  - pause:
-     seconds: 10
+     seconds: 30
 
  - name: restart pulse-xmpp-agent-relay
    systemd:
