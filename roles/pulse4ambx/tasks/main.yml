@@ -82,9 +82,9 @@
 
  - name: PREPARATION - Download SIVEO public key
    get_url:
-     url: {{ grep_output.stdout_lines[0].split("=")[1] }}
+     url: '{{ grep_output.stdout.split("=")[1] }}'
      dest: /tmp/siveo_key.asc
-    when:
+   when:
      - ansible_distribution == 'CentOS'
 
  - name: PREPARATION - Import SIVEO public key
