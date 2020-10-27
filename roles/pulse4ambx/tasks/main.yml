@@ -140,13 +140,14 @@
 #                    Install base tools                  #
 ##########################################################
 
- - name: BASE - Install Crudini
+ - name: BASE - Install tools needed for the setup
    yum:
      update_cache: yes
      state: latest
      pkg:
        - crudini
        - pwgen
+       - xmlstarlet
    when:
      - ansible_distribution == 'CentOS'
 
@@ -156,7 +157,6 @@
 
  - name: PULSE - Install pulse-xmpp-agent-relay
    yum:
-     update_cache: yes
      state: latest
      pkg:
        - pulse-xmpp-agent-relay
@@ -169,7 +169,6 @@
 
  - name: APACHE - Install Apache
    yum:
-     update_cache: yes
      state: latest
      pkg:
        - httpd
@@ -195,14 +194,9 @@
  - name: APACHE - Enable service
    systemd:
      enabled: yes
-     name: httpd
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: APACHE - Restart service
-   systemd:
-     name: httpd
      state: restarted
+     daemon_reload: yes
+     name: httpd
    when:
      - ansible_distribution == 'CentOS'
 
@@ -212,7 +206,6 @@
 
  - name: PHP - Uninstall previous version
    yum:
-     update_cache: yes
      pkg:
        - php-common
        - php-mysql
@@ -249,14 +242,8 @@
  - name: PHP - Enable service
    systemd:
      enabled: yes
-     name: php-fpm
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: PHP - Restart service
-   systemd:
-     name: php-fpm
      state: restarted
+     name: php-fpm
    when:
      - ansible_distribution == 'CentOS'
 
@@ -273,7 +260,6 @@
 
  - name: MARIADB - Install mariadb
    yum:
-     update_cache: yes
      state: latest
      pkg:
        - mariadb
@@ -314,12 +300,8 @@
  - name: MARIADB - Enable service
    systemd:
      enabled: yes
-     name: mariadb
-
- - name: MARIADB - Restart service
-   systemd:
-     name: mariadb
      state: restarted
+     name: mariadb
 
  - name: MARIADB - Define root password
    command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
@@ -339,7 +321,6 @@
 
  - name: EJABBERD - Install ejabberd
    yum:
-     update_cache: yes
      state: latest
      pkg:
        - ejabberd
@@ -434,7 +415,7 @@
      seconds: 5
 
 ##########################################################
-#                    Install guacamole                    #
+#                    Install guacamole                   #
 ##########################################################
 
  - name: GUACAMOLE - Install guacamole
@@ -447,8 +428,7 @@
        - libguac-client-rdp
        - guacamole-auth-mysql
        - mysql-connector-java
-       - xmlstarlet
-     state: present
+     state: latest
    when:
      - ansible_distribution == 'CentOS'
 
@@ -466,26 +446,16 @@
  - name: GUACAMOLE - Enable tomcat
    systemd:
      enabled: yes
-     name: tomcat
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Restart tomcat
-   systemd:
-     name: tomcat
      state: restarted
+     name: tomcat
    when:
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Enable guacd
    systemd:
      enabled: yes
-     name: guacd
-
- - name: GUACAMOLE - Restart guacd
-   systemd:
-     name: guacd
      state: restarted
+     name: guacd
 
  - name: GUACAMOLE - Generate Guacamole password
    command: pwgen --secure 40 1
@@ -669,103 +639,62 @@
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE != "p"
 
+##########################################################
+#                    Install syncthing                   #
+##########################################################
 
-#######################################################
- - debug:
-     msg: "___________________________"
- - debug:
-     msg: "_____INSTALL_SYNCTHING_____"
- - debug:
-     msg: "___________________________"
-
-
- - name: Get hostname
-   shell: hostname -s
-   register: result
-
- - name: set xmppDomain to hostname
-   set_fact:
-     SERVER: "{{ result.stdout }}"
-
-        #INSTALL SYNCTHING
-
- - name: install_syncthing
+ - name: SYNCTHING - Install syncthing
    yum:
-     name: syncthing
+     pkg:
+       - syncthing
+       - syncthingmanager
      state: latest
    when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
+     - ansible_distribution == 'CentOS'
 
-     # Delete syncthing folders if already present
+ - name: SYNCTHING - Install additional packages on pulsemain
+   yum:
+     pkg:
+       - syncthing-tools
+       - syncthing-systemd-addons
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == "p"
 
- - name: Remove file (delete file) /var/lib/syncthing/.config
+ - name: SYNCTHING - Reset syncthing
    file:
-     path: /var/lib/syncthing/.config
+     path: '{{ item }}'
      state: absent
+   with_items:
+     - '/var/lib/syncthing/.config'
+     - '/var/lib/syncthing/Sync'
+     - '/var/lib/syncthing-depl/.config'
+     - '/var/lib/syncthing-depl/Sync'
 
- - name: Remove file /var/lib/syncthing/Sync
-   file:
-     path: /var/lib/syncthing/Sync
-     state: absent
-
- - name: Remove file /var/lib/syncthing-depl/.config
-   file:
-     path: /var/lib/syncthing-depl/.config
-     state: absent
-
- - name: Remove file /var/lib/syncthing-depl/Sync
-   file:
-     path: /var/lib/syncthing-depl/Sync
-     state: absent
-
-     # Create a syncthing unprivileged account for general synch
-
- - name: Create a syncthing unprivileged account for general synch with home /var/lib/syncthing
+ - name: SYNCTHING - Create user accounts
    user:
-     name: syncthing
+     name: '{{ item.name }}'
      state: present
      createhome: yes
-     home: /var/lib/syncthing
+     home: '{{ item.home }}'
      shell: /bin/false
      system: yes
+   with_items:
+     - { name: 'syncthing', home: '/var/lib/syncthing' }
+     - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
 
- - name: Make sure a service is running syncthing@syncthing
+ - name: SYNCTHING - Enable services
    systemd:
      enabled: yes
-     name: syncthing@syncthing.service
-
- - name: Make syncthing@syncthing restarted
-   systemd:
      state: restarted
-     name: syncthing@syncthing.service
+     name: syncthing@{{ item }}.service
+   with_items:
+     - synching
+     - syncthing-depl
 
-# Pause for 5 minutes to build app cache.
- - pause:
-     seconds: 5
-
-     # Create a syncthing unprivileged account for deployment
-
- - name: Create a syncthing unprivileged account for deployment with home /var/lib/syncthing-depl
-   user:
-     name: syncthing-depl
-     state: present
-     createhome: yes
-     home: /var/lib/syncthing-depl
-     shell: /bin/false
-     system: yes
-
- - name: Make sure a syncthing@syncthing-depl is running
-   systemd:
-     enabled: yes
-     name: syncthing@syncthing-depl.service
-
- - name: Make syncthing@syncthing-depl restarted
-   systemd:
-     state: restarted
-     name: syncthing@syncthing-depl.service
-
-# Pause for 5 minutes to build app cache.
- - pause:
+ - name: SYNCTHING - Pause for 5 seconds to enable syncthing start
+   pause:
      seconds: 5
 
 # Create a backup of the config files
@@ -776,31 +705,6 @@
  - name: create backup /bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig
    shell: "/bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig"
 
-        #INSTALL SYNCTHING_MANAGER
-
- - name: install_syncthingmanager
-   yum:
-     update_cache: yes
-     name: syncthingmanager
-     state: latest
-   when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
-
-# add other install syncthing
-
- - name: install_syncthing_other
-   yum:
-     name: "{{ packages_cent }}"
-     update_cache: yes
-     state: latest
-   vars:
-     packages_cent:
-       - syncthing-tools
-       - syncthing-systemd-addons
-       - xmlstarlet
-   when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
-     - SERVER == "pulse"
 
 #######################################################
  - debug:
