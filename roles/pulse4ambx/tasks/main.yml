@@ -73,6 +73,25 @@
      url: '{{ PULSE4REPO_URL }}'
      dest: /etc/yum.repos.d/pulse4.repo
 
+ - name: PREPARATION - Find out URL of SIVEO public key
+   command: "grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo"
+   register: grep_output
+   ignore_errors: true
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Download SIVEO public key
+   get_url:
+     url: {{ grep_output.stdout_lines[0].split("=")[1] }}
+     dest: /tmp/siveo_key.asc
+    when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Import SIVEO public key
+   command: "rpm --import /tmp/siveo_key.asc"
+   when:
+     - ansible_distribution == 'CentOS'
+
  - name: Cleaning yum repo cache
    command: yum clean all
 
