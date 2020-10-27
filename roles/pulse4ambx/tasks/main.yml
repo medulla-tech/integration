@@ -1568,6 +1568,19 @@
  - debug:
      msg: "_____________________________"
 
+ - name: get LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+
+ - name: execute LOCAL_DEVICE_ID
+   shell: '{{ LOCAL_DEVICE_ID }}'
+   register: deviceid
+
+ - name: set LOCAL_DEVICE_ID
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
+
+
     # Configure Apache for syncthing-depl
 
  - name: write <Location /syncthing-depl/> in file set LOCAL_DEVICE_ID
