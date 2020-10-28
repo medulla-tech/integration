@@ -3,9 +3,9 @@
 #                    Compute variables                   #
 ##########################################################
 
- - name: VARS - Set XMPP_DOMAIN to ansible_nodename if not on pulsemain
+ - name: VARS - Set XMPP_DOMAIN to ansible_hostname if not on pulsemain
    set_fact:
-     XMPP_DOMAIN: "{{ ansible_nodename }}"
+     XMPP_DOMAIN: "{{ ansible_hostname }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -46,6 +46,27 @@
    when:
      - INTERFACE_TO_PULSE == ''
      - INSTALL_TYPE != 'p'
+
+ - name: VARS - Set CLUSTER_NAME to MAIN_ENTITY for pulsemain
+   set_fact:
+     CLUSTER_NAME: "{{ MAIN_ENTITY }}"
+   when:
+     - INSTALL_TYPE == 'p'
+     - MAIN_ENTITY != ''
+
+ - name: VARS - Set CLUSTER_NAME to MULTISITE_ENTITY for relay
+   set_fact:
+     CLUSTER_NAME: "{{ MULTISITE_ENTITY }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - MULTISITE_ENTITY != ''
+
+ - name: VARS - Set CLUSTER_NAME to first 6 chars of ansible_hostname if entity not defined
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname[:6] }}"
+   when:
+     - MULTISITE_ENTITY == ''
+     - MAIN_ENTITY == ''
 
 ##########################################################
 #                  Preparation checks                    #
@@ -2149,140 +2170,119 @@
  - pause:
      seconds: 15
 
-# Create the clusters of ARS for multisite installs
 # First wait a few minutes until the relay server is configured
  - pause:
      minutes: 2
+
+ - name: Get cluster id if it exists
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
+   register: existingclusterid
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: set CLUSTER_ID if cluster already exists
+   set_fact:
+     CLUSTER_ID: "{{ existingclusterid.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout != ''
+
  - name: get MAX_ID FROM cluster_ars
-   shell: echo 'SELECT MAX(id) FROM cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"'
    register: maxid
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
+     - existingclusterid.stdout == ''
 
  - name: set CLUSTER_ID
    set_fact:
      CLUSTER_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
+     - existingclusterid.stdout == ''
+
+ - name: set CLUSTER_ID to 1 if on pulsemain
+   set_fact:
+     CLUSTER_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
 
  - name: insert into cluster_ars
-   shell: echo "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ XMPP_DOMAIN }}','{{ XMPP_DOMAIN }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
+     - existingclusterid.stdout == ''
 
 ##_config_relay_server
 # Add the relayserver to the cluster
 
  - name: get MAX_ID FROM has_cluster_ars
-   shell: echo 'SELECT MAX(id) FROM has_cluster_ars;' | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"'
    register: maxid
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
 
  - name: set NEXT_ID
    set_fact:
      NEXT_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
+
+ - name: set NEXT_ID
+   set_fact:
+     NEXT_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
 
  - name: get RELAYSERVER_ID FROM relayserver
-   shell: echo "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}';" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
 
  - name: set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: "{{ relayserverid.stdout }}"
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
+
+ - name: set RELAYSERVER_ID to 1 if on pulsemain
+   set_fact:
+     RELAYSERVER_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
 
  - name: insert into has_cluster_ars
-   shell: echo "INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}');" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
    delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
 
 # Create the substitutes configuration rules
 
  - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', 1)\""
+   with_items:
+     - { type: 'assessor', jid: 'master_asse@pulse' }
+     - { type: 'subscription', jid: 'master_subs@pulse' }
+     - { type: 'registration', jid: 'master_reg@pulse' }
+     - { type: 'inventory', jid: 'master_inv@pulse' }
+     - { type: 'logger', jid: 'master_log@pulse' }
    when:
      - INSTALL_TYPE == 'p'
 
  - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', 1);" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   when:
-     - INSTALL_TYPE == 'p'
-
-# ------------
-#DLEGATE TO
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('registration', 'master_reg@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ RELAYSERVER_ID }})\""
+   with_items:
+     - { type: 'assessor', jid: 'master_asse@pulse' }
+     - { type: 'subscription', jid: 'master_subs@pulse' }
+     - { type: 'registration', jid: 'master_reg@pulse' }
+     - { type: 'inventory', jid: 'master_inv@pulse' }
+     - { type: 'logger', jid: 'master_log@pulse' }
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('inventory', 'master_inv@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('assessor', 'master_asse@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('subscription', 'master_subs@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
-
- - name: create substituteconf records
-   shell: echo "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('logger', 'master_log@pulse', {{ RELAYSERVER_ID }});" | mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
-
 
 # Enable autoupdate by relay servers
 
