@@ -835,7 +835,7 @@
      ENCRYPTED_PASS: "{{ syncthing_pass.stdout }}"
 
  - name: SYNCTHING - Set root password to ENCRYPTED_PASS
-   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
 
  - name: SYNCTHING - Restart service after editing configuration
    systemd:
@@ -1513,7 +1513,7 @@
    command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
  - name: SYNCTHING - Set root password to ENCRYPTED_PASS
-   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHING - Define listen port to 23000
    command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
