@@ -851,45 +851,42 @@
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
    command: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
 
-    # Add device to pool if relay server
-    # Add device to pool on pulsemain
-
- - name: stman device add (config_syncthing - delagate_to pulsemain)
-   shell: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
+ - name: SYNCTHING - Add relayserver device to pulsemain syncthing
+   command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
-# Add pulsemain to local pool
-
- - name: stman device add --name --address --introducer (Add pulsemain to local pool)
-   shell: stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}
+ - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing
+   command: 'stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
      - INSTALL_TYPE != 'p'
 
- # Auto-accept shares coming from pulsemain
-
- - name: xmlstarlet auto-accept shares coming from pulsemain
-   shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@syncthing
+     state: stopped
    when:
      - INSTALL_TYPE != 'p'
 
- - name: restart syncthing@syncthing
+ - name: SYNCTHING - Auto-accept shares coming from pulsemain
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart service after editing configuration
    systemd:
      name: syncthing@syncthing
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
 
- - pause:
-     seconds: 10
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
    when:
      - INSTALL_TYPE != 'p'
-
-    # Delete the default share
-
- - name: stman folder remove "Default Folder"'
-   shell: 'stman folder remove "Default Folder"'
 
 #######################################################
  - debug:
@@ -899,6 +896,8 @@
  - debug:
      msg: "_________________________________"
 
+ - name: SYNCTHING - Delete the default share
+   command: 'stman folder remove "Default Folder"'
 
 ##########################################################
 #                         Checks                         #
@@ -1506,23 +1505,21 @@
  - name: SYNCTHING - Set root password to ENCRYPTED_PASS
    command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
-# Reconfigure listen ports for syncthing-depl
+ - name: SYNCTHING - Define listen port to 23000
+   command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: xmlstarlet define listen port to 23000
-   shell: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+ - name: SYNCTHING - Define gui listen port to 8385
+   command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: xmlstarlet define gui listen port to 8385
-   shell: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-
-# Restart syncthing service
-
- - name: restart service syncthing@syncthing-depl
+ - name: SYNCTHING - Restart service after editing configuration
    systemd:
      name: syncthing@syncthing-depl
      state: restarted
 
- - pause:
-     seconds: 10
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 23000
+     delay: 5
 
  - name: SYNCTHING - Get api key from syncthing-depl
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
@@ -1538,23 +1535,11 @@
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
    command: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
 
-# Add device to pool if relay server
-# Add device to pool on pulsemain
-
- - name: stman device add
-   shell: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
+ - name: SYNCTHING - Add relayserver device as introducer on pulsemain syncthing-depl
+   command: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-
-# Add pulsemain to local pool
-
- - name: stman device add --name --address --introducer
-   shell: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
-# Auto-accept shares coming from pulsemain
 
  - name: SYNCTHING - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
@@ -1570,27 +1555,39 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: xmlstarlet auto-accept shares coming from pulsemain
-   shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
+ - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing-depl
+   command: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: service restart syncthing@syncthing-depl
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@syncthing-depl
+     state: stopped
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Auto-accept shares coming from pulsemain
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart service after editing configuration
    systemd:
      name: syncthing@syncthing-depl
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
 
- - pause:
-     seconds: 2
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 23000
+     delay: 5
    when:
      - INSTALL_TYPE != 'p'
 
-# Delete the default share
-
- - name: stman folder remove "Default Folder"
-   shell: 'stman -d depl folder remove "Default Folder"'
+ - name: SYNCTHING - Delete the default share
+   command: 'stman -d depl folder remove "Default Folder"'
 
 # Update relay config
 
