@@ -2599,6 +2599,28 @@
  - debug:
      msg: "______________________________"
 
+ - name: SYNCTHING - Get api key from syncthing on pulsemain
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Set PULSEMAIN_API_KEY
+   set_fact:
+     PULSEMAIN_API_KEY: "{{ apikey.stdout }}"
+
+ - Force synch of syncthing folders from pulsemain
+   command: 'curl -X POST -H "X-API-Key: {{ PULSEMAIN_API_KEY }}" http://localhost:8384/rest/db/override?folder={{ item }}'
+   with_items:
+     - pulsemaster_packages
+     - pulsemaster_baseremoteagent
+     - pulsemaster_bootmenus
+     - pulsemaster_downloads
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - pause:
      seconds: 30
 
@@ -2606,3 +2628,5 @@
    systemd:
      name: pulse-xmpp-agent-relay
      state: restarted
+   when:
+     - INSTALL_TYPE != 'p'
