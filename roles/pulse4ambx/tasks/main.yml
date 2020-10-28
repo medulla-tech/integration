@@ -200,6 +200,12 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: APACHE - Define APACHE_CONF_PATH for CentOS
+   set_fact:
+     APACHE_CONF_PATH: "/etc/httpd/conf.d"
+   when:
+     - ansible_distribution == 'CentOS'
+
 ##########################################################
 #                     Install php-fpm                    #
 ##########################################################
@@ -555,13 +561,6 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: GUACAMOLE - Set GUACAMOLE_APACHE_PATH for CentOS
-   set_fact:
-     GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole.conf'
-   when:
-     - ansible_distribution == 'CentOS'
-     - INSTALL_TYPE == "p"
-
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
    copy:
      content: |
@@ -583,7 +582,7 @@
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
         CustomLog  /var/log/httpd/guac.log common env=!dontlog
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+     dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
    when:
      - INSTALL_TYPE == "p"
 
@@ -594,13 +593,6 @@
    when:
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE == "p"
-
- - name: GUACAMOLE - Set GUACAMOLE_APACHE_PATH for CentOS
-   set_fact:
-     GUACAMOLE_APACHE_PATH: '/etc/httpd/conf.d/guacamole-{{ XMPP_DOMAIN }}.conf'
-   when:
-     - ansible_distribution == 'CentOS'
-     - INSTALL_TYPE != "p"
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
    copy:
@@ -625,7 +617,7 @@
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
         CustomLog  /var/log/httpd/guac.log common env=!dontlog
-     dest: '{{ GUACAMOLE_APACHE_PATH }}'
+     dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != "p"
@@ -1687,26 +1679,26 @@
  - name: stman device add --name --address --introducer
    shell: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
 # Auto-accept shares coming from pulsemain
 
  - name: xmlstarlet auto-accept shares coming from pulsemain
    shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
  - name: service restart syncthing@syncthing-depl
    systemd:
      name: syncthing@syncthing-depl
      state: restarted
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
  - pause:
      seconds: 2
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
 # Delete the default share
 
