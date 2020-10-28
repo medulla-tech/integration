@@ -389,7 +389,7 @@
      mode: '400'
 
  - name: EJABBERD - register root account
-   command: ejabberdctl register root {{ XMPP_DOMAIN }} "{{ ROOT_PASSWORD }}"
+   command: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
 
  - name: EJABBERD - Update ejabberd.yml
    shell: |
@@ -416,9 +416,10 @@
      name: ejabberd
      state: restarted
 
- - name: EJABBERD - Pause for 5 seconds to enable ejabberd start
-   pause:
-     seconds: 5
+ - name: EJABBERD - Pause for 2 to 300 seconds to enable ejabberd start
+   wait_for:
+     port: 5222
+     delay: 2
 
 ##########################################################
 #                    Install guacamole                   #
@@ -670,7 +671,7 @@
      state: present
      createhome: yes
      home: '{{ item.home }}'
-     shell: /bin/false
+     shell: /sbin/nologin
      system: yes
    with_items:
      - { name: 'syncthing', home: '/var/lib/syncthing' }
@@ -679,50 +680,39 @@
  - name: SYNCTHING - Enable services
    systemd:
      enabled: yes
+     daemon_reload: yes
      state: restarted
-     name: syncthing@{{ item }}.service
+     name: 'syncthing@{{ item }}.service'
    with_items:
-     - synching
+     - syncthing
      - syncthing-depl
 
- - name: SYNCTHING - Pause for 5 seconds to enable syncthing start
-   pause:
-     seconds: 5
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
+   wait_for:
+     path: /var/lib/syncthing/.config/syncthing/config.xml
 
-# Create a backup of the config files
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing-depl start
+   wait_for:
+     path: /var/lib/syncthing-depl/.config/syncthing/config.xml
 
- - name: create backup /bin/cp /var/lib/syncthing/.config/syncthing/config.xml /var/lib/syncthing/.config/syncthing/config.xml.orig
-   shell: "/bin/cp /var/lib/syncthing/.config/syncthing/config.xml /var/lib/syncthing/.config/syncthing/config.xml.orig"
+ - name: SYNCTHING - Create backups of syncthing configure
+   copy:
+     src: '/var/lib/{{ item }}/.config/syncthing/config.xml'
+     dest: '/var/lib/{{ item }}/.config/syncthing/config.xml.orig'
+     remote_src: yes
+   with_items:
+     - syncthing
+     - syncthing-depl
 
- - name: create backup /bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig
-   shell: "/bin/cp /var/lib/syncthing-depl/.config/syncthing/config.xml /var/lib/syncthing-depl/.config/syncthing/config.xml.orig"
-
-
-#######################################################
- - debug:
-     msg: "___________________________"
- - debug:
-     msg: "_____CONFIG_SYNCTHING______"
- - debug:
-     msg: "___________________________"
-
- - name: get local device-id
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+ - name: SYNCTHING - Get local device id for syncthing
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    register: localdeviceid
 
- - name: set LOCAL_DEVICE_ID
+ - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
    set_fact:
      LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: set SYNCTHING_APACHE_PATH
-   set_fact:
-     SYNCTHING_APACHE_PATH: '/etc/httpd/conf.d/syncthing.conf'
-   when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
-
-# Configure Apache for syncthing
-
- - name: Setup syncthing write <Location /syncthing/> in {{ SYNCTHING_APACHE_PATH }}
+ - name: SYNCTHING - Setup local apache for syncthing
    copy:
      content: |
        ProxyPass /syncthing/ http://localhost:8384/
@@ -730,149 +720,136 @@
            ProxyPassReverse http://localhost:8384/
            Require all granted
        </Location>
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
+     dest: '{{ APACHE_CONF_PATH }}/syncthing.conf'
 
- - name: reload apache2
+ - name: SYNCTHING - Reload apache
    systemd:
      name: httpd
      state: reloaded
    when:
-     - ansible_distribution != "Debian"
+     - ansible_distribution == 'CentOS'
 
-## IF XMPP_DOMAIN != PULSE
-
- - name: Setup syncthing write <Location /syncthing-{{ XMPP_DOMAIN }}/> in {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: '{{ item }}'
-   with_items:
-     - "ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/"
-     - "<Location /syncthing-{{ XMPP_DOMAIN }}/>"
-     - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/"
-     - "    Require all granted"
-     - "</Location>\n"
+ - name: SYNCTHING - Setup pulsemain apache for relay syncthing
+   copy:
+     content: |
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
    delegate_to: '{{ PULSEMAIN_IP }}'
-   ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
 
-## for Rhel
-
- - name: check if /etc/httpd/conf.d exist
-   stat:
-     path: /etc/httpd/conf.d
-   register: file_details
-   delegate_to: '{{ PULSEMAIN_IP }}'
-
-
- - name: Check if Service httpd Exists
-   stat: path=/etc/init.d/httpd
-   register: service_status
-   delegate_to: '{{ PULSEMAIN_IP }}'
-
- - name: reload httpd
+ - name: SYNCTHING - Reload apache on pulsemain
    systemd:
      name: httpd
      state: reloaded
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
-     - service_status.stat.exists
+     - ansible_distribution == 'CentOS'
 
-## end delegate to
-
- - name: start syncthing.discosrv
+ - name: SYNCTHING - Enable discovery server on pulsemain
    systemd:
+     enabled: yes
      name: syncthing.discosrv
-     state: started
    when:
      - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
 
-# Stop syncthing service
-
- - name: stop syncthing@syncthing
+ - name: SYNCTHING - Restart discovery server on pulsemain
    systemd:
-     name: syncthing@syncthing
-     state: stopped
+     state: restarted
+     name: syncthing.discosrv
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
 
-# Use the local discovery server
-
- - name: xmlstarlet define global announce server as localhost
-   shell: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://localhost:8443/?id={{ LOCAL_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to LOCAL_DEVICE_ID on pulsemain
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ LOCAL_DEVICE_ID }}'
    when:
      - INSTALL_TYPE == 'p'
 
-# Find pulsemain device id
-
-# TO DELEGATE
- - name: get pulsemain device id
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+ - name: SYNCTHING - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: resid
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
- - name: set PULSEMAIN_DEVICE_ID (config_syncthing - delagate_to pulsemain)
+ - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
- - debug:
-     msg: '{{ PULSEMAIN_DEVICE_ID }}'
-
- - name: xmlstarlet define global announce server
-   shell: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to PULSEMAIN_DEVICE_ID on relay
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ PULSEMAIN_DEVICE_ID }}'
    when:
      - INSTALL_TYPE != 'p'
-#END DELEGATE TO
 
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@syncthing
+     state: stopped
 
-    # Disable use of syncthing relays and local announce
+ - name: SYNCTHING - Define global announce server as localhost on pulsemain
+   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://localhost:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
+   when:
+     - INSTALL_TYPE == 'p'
 
- - name: xmlstarlet disable relays
-   shell: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
+   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
+   when:
+     - INSTALL_TYPE != 'p'
 
- - name: xmlstarlet disable local announce
-   shell: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Disable use of relays
+   command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
 
-# Setup a username and password for accessing syncthing
+ - name: SYNCTHING - Disable use of local announce
+   command: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
 
- - name: xmlstarlet add root user
-   shell: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Add root user
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
 
- - name: set ENCRYPTED_PASS
+ - name: SYNCTHING - Generate Syncthing root user hash
+   shell: "htpasswd -bnBC 10 '' {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/'"
+   register: syncthing_pass
+
+ - name: SYNCTHING - Define ENCRYPTED_PASS
    set_fact:
-     ENCRYPTED_PASS: $(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')
+     ENCRYPTED_PASS: "{{ syncthing_pass.stdout }}"
 
- - name: xmlstarlet set root password
-   shell: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Set root password to ENCRYPTED_PASS
+   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml'
 
-# Restart syncthing service
-
- - name: restarted syncthing@syncthing
+ - name: SYNCTHING - Restart service after editing configuration
    systemd:
      name: syncthing@syncthing
      state: restarted
 
- - pause:
-     seconds: 5
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
 
-    # Configure syncthingmanager
+ - name: SYNCTHING - Get api key from syncthing
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
 
- - name: set apikey
+ - name: SYNCTHING - Set API_KEY
    set_fact:
-     API_KEY: '$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)'
+     API_KEY: "{{ apikey.stdout }}"
 
- - name: stman configure apikey
-   shell: 'stman configure -k {{ API_KEY }}'
+ - name: SYNCTHING - Configure API_KEY in stman
+   command: 'stman configure -k {{ API_KEY }}'
 
-# Change the name to use the same as the XMPP domain
-
- - name: stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
-   shell: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
+ - name: SYNCTHING - Define XMPP_DOMAIN for device name
+   command: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
 
     # Add device to pool if relay server
     # Add device to pool on pulsemain
@@ -880,21 +857,6 @@
  - name: stman device add (config_syncthing - delagate_to pulsemain)
    shell: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
-# Find pulsemain device id
-
- - name: get pulsemain device id
-   shell: 'syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   register: deviceout
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: '{{ deviceout.stdout }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -937,14 +899,6 @@
  - debug:
      msg: "_________________________________"
 
-
- - name: get local device-id
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-   register: localdeviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
 ##########################################################
 #                         Checks                         #
@@ -1464,31 +1418,23 @@
  - debug:
      msg: "_____________________________"
 
- - name: get LOCAL_DEVICE_ID
+ - name: SYNCTHING - Get local device id for syncthing
+   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   register: localdeviceid
+
+ - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing-depl
    set_fact:
-     LOCAL_DEVICE_ID: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: execute LOCAL_DEVICE_ID
-   shell: '{{ LOCAL_DEVICE_ID }}'
-   register: deviceid
-
- - name: set LOCAL_DEVICE_ID
-   set_fact:
-     LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
-
-
-    # Configure Apache for syncthing-depl
-
- - name: write <Location /syncthing-depl/> in file set LOCAL_DEVICE_ID
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: '{{ item }}'
-   with_items:
-     - "ProxyPass /syncthing-depl/ http://localhost:8385/"
-     - "<Location /syncthing-depl/>"
-     - "    ProxyPassReverse http://localhost:8385/"
-     - "    Require all granted"
-     - "</Location>\n"
+ - name: SYNCTHING - Setup local apache for syncthing-depl
+   copy:
+     content: |
+       ProxyPass /syncthing-depl/ http://localhost:8385/
+       <Location /syncthing-depl/>
+           ProxyPassReverse http://localhost:8385/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-depl.conf'
 
  - name: reload apache2
    systemd:
@@ -1499,30 +1445,18 @@
 
 #######START DELEGATE TO
 
- - name: check if /etc/httpd/conf.d exist
-   stat:
-     path: /etc/httpd/conf.d
-   register: file_details
+ - name: SYNCTHING - Setup pulsemain apache for relay syncthing-depl
+   copy:
+     content: |
+       ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/
+       <Location /syncthing-depl-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-depl-{{ XMPP_DOMAIN }}.conf'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == "CentOS"
-
- - name: write <Location /syncthing-depl-{{ XMPP_DOMAIN }}/> in file {{ SYNCTHING_APACHE_PATH }}
-   lineinfile:
-     dest: '{{ SYNCTHING_APACHE_PATH }}'
-     line: '{{ item }}'
-   with_items:
-     - "ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/"
-     - "<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>"
-     - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
-     - "    Require all granted"
-     - "</Location>\n"
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   ignore_errors: yes
-   when:
-     - file_details.stat.exists
      - INSTALL_TYPE != 'p'
-     - ansible_distribution == "CentOS"
 
  - name: Check if Service apache2 Exists
    stat:
@@ -1545,78 +1479,32 @@
      - INSTALL_TYPE != 'p'
      - service_status.stat.exists
 
-#######END DELEGATE TO
-
-# Stop syncthing service
-
- - name: stop service syncthing@syncthing-depl
+ - name: SYNCTHING - Stop service for editing configuration
    systemd:
      name: syncthing@syncthing-depl
      state: stopped
 
-# Use the local discovery server
-
- - name: get PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: 'syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id'
+ - name: SYNCTHING - Define global announce server as localhost on pulsemain for syncthing-depl
+   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://localhost:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
-     - XMPP_DOMAIN == "pulse"
+     - INSTALL_TYPE == 'p'
 
- - name: execute PULSEMAIN_DEVICE_ID
-   shell: '{{ PULSEMAIN_DEVICE_ID }}'
-   register: deviceid
+ - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing-depl
+   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
-     - XMPP_DOMAIN == "pulse"
+     - INSTALL_TYPE != 'p'
 
- - name: set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: '{{ deviceid.stdout }}'
-   when:
-     - XMPP_DOMAIN == "pulse"
+ - name: SYNCTHING - Disable use of relays
+   command: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: xmlstarlet config global announce server syncthing
-   shell: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://localhost:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-   when:
-     - XMPP_DOMAIN == "pulse"
+ - name: SYNCTHING - Disable use of local announce
+   command: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
-# else
- - name: get PULSEMAIN_DEVICE_ID
-   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   register: device
-   when:
-     - XMPP_DOMAIN != "pulse"
+ - name: SYNCTHING - Add root user
+   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: '{{ device.stdout }}'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: xmlstarlet configuration globalAnnounceServer syncthing-depl
-   shell: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ PULSEMAIN_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
-# Disable use of syncthing relays and local announce
-
- - name: xmlstarlet disable relays
-   shell: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-
- - name: xmlstarlet disable local announce
-   shell: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-
-# Setup a username and password for accessing syncthing
-
- - name: xmlstarlet add root user
-   shell: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
-
- - name: set ENCRYPTED_PASS
-   set_fact:
-     ENCRYPTED_PASS: $(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')
-
- - name: xmlstarlet set root password
-   shell: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
+ - name: SYNCTHING - Set root password to ENCRYPTED_PASS
+   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
 # Reconfigure listen ports for syncthing-depl
 
@@ -1636,19 +1524,19 @@
  - pause:
      seconds: 10
 
-# Configure syncthingmanager
+ - name: SYNCTHING - Get api key from syncthing-depl
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   register: apikey
 
- - name: get apikey
+ - name: SYNCTHING - Set API_KEY
    set_fact:
-     API_KEY: $(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml)
+     API_KEY: "{{ apikey.stdout }}"
 
- - name: stman configure apikey
-   shell: "stman configure -k {{ API_KEY }} -p 8385 -n depl"
+ - name: SYNCTHING - Configure API_KEY in stman
+   command: "stman configure -k {{ API_KEY }} -p 8385 -n depl"
 
-# Change the name to use the same as the XMPP domain
-
- - name: stman device edit
-   shell: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
+ - name: SYNCTHING - Define XMPP_DOMAIN for device name
+   command: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
 
 # Add device to pool if relay server
 # Add device to pool on pulsemain
@@ -1657,22 +1545,7 @@
    shell: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - XMPP_DOMAIN != "pulse"
-
-# Find pulsemain device id
-
- - name: get pulsemain device id
-   shell: 'syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id'
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   register: deviceout
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: '{{ deviceout.stdout}}'
-   when:
-     - XMPP_DOMAIN != "pulse"
+     - INSTALL_TYPE != 'p'
 
 # Add pulsemain to local pool
 
@@ -1682,6 +1555,20 @@
      - INSTALL_TYPE != 'p'
 
 # Auto-accept shares coming from pulsemain
+
+ - name: SYNCTHING - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: resid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: xmlstarlet auto-accept shares coming from pulsemain
    shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
