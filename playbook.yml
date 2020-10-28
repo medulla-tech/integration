@@ -26,26 +26,8 @@
      - INSTALL_TYPE: 'm'
      - INTERFACE_TO_PULSE: 'ens192'
      - INTERFACE: 'ens192'
-     - XMPP_DOMAIN: ''
-     - key: /root/.ssh/id_rsa.pub
-     - RELAY_CONFIG_FILE: ''
-     - PLUGINLIST: ''
-     - MASTER_PASSWORD: ''
-     - GUACAMOLE_BASEURL: ''
-     - IP_REMOTE_SERVER: ''
-     - IP_ADDRESS: ''
-     - PLUGIN_CONFIG_FILE: ''
-     - MAX_ID: ''
-     - CLUSTER_ID: ''
-     - RELAYSERVER_ID: ''
-     - GATEWAYPORTS_RES: ''
-     - SYNCTHING_APACHE_PATH: ''
-     - GUACAMOLE_ROOT_PASSWORD: ''
-     - GUACAMOLE_APACHE_PATH: ''
-     - PULSEMAIN_DEVICE_ID: ''
-     - LOCAL_DEVICE_ID: ''
-     - SHARE_ADDED: ''
-     - SSL_CONF_FILE: ''
+     - MULTISITE_ENTITY: ''                                                                                                                                   │····················································
+     - MAIN_ENTITY: ''
 
    roles:
      - pulse4ambx
