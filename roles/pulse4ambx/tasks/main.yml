@@ -1638,7 +1638,7 @@
    lineinfile:
      dest: /etc/ejabberd/ejabberd.yml
      regexp: '^\s*certfile: .*$'
-     line: '\ \ \ \ certfile: "/etc/ejabberd/ejabberd.pem"'
+     line: '    certfile: "/etc/ejabberd/ejabberd.pem"'
    when:
      - INSTALL_TYPE != 'p'
 
