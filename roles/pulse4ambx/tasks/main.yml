@@ -1473,7 +1473,7 @@
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - relay_is_inserted.stdout == 0
+     - relay_is_inserted.stdout_lines[1] == "0"
 
  - name: RELAY - Create substituteconf records
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
