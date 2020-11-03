@@ -1510,6 +1510,15 @@
 #                Certificate Generation                  #
 ##########################################################
 
+ - name: Remove relay from certificat trust, we will redo it.
+   lineinfile:
+     dest: /var/lib/pulse2/pki/index.txt
+     state: absent
+     regexp: '{{ SERVER_FQDN }}$'
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: CERTS - Create the certificates on pulsemain
    shell: "{{ item }}"
    with_items:
