@@ -991,6 +991,17 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SHARE - Remove ACLs on reversessh
+   acl:
+     path: /var/lib/pulse2/clients/reversessh
+     state: absent
+     entity: syncthing
+     etype: group
+     default: yes
+     recursive: yes
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SHARE - Share folders to local relay from pulsemain
    command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
