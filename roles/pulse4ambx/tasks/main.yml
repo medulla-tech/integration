@@ -944,6 +944,11 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SHARE - Delete if it's present
+   file:
+     state: absent
+     path: /var/lib/pulse2/packages
+
  - name: SHARE - Create symbolic link in /var/lib/pulse2/packages
    file:
      src: /telediffusion/4
@@ -1464,7 +1469,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: RELAY - Create substituteconf records
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ RELAYSERVER_ID }})\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
      - { type: 'subscription', jid: 'master_subs@pulse' }
