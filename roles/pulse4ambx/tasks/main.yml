@@ -413,6 +413,8 @@
     sed -i '/body: ""/ {n;N; s/^/    ##/gm }' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
 
  - name: EJABBERD - Restart service
    systemd:
