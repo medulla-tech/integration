@@ -1506,6 +1506,14 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Disable Quick deploy
+   blockinfile:
+     dest: /etc/pulse-xmpp-agent/relayconf.ini.local
+     block: |
+       [quick_deploy]
+       max_size_stanza_xmpp = 0
+     state: present
+
 ##########################################################
 #                Certificate Generation                  #
 ##########################################################
