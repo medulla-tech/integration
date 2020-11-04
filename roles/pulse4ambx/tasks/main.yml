@@ -133,6 +133,12 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: PREPARATION - Disable pulse2-package-server and deps
+   lineinfile:
+     dest:  /etc/yum.conf
+     state: present
+     line: exclude= pulse2-common pulse2-package-server python-pulse2-common python-mmc-core
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
