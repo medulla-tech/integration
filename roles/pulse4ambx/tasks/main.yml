@@ -129,7 +129,7 @@
      - ansible_distribution == 'CentOS'
 
  - name: PREPARATION - Clean yum repo metdata
-   command: yum clean metdata
+   command: yum clean metadata
    when:
      - ansible_distribution == 'CentOS'
 
