@@ -20,16 +20,21 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ deviceid.stdout }}"
 
- - name: delete file if present
+ - name: delete /var/lib/syncthing/packages if present
    file:
      path: /var/lib/syncthing/packages
      state: absent
 
- - name: create file
+ - name: create /var/lib/syncthing/packages
    file:
      path: /var/lib/syncthing/packages
      state: directory
      mode: '0755'
+
+ - name: create /var/lib/pulse2/packages
+   file:
+     path: /var/lib/pulse2/packages
+     state: directory
 
  - name: install acl
    apt:
@@ -57,7 +62,7 @@
  - name: shell stman
    shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -68,28 +73,28 @@
  - name: set SHARE_ADDED
    set_fact:
      SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell xmlstarlet
    shell: '{{ SHARE_ADDED }}'
    register: xmlout
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: set LOCAL_DEVICE_ID
    set_fact:
      SHARE_ADDED: "{{ xmlout.stdout }}"
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 
  - name: shell stman
    shell: stman folder unshare pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -97,7 +102,7 @@
  - name: shell stman
    shell: stman folder share pulsemaster_packages {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - SHARE_ADDED == '0'
      - XMPP_DOMAIN != 'pulse'
@@ -105,7 +110,7 @@
  - name: set SHARE_ADDED
    set_fact:
      SHARE_ADDED: xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != 'pulse'
 

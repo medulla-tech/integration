@@ -63,7 +63,7 @@
    user:
      name: syncthing
      state: present
-     create_home: yes
+     createhome: yes
      home: /var/lib/syncthing
      shell: /bin/false
      system: yes
@@ -88,7 +88,7 @@
    user:
      name: syncthing-depl
      state: present
-     create_home: yes
+     createhome: yes
      home: /var/lib/syncthing-depl
      shell: /bin/false
      system: yes

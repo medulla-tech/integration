@@ -75,13 +75,13 @@
  - name: mysql_install_db
    shell: mysql_install_db
 
- - name: mysql_install_db
-   shell: "chown -R mysql: /var/lib/mysql/"
+ - name: delede dir
+   file:
+     path: /var/lib/mysql
+     state: absent
 
- - name: restart mariadb
-   service:
-     name: mariadb
-     state: restarted
+ - name: mysql_install_db
+   shell: mysql_install_db
 
  - name: enabled centos password
    shell: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
@@ -90,6 +90,9 @@
 
  - name: settings for mysql-server UPDATE mysql.user SET Password=PASSWORD
    shell: echo "UPDATE mysql.user SET Password=PASSWORD('{{ DBADMINPASSWD }}') WHERE User='{{ DBADMINUSER }}'" | mysql -u root -p{{ DBADMINPASSWD }}
+
+ - name: define root password for mariadb
+   shell: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
 
  - name: settings for mysql-server FLUSH PRIVILEGES
    shell: echo "FLUSH PRIVILEGES" | mysql -u {{ DBADMINUSER }} -p"{{ DBADMINPASSWD }}"

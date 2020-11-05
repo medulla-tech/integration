@@ -4,6 +4,14 @@
      msg: "_____INSTALL_PHP_____"
 
        #INSTALL PHP
+ - name: desinstall_php_mysql
+   yum:
+     update_cache: yes
+     pkg:
+       - php-mysql
+     state: absent
+   when:
+     - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
  - name: install_php
    yum:

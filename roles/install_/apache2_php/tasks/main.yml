@@ -13,10 +13,6 @@
    vars:
      packages_cent:
        - httpd
-       - httpd-tools
-       - python3
-       - rsync
-       - epel-release
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == "Rhel"
 
@@ -116,9 +112,8 @@
 
         #SERVICES RESTART
 
- - name: daemon_reload
-   systemd:
-     daemon_reload: yes
+ - name: shell daemon-reload
+   shell: systemctl daemon-reload 
 
  - name: restart apache2
    systemd:

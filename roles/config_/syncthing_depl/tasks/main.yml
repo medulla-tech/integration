@@ -82,7 +82,7 @@
    stat:
      path: /etc/apache2/conf-available
    register: file_details
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "Debian"
 
@@ -96,7 +96,7 @@
      - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "    Require all granted"
      - "</Location>\n"
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
      - file_details.stat.exists
@@ -107,7 +107,7 @@
    stat:
      path: /etc/httpd/conf.d
    register: file_details
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "CentOS"
 
@@ -121,7 +121,7 @@
      - "    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/"
      - "    Require all granted"
      - "</Location>\n"
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
      - file_details.stat.exists
@@ -131,13 +131,13 @@
  - name: Check if Service Exists
    stat: path=/etc/init.d/apache2
    register: service_status
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: reload apache2
    systemd:
      name: apache2
      state: reloaded
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "Debian" or ansible_distribution == 'Mageia'
      - XMPP_DOMAIN != 'pulse'
@@ -146,13 +146,13 @@
  - name: Check if Service Exists
    stat: path=/etc/init.d/httpd
    register: service_status
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: set reload httpd
    systemd:
      name: httpd
      state: reloaded
-   delegate_to: pulse
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == "CentOS" or ansible_distribution == 'Rhel'
      - XMPP_DOMAIN != 'pulse'
@@ -193,15 +193,16 @@
      - XMPP_DOMAIN == "pulse"
 
 # else
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: '$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)'
+ - name: get device id
+   shell: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: device
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
-     PULSEMAIN_DEVICE_ID: '$(ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }})'
+     PULSEMAIN_DEVICE_ID: '{{ device.stdout }}'
    when:
      - XMPP_DOMAIN != "pulse"
 
@@ -212,30 +213,30 @@
 
 # Disable use of syncthing relays and local announce
 
- - name: shell
+ - name: xmlstarlet disable relays
    shell: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: shell
+ - name: xmlstarlet disable local announce
    shell: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
 # Setup a username and password for accessing syncthing
 
- - name: shell
+ - name: xmlstarlet add root user
    shell: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
  - name: set ENCRYPTED_PASS
    set_fact:
      ENCRYPTED_PASS: $(htpasswd -bnBC 10 "" {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/')
 
- - name: shell
+ - name: xmlstarlet set root password
    shell: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
 # Reconfigure listen ports for syncthing-depl
 
- - name: shell
+ - name: xmlstarlet define listen port to 23000
    shell: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: shell
+ - name: xmlstarlet define gui listen port to 8385
    shell: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
 # Restart syncthing service
@@ -250,56 +251,52 @@
 
 # Configure syncthingmanager
 
- - name: set API_KEY
+ - name: get apikey
    set_fact:
      API_KEY: $(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml)
 
- - name: shell
+ - name: stman configure apikey
    shell: "stman configure -k {{ API_KEY }} -p 8385 -n depl"
 
 # Change the name to use the same as the XMPP domain
 
- - name: shell
+ - name: stman device edit
    shell: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
 
 # Add device to pool if relay server
 # Add device to pool on pulsemain
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
-   when:
-     - XMPP_DOMAIN != "pulse"
-
- - name: run ssh SSH_COMMAND
-   shell: 'ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }}'
+ - name: stman device add
+   shell: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - XMPP_DOMAIN != "pulse"
 
 # Find pulsemain device id
 
- - name: set SSH_COMMAND
-   set_fact:
-     SSH_COMMAND: 'syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id'
+ - name: get pulsemain device id
+   shell: 'syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id'
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: deviceout
    when:
      - XMPP_DOMAIN != "pulse"
 
  - name: set PULSEMAIN_DEVICE_ID
    set_fact:
-     PULSEMAIN_DEVICE_ID: '$(ssh {{ PULSEMAIN_IP }} {{ SSH_COMMAND }})'
+     PULSEMAIN_DEVICE_ID: '{{ deviceout.stdout}}'
    when:
      - XMPP_DOMAIN != "pulse"
 
 # Add pulsemain to local pool
 
- - name: stman
+ - name: stman device add
    shell: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
      - XMPP_DOMAIN != "pulse"
 
 # Auto-accept shares coming from pulsemain
 
- - name: shell
+ - name: xmlstarlet auto-accept shares coming from pulsemain
    shell: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - XMPP_DOMAIN != "pulse"
@@ -318,7 +315,7 @@
 
 # Delete the default share
 
- - name: shell
+ - name: stman folder remove
    shell: 'stman -d depl folder remove "Default Folder"'
 
 # Update relay config
