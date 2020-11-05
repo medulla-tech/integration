@@ -1,6 +1,5 @@
 ---
 
-##_configure_glpi_multisite
 ##_configure_package_server_multisite
 
  # - name: set PACKAGESERVER_UUID
