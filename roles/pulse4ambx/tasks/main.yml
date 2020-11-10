@@ -837,6 +837,7 @@
  - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
    command: 'stman device remove {{ XMPP_DOMAIN }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
+   ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
 
