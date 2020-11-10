@@ -1272,16 +1272,16 @@
      line: "{{ item.line }}"
      insertafter: "{{ item.insertafter }}"
    with_items:
-     - { regex: '^#\s*Port 22$', line: 'Port 22', insertafter: '' }
+     - { regex: '^#?\s*Port 22$', line: 'Port 22', insertafter: '' }
      - { regex: "^Port {{ REVERSE_SSH_PORT }}$", line: "Port {{ REVERSE_SSH_PORT }}", insertafter: 'Port 22' }
-     - { regex: '^#?\s*GatewayPorts no$', line: 'GatewayPorts yes', insertafter: '' }
+     - { regex: '^#?\s*GatewayPorts .*$', line: 'GatewayPorts yes', insertafter: '' }
    when:
      - REVERSE_SSH_PORT != ''
 
  - name: SSH - Setup GatewayPorts
    lineinfile:
      dest: /etc/ssh/sshd_config
-     regexp: '^#\?\s*GatewayPorts no$'
+     regexp: '^#?\s*GatewayPorts .*$'
      line: 'GatewayPorts yes'
 
  - name: SSH - Restart SSH server
