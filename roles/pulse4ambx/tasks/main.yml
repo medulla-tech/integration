@@ -1484,7 +1484,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Relay check if id_ars is already inserted
+ - name: RELAY - Check if ARS is already inserted in its cluster
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: relay_is_inserted
