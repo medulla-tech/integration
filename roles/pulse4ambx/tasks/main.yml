@@ -834,6 +834,12 @@
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
    command: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
 
+ - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
+   command: 'stman device remove {{ XMPP_DOMAIN }}'
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SYNCTHING - Add relayserver device to pulsemain syncthing
    command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    delegate_to: '{{ PULSEMAIN_IP }}'
