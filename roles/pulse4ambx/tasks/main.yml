@@ -71,6 +71,8 @@
      user: root
      state: present
      key: "{{ sshkey.ssh_public_key }}"
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -81,6 +83,8 @@
      generate_ssh_key: yes
      ssh_key_bits: 2048
    register: pulsemain_sshkey
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -629,6 +633,8 @@
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
         CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != "p"
@@ -637,6 +643,8 @@
    systemd:
      name: httpd
      state: reloaded
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'CentOS'
@@ -748,6 +756,8 @@
            Require all granted
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -756,12 +766,16 @@
    systemd:
      name: httpd
      state: reloaded
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'CentOS'
 
  - name: SYNCTHING - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: resid
    when:
@@ -770,6 +784,8 @@
  - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -836,6 +852,8 @@
 
  - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
    command: 'stman device remove {{ XMPP_DOMAIN }}'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
@@ -843,6 +861,8 @@
 
  - name: SYNCTHING - Add relayserver device to pulsemain syncthing
    command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -893,6 +913,8 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1019,6 +1041,8 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1042,6 +1066,8 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1055,6 +1081,8 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1144,6 +1172,8 @@
            Require all granted
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-depl-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1152,6 +1182,8 @@
    systemd:
      name: httpd
      state: reloaded
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'CentOS'
@@ -1210,12 +1242,16 @@
 
  - name: SYNCTHING - Add relayserver device as introducer on pulsemain syncthing-depl
    command: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: resid
    when:
@@ -1224,6 +1260,8 @@
  - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1304,6 +1342,8 @@
 
  - name: RELAY - Get current plugins list from pulsemain
    command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: plugin_list
    when:
@@ -1311,6 +1351,8 @@
 
  - name: RELAY - Get connection password from pulsemain
    shell: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: connection_pass
    when:
@@ -1362,6 +1404,8 @@
      - guacamole
      - reverse_ssh_on
      - manage_scheduler_relay
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    ignore_errors: yes
    when:
@@ -1407,6 +1451,8 @@
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1426,6 +1472,8 @@
  - name: RELAY - Get cluster id if it exists
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
    register: existingclusterid
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1440,6 +1488,8 @@
  - name: RELAY - Get MAX_ID FROM cluster_ars when cluster does not exist
    command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"'
    register: maxid
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1454,6 +1504,8 @@
 
  - name: RELAY - Create cluster if it does not exist
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - existingclusterid.stdout == ''
@@ -1461,6 +1513,8 @@
  - name: RELAY - Get MAX_ID FROM has_cluster_ars
    command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"'
    register: maxid
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1474,6 +1528,8 @@
  - name: RELAY - Get RELAYSERVER_ID FROM relayserver
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1484,13 +1540,17 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Check if ARS is already inserted in its cluster
+ - name: RELAY - Relay check if id_ars is already inserted
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: relay_is_inserted
 
  - name: RELAY - Insert relay in its cluster
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - relay_is_inserted.stdout == "0"
@@ -1503,6 +1563,8 @@
      - { type: 'registration', jid: 'master_reg@pulse' }
      - { type: 'inventory', jid: 'master_inv@pulse' }
      - { type: 'logger', jid: 'master_log@pulse' }
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1512,6 +1574,8 @@
    with_items:
      - 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
      - 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1522,6 +1586,8 @@
      state: present
      key: "{{ sshkey.ssh_public_key }}"
      path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1543,6 +1609,8 @@
      dest: /var/lib/pulse2/pki/index.txt
      state: absent
      regexp: '{{ SERVER_FQDN }}$'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1557,6 +1625,8 @@
      - 'openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem'
      - 'cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem'
      - 'crudini --del /var/lib/pulse2/pki/conf/pulse.cnf alt_names'
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1571,6 +1641,8 @@
      - { path: '/var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem', mode: '0644', state: 'file' }
      - { path: '/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem', mode: '0644', state: 'file' }
      - { path: '/var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem', mode: '', state: 'absent' }
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
 
  - name: CERTS - Fetch relay certificate from pulsemain
@@ -1578,6 +1650,8 @@
      src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
      dest: "/tmp/{{ ansible_hostname }}-temp.pem"
      flat: yes
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1619,6 +1693,8 @@
  - name: FINAL - Get api key from syncthing on pulsemain
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
    register: apikey
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1630,6 +1706,8 @@
      - pulsemaster_baseremoteagent
      - pulsemaster_bootmenus
      - pulsemaster_downloads
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -1644,3 +1722,4 @@
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
+
