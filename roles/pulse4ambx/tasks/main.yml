@@ -1437,13 +1437,25 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Delete lines from /etc/hosts
+   lineinfile:
+     dest: "/etc/hosts"
+     regexp: "{{ item }}"
+     state: absent
+   with_items:
+     - '^.* pulse$'
+     - '^.* {{ XMPP_DOMAIN }}$'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: RELAY - Update /etc/hosts
    lineinfile:
-     line: "{{ item }}"
+     line: "{{ item.line }}"
      dest: "/etc/hosts"
+     regexp: "{{ item.regex }}"
    with_items:
-     - '{{ PULSEMAIN_IP }} pulse'
-     - '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
+     - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse' }
+     - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1451,6 +1463,7 @@
    lineinfile:
      line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
      dest: /etc/hosts
+     regexp: '^.* {{ XMPP_DOMAIN }}$'
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1722,4 +1735,3 @@
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
-
