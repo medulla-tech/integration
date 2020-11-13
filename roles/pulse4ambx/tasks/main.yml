@@ -696,8 +696,9 @@
      - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
 
  - name: SYNCTHING - Create log file
-   file: /var/log/syncthing.log
-   mode: 0666
+   file:
+     path: /var/log/syncthing.log
+     mode: 0666
 
  - name: SYNCTHING - Separate syncthing logs
    lineinfile:
