@@ -695,6 +695,21 @@
      - { name: 'syncthing', home: '/var/lib/syncthing' }
      - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
 
+ - name: SYNCTHING - Create log file
+   file: /var/log/synchting.log
+   mode: 0666
+
+ - name: SYNCTHING - Separate syncthing logs
+   lineinfile:
+     dest: "/usr/lib/systemd/system/syncthing@.service"
+     regexp: "{{ item.regex }}"
+     line: "{{ item.line }}"
+     insertafter: "{{ item.insertafter }}"
+   with_items:
+     - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
+     - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
+     - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
+
  - name: SYNCTHING - Enable services
    systemd:
      enabled: yes
