@@ -699,6 +699,7 @@
    file:
      path: /var/log/syncthing.log
      mode: 0666
+     state: touch
 
  - name: SYNCTHING - Separate syncthing logs
    lineinfile:
@@ -710,6 +711,21 @@
      - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
      - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
      - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
+
+ - name: SYNCTHING - Setup rotation of syncthing logs
+   copy:
+     content: |
+       /var/log/syncthing.log
+       {
+           missingok
+           daily
+           copytruncate
+           rotate 7
+           create 0644 root root
+           compress
+           delaycompress
+       }
+     dest: '/etc/logrotate.d/syncthing'
 
  - name: SYNCTHING - Enable services
    systemd:
