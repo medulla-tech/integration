@@ -1728,9 +1728,6 @@
  - name: crudini quick_deploy max_size_stanza_xmpp 0
    shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
 
- - name: Add compress and delaycompess lines in pulse-xmpp-agent-relay logrotate file
-   shell: '[ -f /etc/logrotate.d/pulse-xmpp-agent-relay ] && sed "/^}$/i  \    compress\n    delaycompress" -i /etc/logrotate.d/pulse-xmpp-agent-relay'
-
 ##########################################################
 #                     Final steps                        #
 ##########################################################
