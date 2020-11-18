@@ -719,11 +719,10 @@
        {
            missingok
            daily
-           copytruncate
            rotate 7
+           notifempty
            create 0644 root root
            compress
-           delaycompress
        }
      dest: '/etc/logrotate.d/syncthing'
 
@@ -1502,6 +1501,13 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Delete service start marker
+   file:
+     path: /usr/lib/python2.7/site-packages/pulse_xmpp_agent/INFOSTMP/on_line_ars.ansible
+     state: absent
+   when:
+     - ansible_distribution == 'CentOS'
+
  - name: RELAY - Enable service
    systemd:
      enabled: yes
@@ -1510,9 +1516,11 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Pause for 2 minutes to start and register the relay
-   pause:
-     minutes: 2
+ - name: RELAY - Pause for up to 300 seconds to start and register the relay
+   wait_for:
+     path: /usr/lib/python2.7/site-packages/pulse_xmpp_agent/INFOSTMP/on_line_ars.ansible
+   when:
+     - ansible_distribution == 'CentOS'
 
  - name: RELAY - Get cluster id if it exists
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
