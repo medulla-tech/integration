@@ -106,17 +106,11 @@
 
  - name: PREPARATION - Delete old siveo repo
    file:
-     path: /etc/yum.repos.d/siveo.repo
+     path: {{ item }}
      state: absent
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: PREPARATION - Delete old siveo repo
-   file:
-     path: /etc/apt/sources.list.d/siveo.repo
-     state: absent
-   when:
-     - ansible_distribution == 'Debian'
+   with_items:
+     - /etc/yum.repos.d/siveo.repo
+     - /etc/apt/sources.list.d/siveo.repo
 
  - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
    get_url:
@@ -154,7 +148,7 @@
      - ansible_distribution == 'CentOS'
 
  - name: PREPARATION - Import SIVEO public key
-   rpm_key:
+   apt_key:
      state: present
      key: '{{ grep_output.stdout.split("=")[1] }}'
    when:
@@ -165,7 +159,7 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: PREPARATION - Clean yum repo metadata
+ - name: PREPARATION - Clean apt repo metadata
    command: apt-get clean metadata
    when:
      - ansible_distribution == 'Debian'
@@ -175,7 +169,7 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: PREPARATION - Clean yum repo cache
+ - name: PREPARATION - Clean apt repo cache
    command: apt-get clean all
    when:
      - ansible_distribution == 'Debian'
@@ -383,10 +377,13 @@
    apt:
      update_cache: yes
      pkg:
-       - {{ v_php }}-fpm
+       - {{ PHP_VERSION }}
      state: latest
    when:
      - ansible_distribution == 'Debian'
+
+ - name: PHP - Enable modules
+   command: a2enconf {{ PHP_VERSION }}-fpm
 
  - name: PHP - Update php.ini
    lineinfile:
@@ -436,7 +433,7 @@
    systemd:
      enabled: yes
      state: restarted
-     name: {{ v_php }}-fpm
+     name: {{ PHP_VERSION }}-fpm
    when:
      - ansible_distribution == 'Debian'
 
@@ -461,15 +458,33 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: MARIADB - Delete /var/lib/mysql
-   file:
-     path: /var/lib/mysql
-     state: absent
+ - name: MARIADB - Install mariadb
+   apt:
+     state: latest
+     pkg:
+       - mariadb-client-10.3
+       - mariadb-server-10.3
+       - mariadb-server-core-10.3
+   when:
+     - ansible_distribution == 'Debian'
 
- - name: MARIADB - Delete /root/.my.cnf
+ # - name: MARIADB - Delete /var/lib/mysql
+ #   file:
+ #     path: /var/lib/mysql
+ #     state: absent
+ #
+ # - name: MARIADB - Delete /root/.my.cnf
+ #   file:
+ #     path: /root/.my.cnf
+ #     state: absent
+
+ - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
-     path: /root/.my.cnf
+     path: {{ item }}
      state: absent
+   with_items:
+     - /var/lib/mysql
+     - /root/.my.cnf
 
  - name: MARIADB - Install initial database
    command: mysql_install_db
@@ -520,6 +535,14 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: EJABBERD - Install ejabberd
+   apt:
+     state: latest
+     pkg:
+       - ejabberd
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: EJABBERD - Enable service
    systemd:
      enabled: yes
@@ -545,8 +568,8 @@
 
  - name: EJABBERD - Set home folder to /var/lib/ejabberd for ejabberd user
    shell: "usermod ejabberd -d /var/lib/ejabberd"
-   when:
-     - ansible_distribution == 'CentOS'
+   # when:
+   #   - ansible_distribution == 'CentOS'
 
  - name: EJABBERD - Set XMPP domain in ejabberd.yml
    command: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
@@ -599,6 +622,30 @@
     sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: EJABBERD - Update ejabberd.yml
+   shell: |
+    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: EJABBERD - Restart service
    systemd:
@@ -628,16 +675,56 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: GUACAMOLE - Install guacamole Debian 10
+   apt:
+     pkg:
+       - guacamole-auth-mysql
+       - libmysql-java
+     state: latest
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
+
+ - name: GUACAMOLE - Install guacamole Debian other 10
+   apt:
+     pkg:
+       - guacamole-auth-mysql
+       - mysql-connector-java
+     state: latest
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version != '10'
+
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
-   lineinfile:
+   blockinfile:
      dest: /etc/default/tomcat
      create: yes
-     line: "{{ item }}"
-   with_items:
-     - '# Guacamole env variable'
-     - 'GUACAMOLE_HOME=/etc/guacamole'
+     block: |
+       '# Guacamole env variable'
+       'GUACAMOLE_HOME=/etc/guacamole'
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Get tomcat version
+   shell: basename /etc/default/tomcat*
+   register: versionTC
+   changed_when: False
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: GUACAMOLE - Set variable of tomcat version
+   set_fact:
+     TOMCAT_VERSION: "{{ versionTC.stdout }}"
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
+   blockinfile:
+     dest: /etc/default/{{ TOMCAT_VERSION }}
+     create: yes
+     block: |
+       # Guacamole env variable
+       GUACAMOLE_HOME=/etc/guacamole
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Enable tomcat
    systemd:
@@ -646,6 +733,14 @@
      name: tomcat
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Enable tomcat
+   systemd:
+     enabled: yes
+     state: restarted
+     name: '{{ TOMCAT_VERSION }}'
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Enable guacd
    systemd:
@@ -689,8 +784,8 @@
      mode: '0755'
      owner: root
      group: root
-   when:
-     - ansible_distribution == 'CentOS'
+   # when:
+   #   - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
    copy:
