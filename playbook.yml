@@ -1,14 +1,11 @@
 ---
 
- - name: install_relay
+ - name: install_multisite_dependencies
    hosts: relay
    remote_user: root
    vars:
-     - PULSE_REPO_URL: 'https://git.siveo.net'
-     - PULSE_REPO_RPM_URL: 'https://git.siveo.net'
-     - GIT_BRANCH: "integration"
+     - PULSE4REPO_URL: 'https://cnam.siveo.net/pulse4.repo'
      - ROOT_PASSWORD: 'siveo'
-     - DRIVERS_PASSWORD: 's3cr3t'
      - DBHOST: 'localhost'
      - DBPORT: '3306'
      - DBADMINUSER: 'root'
@@ -17,7 +14,6 @@
      - PUBLIC_IP: '212.83.163.33'
      - CLIENTS_SSH_PORT: ''
      - CLIENTS_VNC_PORT: ''
-     - MULTISITE_ENTITY: 'Main'
      - PULSEMAIN_IP: '10.62.19.40'
      - PULSEMAIN_FQDN: 'wva-mmc.siveo.lan'
      - PKI_PASSWORD: 'siveo'
@@ -26,74 +22,12 @@
      - GLPI_DBUSER: 'root'
      - GLPI_DBPASSWD: 'siveo'
      - GLPI_DBNAME: 'glpi'
-     - CREATE_ENTITY: 'y'
      - SERVER_FQDN: 'wva-ars1.siveo.lan'
      - INSTALL_TYPE: 'm'
      - INTERFACE_TO_PULSE: 'ens192'
      - INTERFACE: 'ens192'
-     - XMPP_DOMAIN: ''
-     - key: /root/.ssh/id_rsa.pub
-     - PHP_VERSION: php7.0
-     - PHP_VERSION_DEB: ''
-     - PHP_VERSION_CENT: ''
-     - TOMCAT_VERSION_MAG: '6'
-     - TOMCAT_VERSION: ''
-     - RELAY_CONFIG_FILE: ''
-     - PLUGINLIST: ''
-     - SSH_COMMAND: ''
-     - MASTER_PASSWORD: ''
-     - GUACAMOLE_BASEURL: ''
-     - IP_REMOTE_SERVER: ''
-     - IP_ADDRESS: ''
-     - PLUGIN_CONFIG_FILE: ''
-     - MAX_ID: ''
-     - CLUSTER_ID: ''
-     - RELAYSERVER_ID: ''
-     - SYSLINUX_PATH: ''
-     - PXELINUX_PATH: ''
-     - TOMCAT_VERSION: ''
-     - HOSTNAME_F: ''
-     - REVERSESSH: ''
-     - GATEWAYPORTS_RES: ''
-     - SYNCTHING_APACHE_PATH: ''
-     - GUACAMOLE_ROOT_PASSWORD: ''
-     - GUACAMOLE_APACHE_PATH: ''
-     - PULSEMAIN_DEVICE_ID: ''
-     - LOCAL_DEVICE_ID: ''
-     - SHARE_ADDED: ''
-     - ENABLE_CHANGE_PASS_CENT: 'true'
-     - SSL_CONF_FILE: ''
-     - PACKAGESERVER_UUID: ''
-     - NETMASK: '255.255.255.0'
-     - UUID: ''
-     - UUID_IMAGING: ''
-     - GLPI_ENTITY_ID: ''
-     - SHARE:
-       - share_id :
-         - share_id_name: 'pulsemaster_packages'
-       - share_id :
-         - share_id_name: 'pulsemaster_downloads'
-       - share_id :
-         - share_id_name: 'pulsemaster_bootmenus'
-       - share_id :
-         - share_id_name: 'pulsemaster_baseremoteagent'
-       - syncthing_folder :
-         - syncthing_folder_name: 'packages'
-       - syncthing_folder :
-         - syncthing_folder_name: 'downloads'
-       - syncthing_folder :
-         - syncthing_folder_name: 'bootmenus'
-       - syncthing_folder :
-         - syncthing_folder_name: 'baseremoteagent'
-       - destination:
-         - destination_name: '/telediffusion/4/'
-       - destination:
-         - destination_name: '/var/lib/pulse2/clients/'
-       - destination:
-         - destination_name: '/var/lib/pulse2/imaging/bootmenus/'
-       - destination:
-         - destination_name: '/var/lib/pulse2/xmpp_baseremoteagent/'
+     - MULTISITE_ENTITY: ''                                                                                                                                   │····················································
+     - MAIN_ENTITY: ''
 
-#INSTALL_RELAY
    roles:
      - pulse4ambx
