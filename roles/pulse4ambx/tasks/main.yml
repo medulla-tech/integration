@@ -784,8 +784,6 @@
      mode: '0755'
      owner: root
      group: root
-   # when:
-   #   - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
    copy:
@@ -797,6 +795,21 @@
      mode: '644'
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - MySQLAuthenticationProvider to /etc/guacamole/guacamole.properties
+   command: sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '8'
+
+ - name: GUACAMOLE - Set Hostname and port to /etc/guacamole/guacamole.properties
+   blockinfile:
+     path: /etc/guacamole/guacamole.properties
+     block: |
+       # Hostname and port of guacamole proxy
+       guacd-hostname: localhost
+       guacd-port:     4822
+       # Auth provider class (authenticates user/pass combination, needed if using the provided login screen)
+       auth-provider: net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider
 
  - name: GUACAMOLE - Configure guacamole.properties
    lineinfile:
@@ -821,6 +834,11 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: GUACAMOLE - Change tomcat port from 8080 to 8081
+   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ TOMCAT_VERSION }}/server.xml
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
    lineinfile:
      dest: /etc/tomcat/server.xml
@@ -829,6 +847,15 @@
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
+   lineinfile:
+     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
+     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
+     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"/>'
+   when:
+     - INSTALL_TYPE == "p"
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
    lineinfile:
@@ -839,12 +866,28 @@
      - INSTALL_TYPE != "p"
      - ansible_distribution == 'CentOS'
 
+ - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
+   lineinfile:
+     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
+     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
+     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
+   when:
+     - INSTALL_TYPE != "p"
+     - ansible_distribution == 'Debian'
+
  - name: GUACAMOLE - Restart tomcat
    systemd:
      name: tomcat
      state: restarted
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Restart tomcat
+   systemd:
+     name: {{ TOMCAT_VERSION }}
+     state: restarted
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
    copy:
@@ -877,6 +920,14 @@
      state: reloaded
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == "p"
+
+ - name: GUACAMOLE - Reload apache
+   systemd:
+     name: apache2
+     state: reloaded
+   when:
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
@@ -920,6 +971,17 @@
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE != "p"
 
+ - name: GUACAMOLE - Reload apache on pulsemain
+   systemd:
+     name: apache2
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != "p"
+
 ##########################################################
 #                    Install syncthing                   #
 ##########################################################
@@ -933,6 +995,15 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: SYNCTHING - Install syncthing
+   apt:
+     pkg:
+       - syncthing
+       - syncthingmanager
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: SYNCTHING - Install additional packages on pulsemain
    yum:
      pkg:
@@ -941,6 +1012,16 @@
      state: latest
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == "p"
+
+ - name: SYNCTHING - Install additional packages on pulsemain
+   apt:
+     pkg:
+       - syncthing_discosrv
+       - syncthing-systemd-addons
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
  - name: SYNCTHING - Reset syncthing
@@ -1073,6 +1154,16 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: SYNCTHING - Reload apache on pulsemain
+   systemd:
+     name: apache2
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
@@ -1207,13 +1298,38 @@
 #               Syncthing share packages                 #
 ##########################################################
 
+ # - name: SHARE - Set variables for loop
+ #   vars:
+ - name: SHARE - Set variables for loop
+   SHARE:
+     share_id :
+       share_id_name: 'pulsemaster_packages'
+     share_id :
+       share_id_name: 'pulsemaster_downloads'
+     share_id :
+       share_id_name: 'pulsemaster_bootmenus'
+     share_id :
+       share_id_name: 'pulsemaster_baseremoteagent'
+     syncthing_folder :
+       syncthing_folder_name: 'packages'
+     syncthing_folder :
+       syncthing_folder_name: 'downloads'
+     syncthing_folder :
+       syncthing_folder_name: 'bootmenus'
+     syncthing_folder :
+       syncthing_folder_name: 'baseremoteagent'
+     destination:
+       destination_name: '/telediffusion/4/'
+     destination:
+       destination_name: '/var/lib/pulse2/clients/'
+     destination:
+       destination_name: '/var/lib/pulse2/imaging/bootmenus/'
+     destination:
+       destination_name: '/var/lib/pulse2/xmpp_baseremoteagent/'
+
  - name: SHARE - Unshare folder from main pulse if already shared
-   command: stman folder unshare {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   with_dict: '{{SHARE}}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1229,52 +1345,36 @@
 
  - name: SHARE - Remove destination folders if present
    file:
-     path: '{{ item.destination }}'
+     path: '{{ item.value.destination_name }}'
      state: absent
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Remove syncthing folders if present
    file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
+     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create destination folders
    file:
-     path: '{{ item.destination }}'
+     path: '{{ item.value.destination_name }}'
      state: directory
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create syncthing special folder
    file:
-     path: '{{ item.destination }}/.stfolder/'
+     path: '{{ item.value.destination_name }}/.stfolder/'
      state: directory
      mode: '0755'
      owner: syncthing
      group: syncthing
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1303,46 +1403,34 @@
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
-     path: '{{ item.destination }}'
+     path: '{{ item.value.destination_name }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: yes
      state: present
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Define ACLs on the folders
    acl:
-     path: '{{ item.destination }}'
+     path: '{{ item.value.destination_name }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: no
      state: present
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folders to local relay from pulsemain
-   command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1361,12 +1449,8 @@
    ignore_errors: yes
 
  - name: SHARE - Unshare folders from main pulse if share is not added on relay
-   command: stman folder unshare {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   with_dict: '{{SHARE}}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1376,12 +1460,8 @@
      - check_share.rc != 0
 
  - name: SHARE - Re-share folders to local relay from pulsemain
-   command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   with_dict: '{{SHARE}}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1406,23 +1486,15 @@
 
  - name: SHARE - Remove syncthing folders from syncthing home
    file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
+     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Change path to folders in syncthing config file
-   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.share_id }}']/@path" -v "{{ item.destination }}" /var/lib/syncthing/.config/syncthing/config.xml
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.value.share_id_name }}']/@path" -v "{{ item.value.destination_name }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_dict: '{{SHARE}}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1465,6 +1537,13 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: SYNCTHING - Reload apache
+   systemd:
+     name: apache2
+     state: reloaded
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: SYNCTHING - Setup pulsemain apache for relay syncthing-depl
    copy:
      content: |
@@ -1489,6 +1568,16 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: SYNCTHING - Reload apache on pulsemain
+   systemd:
+     name: apache2
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
@@ -1635,8 +1724,18 @@
    service:
      name: sshd
      state: restarted
+
+ - name: SSH - Active pulse module
+   command: a2enconf pulse
    when:
-     - ansible_distribution == 'CentOS'
+     - ansible_distribution == 'Debian'
+
+ - name: SSH - Reload apache on Debian
+   systemd:
+     name: apache2
+     state: reloaded
+   when:
+     - ansible_distribution == 'Debian'
 
 ##########################################################
 #                  Relay server setup                    #
@@ -1919,7 +2018,7 @@
 #                Certificate Generation                  #
 ##########################################################
 
- - name: Remove relay from certificat trust, we will redo it.
+ - name: CERTS - Remove relay from certificat trust, we will redo it.
    lineinfile:
      dest: /var/lib/pulse2/pki/index.txt
      state: absent
