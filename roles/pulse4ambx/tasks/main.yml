@@ -468,16 +468,6 @@
    when:
      - ansible_distribution == 'Debian'
 
- # - name: MARIADB - Delete /var/lib/mysql
- #   file:
- #     path: /var/lib/mysql
- #     state: absent
- #
- # - name: MARIADB - Delete /root/.my.cnf
- #   file:
- #     path: /root/.my.cnf
- #     state: absent
-
  - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
      path: {{ item }}
@@ -566,10 +556,17 @@
      owner: ejabberd
      group: ejabberd
 
+ - name: EJABBERD - Deconf set selections for Debian
+   shell: |
+    echo "ejabberd ejabberd/hostname string {{ XMPP_DOMAIN }}" | debconf-set-selections
+    echo "ejabberd ejabberd/user string root" | debconf-set-selections
+    echo "ejabberd ejabberd/password password {{ ROOT_PASSWORD }}" | debconf-set-selections
+    echo "ejabberd ejabberd/verify password {{ ROOT_PASSWORD }}" | debconf-set-selections
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: EJABBERD - Set home folder to /var/lib/ejabberd for ejabberd user
    shell: "usermod ejabberd -d /var/lib/ejabberd"
-   # when:
-   #   - ansible_distribution == 'CentOS'
 
  - name: EJABBERD - Set XMPP domain in ejabberd.yml
    command: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
@@ -708,13 +705,13 @@
    register: versionTC
    changed_when: False
    when:
-     - ansible_distribution == "Debian"
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
      TOMCAT_VERSION: "{{ versionTC.stdout }}"
    when:
-     - ansible_distribution == "Debian"
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
@@ -1298,8 +1295,6 @@
 #               Syncthing share packages                 #
 ##########################################################
 
- # - name: SHARE - Set variables for loop
- #   vars:
  - name: SHARE - Set variables for loop
    SHARE:
      share_id :
