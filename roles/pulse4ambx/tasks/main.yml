@@ -110,7 +110,7 @@
      state: absent
    with_items:
      - /etc/yum.repos.d/siveo.repo
-     - /etc/apt/sources.list.d/siveo.repo
+     - /etc/apt/sources.list.d/pulse.list
 
  - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
    get_url:
@@ -119,10 +119,10 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
+ - name: PREPARATION - Download list file from {{ PULSE4REPO_URL }}
    get_url:
      url: '{{ PULSE4REPO_URL }}'
-     dest: /etc/apt/sources.list.d/pulse4.repo
+     dest: /etc/apt/sources.list.d/pulse4.list
    when:
      - ansible_distribution == 'Debian'
 
@@ -132,13 +132,6 @@
    ignore_errors: true
    when:
      - ansible_distribution == 'CentOS'
-
- - name: PREPARATION - Find out URL of SIVEO public key
-   command: "grep -m1 -ir 'gpgkey=' /etc/apt/sources.list.d/pulse4.repo"
-   register: grep_output
-   ignore_errors: true
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Import SIVEO public key
    rpm_key:
@@ -150,7 +143,7 @@
  - name: PREPARATION - Import SIVEO public key
    apt_key:
      state: present
-     key: '{{ grep_output.stdout.split("=")[1] }}'
+     url: '{{ PULSE4REPOKEY_URL }}'
    when:
      - ansible_distribution == 'Debian'
 
@@ -159,20 +152,10 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: PREPARATION - Clean apt repo metadata
-   command: apt-get clean metadata
-   when:
-     - ansible_distribution == 'Debian'
-
  - name: PREPARATION - Clean yum repo cache
    command: yum clean all
    when:
      - ansible_distribution == 'CentOS'
-
- - name: PREPARATION - Clean apt repo cache
-   command: apt-get clean all
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Disable pulse2-package-server and deps
    lineinfile:
@@ -255,7 +238,6 @@
      - proxy_http
      - proxy_wstunnel
      - proxy_fcgi
-   notify: [ "apache restart" ]
    when:
      - ansible_distribution == "Debian"
 
@@ -265,7 +247,6 @@
      name: "{{item}}"
    with_items:
      - mpm_prefork
-   notify: [ "apache restart" ]
    when:
      - ansible_distribution == "Debian"
 
@@ -275,7 +256,6 @@
      name: "{{item}}"
    with_items:
      - mpm_event
-   notify: [ "apache restart" ]
    when:
      - ansible_distribution == "Debian"
 
@@ -287,18 +267,10 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
+ - name: APACHE - Ensure /etc/systemd/system/apache2.service.d exists
    file:
      path: /etc/systemd/system/apache2.service.d
      state: directory
-     mode: '0755'
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: APACHE - Ensure /etc/systemd/system/httpd.service.d/nopt.conf exists
-   file:
-     path: /etc/systemd/system/apache2.service.d/nopt.conf
-     state: touch
      mode: '0755'
    when:
      - ansible_distribution == 'Debian'
@@ -377,13 +349,13 @@
    apt:
      update_cache: yes
      pkg:
-       - {{ PHP_VERSION }}
+       - php-fpm
      state: latest
    when:
      - ansible_distribution == 'Debian'
 
  - name: PHP - Enable modules
-   command: a2enconf {{ PHP_VERSION }}-fpm
+   command: a2enconf php-fpm
 
  - name: PHP - Update php.ini
    lineinfile:
@@ -402,7 +374,7 @@
 
  - name: PHP - Update php.ini
    lineinfile:
-     dest: /etc/php/7.0/apache2/php.ini
+     dest: /etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini
      regexp: "{{ item.regex }}"
      line: "{{ item.line }}"
    with_items:
@@ -2097,7 +2069,7 @@
 #                   Specifique CNAM                      #
 ##########################################################
 
- - name: crudini quick_deploy max_size_stanza_xmpp 0
+ - name: CNAM - crudini quick_deploy max_size_stanza_xmpp 0
    shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
 
 ##########################################################
