@@ -243,38 +243,6 @@
    when:
      - ansible_distribution == "Debian"
 
- - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
-   file:
-     path: /etc/systemd/system/httpd.service.d
-     state: directory
-     mode: '0755'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: APACHE - Ensure /etc/systemd/system/apache2.service.d exists
-   file:
-     path: /etc/systemd/system/apache2.service.d
-     state: directory
-     mode: '0755'
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: APACHE - Configure PrivateTmp=false in nopt.conf
-   copy:
-     content: "[Service]\nPrivateTmp=false"
-     dest: /etc/systemd/system/httpd.service.d/nopt.conf
-     mode: '0644'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: APACHE - Configure PrivateTmp=false in nopt.conf
-   copy:
-     content: "[Service]\nPrivateTmp=false"
-     dest: /etc/systemd/system/apache2.service.d/nopt.conf
-     mode: '0644'
-   when:
-     - ansible_distribution == 'Debian'
-
  - name: APACHE - Define Apache variable for CentOS
    set_fact:
      APACHE_DAEMON: "httpd"
@@ -286,6 +254,18 @@
      APACHE_DAEMON: "apache2"
    when:
      - ansible_distribution == 'Debian'
+
+ - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
+   file:
+     path: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d
+     state: directory
+     mode: '0755'
+
+ - name: APACHE - Configure PrivateTmp=false in nopt.conf
+   copy:
+     content: "[Service]\nPrivateTmp=false"
+     dest: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d/nopt.conf
+     mode: '0644'
 
  - name: APACHE - Enable service
    systemd:
@@ -619,13 +599,9 @@
    when:
      - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
- - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
-   blockinfile:
-     dest: /etc/default/tomcat
-     create: yes
-     block: |
-       '# Guacamole env variable'
-       'GUACAMOLE_HOME=/etc/guacamole'
+ - name: GUACAMOLE - Set variable of tomcat version
+   set_fact:
+     TOMCAT_VERSION: "tomcat"
    when:
      - ansible_distribution == 'CentOS'
 
@@ -638,35 +614,23 @@
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
-     DEB_TOMCAT_VERSION: "{{ versionTC.stdout }}"
+     TOMCAT_VERSION: "{{ versionTC.stdout }}"
    when:
      - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
-     dest: /etc/default/{{ DEB_TOMCAT_VERSION }}
+     dest: /etc/default/{{ TOMCAT_VERSION }}
      create: yes
      block: |
-       # Guacamole env variable
-       GUACAMOLE_HOME=/etc/guacamole
-   when:
-     - ansible_distribution == 'Debian'
+       '# Guacamole env variable'
+       'GUACAMOLE_HOME=/etc/guacamole'
 
  - name: GUACAMOLE - Enable tomcat
    systemd:
      enabled: yes
      state: restarted
-     name: tomcat
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Enable tomcat
-   systemd:
-     enabled: yes
-     state: restarted
-     name: '{{ DEB_TOMCAT_VERSION }}'
-   when:
-     - ansible_distribution == 'Debian'
+     name: {{ TOMCAT_VERSION }}
 
  - name: GUACAMOLE - Enable guacd
    systemd:
@@ -751,30 +715,11 @@
      - { regex: '^mysql-password:.*$', line: 'mysql-password: {{ ROOT_PASSWORD }}', state: 'present' }
 
  - name: GUACAMOLE - Change tomcat port from 8080 to 8081
-   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat/server.xml
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Change tomcat port from 8080 to 8081
-   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ DEB_TOMCAT_VERSION }}/server.xml
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: GUACAMOLE - Define TOMCAT_CONF_PATH for CentOS
-   set_fact:
-     TOMCAT_CONF_PATH: "/etc/tomcat/server.xml"
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Define TOMCAT_CONF_PATH for Debian
-   set_fact:
-     TOMCAT_CONF_PATH: "/etc/{{ DEB_TOMCAT_VERSION }}/server.xml"
-   when:
-     - ansible_distribution == 'Debian'
+   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ TOMCAT_VERSION }}/server.xml
 
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
    lineinfile:
-     dest: {{ TOMCAT_CONF_PATH }}
+     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
      insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
      line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"/>'
    when:
@@ -782,7 +727,7 @@
 
  - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
    lineinfile:
-     dest: {{ TOMCAT_CONF_PATH }}
+     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
      insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
      line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
    when:
@@ -790,17 +735,8 @@
 
  - name: GUACAMOLE - Restart tomcat
    systemd:
-     name: tomcat
+     name: {{ TOMCAT_VERSION }}
      state: restarted
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Restart tomcat
-   systemd:
-     name: {{ DEB_TOMCAT_VERSION }}
-     state: restarted
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
    copy:
@@ -873,6 +809,14 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != "p"
+
+##########################################################
+#                     Imaging_Server                     #
+##########################################################
+
+##########################################################
+#                      Install Samba                     #
+##########################################################
 
 ##########################################################
 #                    Install syncthing                   #
