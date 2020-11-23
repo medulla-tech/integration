@@ -229,33 +229,17 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: APACHE - Enable modules
+ - name: APACHE - Enable and disable apache module
    apache2_module:
-     state: present
-     name: "{{item}}"
+     state: {{ item.state }}
+     name: {{ item.name }}
    with_items:
-     - proxy
-     - proxy_http
-     - proxy_wstunnel
-     - proxy_fcgi
-   when:
-     - ansible_distribution == "Debian"
-
- - name: APACHE - Disable module
-   apache2_module:
-     state: absent
-     name: "{{item}}"
-   with_items:
-     - mpm_prefork
-   when:
-     - ansible_distribution == "Debian"
-
- - name: APACHE - Enable module
-   apache2_module:
-     state: present
-     name: "{{item}}"
-   with_items:
-     - mpm_event
+     - { name: 'proxy', state: 'present' }
+     - { name: 'proxy_http', state: 'present' }
+     - { name: 'proxy_wstunnel', state: 'present' }
+     - { name: 'proxy_fcgi', state: 'present' }
+     - { name: 'mpm_prefork', state: 'absent' }
+     - { name: 'mpm_event', state: 'present' }
    when:
      - ansible_distribution == "Debian"
 
@@ -291,23 +275,24 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: APACHE - Enable service
-   systemd:
-     enabled: yes
-     state: restarted
-     daemon_reload: yes
-     name: httpd
+ - name: APACHE - Define Apache variable for CentOS
+   set_fact:
+     APACHE_DAEMON: "httpd"
    when:
      - ansible_distribution == 'CentOS'
+
+ - name: APACHE - Define Apache variable for Debian
+   set_fact:
+     APACHE_DAEMON: "apache2"
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: APACHE - Enable service
    systemd:
      enabled: yes
      state: restarted
      daemon_reload: yes
-     name: apache2
-   when:
-     - ansible_distribution == 'Debian'
+     name: {{ APACHE_DAEMON }}
 
  - name: APACHE - Define APACHE_CONF_PATH for CentOS
    set_fact:
@@ -391,30 +376,11 @@
      enabled: yes
      state: restarted
      name: php-fpm
-   when:
-     - ansible_distribution == 'CentOS'
 
  - name: PHP - Restart apache
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: restarted
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: PHP - Enable service
-   systemd:
-     enabled: yes
-     state: restarted
-     name: {{ PHP_VERSION }}-fpm
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: PHP - Restart apache
-   systemd:
-     name: apache2
-     state: restarted
-   when:
-     - ansible_distribution == 'Debian'
 
 ##########################################################
 #                     Install mariadb                    #
@@ -527,15 +493,6 @@
      mode: '0755'
      owner: ejabberd
      group: ejabberd
-
- - name: EJABBERD - Deconf set selections for Debian
-   shell: |
-    echo "ejabberd ejabberd/hostname string {{ XMPP_DOMAIN }}" | debconf-set-selections
-    echo "ejabberd ejabberd/user string root" | debconf-set-selections
-    echo "ejabberd ejabberd/password password {{ ROOT_PASSWORD }}" | debconf-set-selections
-    echo "ejabberd ejabberd/verify password {{ ROOT_PASSWORD }}" | debconf-set-selections
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: EJABBERD - Set home folder to /var/lib/ejabberd for ejabberd user
    shell: "usermod ejabberd -d /var/lib/ejabberd"
@@ -656,11 +613,11 @@
  - name: GUACAMOLE - Install guacamole Debian other 10
    apt:
      pkg:
-       - guacamole-auth-mysql
+       - guacamole-auth-jdbc
        - mysql-connector-java
      state: latest
    when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version != '10'
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
@@ -681,13 +638,13 @@
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
-     TOMCAT_VERSION: "{{ versionTC.stdout }}"
+     DEB_TOMCAT_VERSION: "{{ versionTC.stdout }}"
    when:
      - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
-     dest: /etc/default/{{ TOMCAT_VERSION }}
+     dest: /etc/default/{{ DEB_TOMCAT_VERSION }}
      create: yes
      block: |
        # Guacamole env variable
@@ -707,7 +664,7 @@
    systemd:
      enabled: yes
      state: restarted
-     name: '{{ TOMCAT_VERSION }}'
+     name: '{{ DEB_TOMCAT_VERSION }}'
    when:
      - ansible_distribution == 'Debian'
 
@@ -765,12 +722,7 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: GUACAMOLE - MySQLAuthenticationProvider to /etc/guacamole/guacamole.properties
-   command: sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
-   when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '8'
-
- - name: GUACAMOLE - Set Hostname and port to /etc/guacamole/guacamole.properties
+ - name: GUACAMOLE - Configure guacd hostname and port
    blockinfile:
      path: /etc/guacamole/guacamole.properties
      block: |
@@ -804,45 +756,37 @@
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Change tomcat port from 8080 to 8081
-   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ TOMCAT_VERSION }}/server.xml
+   command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ DEB_TOMCAT_VERSION }}/server.xml
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: GUACAMOLE - Define TOMCAT_CONF_PATH for CentOS
+   set_fact:
+     TOMCAT_CONF_PATH: "/etc/tomcat/server.xml"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Define TOMCAT_CONF_PATH for Debian
+   set_fact:
+     TOMCAT_CONF_PATH: "/etc/{{ DEB_TOMCAT_VERSION }}/server.xml"
    when:
      - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
    lineinfile:
-     dest: /etc/tomcat/server.xml
+     dest: {{ TOMCAT_CONF_PATH }}
      insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
      line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"/>'
    when:
      - INSTALL_TYPE == "p"
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
-   lineinfile:
-     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
-     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
-     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"/>'
-   when:
-     - INSTALL_TYPE == "p"
-     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
    lineinfile:
-     dest: /etc/tomcat/server.xml
+     dest: {{ TOMCAT_CONF_PATH }}
      insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
      line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
    when:
      - INSTALL_TYPE != "p"
-     - ansible_distribution == 'CentOS'
-
- - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
-   lineinfile:
-     dest: /etc/{{ TOMCAT_VERSION }}/server.xml
-     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
-     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
-   when:
-     - INSTALL_TYPE != "p"
-     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Restart tomcat
    systemd:
@@ -853,7 +797,7 @@
 
  - name: GUACAMOLE - Restart tomcat
    systemd:
-     name: {{ TOMCAT_VERSION }}
+     name: {{ DEB_TOMCAT_VERSION }}
      state: restarted
    when:
      - ansible_distribution == 'Debian'
@@ -878,25 +822,16 @@
             ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/httpd/guac.log common env=!dontlog
+        CustomLog  /var/log/{{ APACHE_DAEMON }}/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
    when:
      - INSTALL_TYPE == "p"
 
  - name: GUACAMOLE - Reload apache
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
    when:
-     - ansible_distribution == 'CentOS'
-     - INSTALL_TYPE == "p"
-
- - name: GUACAMOLE - Reload apache
-   systemd:
-     name: apache2
-     state: reloaded
-   when:
-     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
@@ -921,7 +856,7 @@
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/httpd/guac.log common env=!dontlog
+        CustomLog  /var/log/{{ APACHE_DAEMON }}/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
    vars:
      ansible_ssh_user: root
@@ -931,24 +866,12 @@
 
  - name: GUACAMOLE - Reload apache on pulsemain
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'CentOS'
-     - INSTALL_TYPE != "p"
-
- - name: GUACAMOLE - Reload apache on pulsemain
-   systemd:
-     name: apache2
-     state: reloaded
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != "p"
 
 ##########################################################
@@ -1093,10 +1016,8 @@
 
  - name: SYNCTHING - Reload apache
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
-   when:
-     - ansible_distribution == 'CentOS'
 
  - name: SYNCTHING - Setup pulsemain apache for relay syncthing
    copy:
@@ -1115,23 +1036,11 @@
 
  - name: SYNCTHING - Reload apache on pulsemain
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: SYNCTHING - Reload apache on pulsemain
-   systemd:
-     name: apache2
-     state: reloaded
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
@@ -1498,17 +1407,8 @@
 
  - name: SYNCTHING - Reload apache
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: SYNCTHING - Reload apache
-   systemd:
-     name: apache2
-     state: reloaded
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Setup pulsemain apache for relay syncthing-depl
    copy:
@@ -1527,23 +1427,11 @@
 
  - name: SYNCTHING - Reload apache on pulsemain
    systemd:
-     name: httpd
+     name: {{ APACHE_DAEMON }}
      state: reloaded
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: SYNCTHING - Reload apache on pulsemain
-   systemd:
-     name: apache2
-     state: reloaded
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
@@ -1691,17 +1579,23 @@
      name: sshd
      state: restarted
 
- - name: SSH - Active pulse module
+##########################################################
+#                Main Pulse server setup                 #
+##########################################################
+
+ - name: MAINPULSE - Active pulse module
    command: a2enconf pulse
    when:
      - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
 
- - name: SSH - Reload apache on Debian
+ - name: MAINPULSE - Reload apache on Debian
    systemd:
-     name: apache2
+     name: {{ APACHE_DAEMON }}
      state: reloaded
    when:
      - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                  Relay server setup                    #
