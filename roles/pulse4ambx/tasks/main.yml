@@ -322,9 +322,21 @@
  - name: PHP - Enable modules
    command: a2enconf php-fpm
 
+ - name: GUACAMOLE - Set variable for php.ini path
+   set_fact:
+     PHP_INI_PATH: "/etc/php.ini"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Set variable for php.ini path
+   set_fact:
+     PHP_INI_PATH: "/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini"
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: PHP - Update php.ini
    lineinfile:
-     dest: /etc/php.ini
+     dest: {{ PHP_INI_PATH }}
      regexp: "{{ item.regex }}"
      line: "{{ item.line }}"
    with_items:
@@ -334,22 +346,6 @@
      - { regex: '^short_open_tag.*$', line: 'short_open_tag = On' }
      - { regex: '^date.timezone.*$', line: 'date.timezone = Europe\/Paris/' }
      - { regex: '^session.cookie_httponly.*$', line: 'session.cookie_httponly = 1' }
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: PHP - Update php.ini
-   lineinfile:
-     dest: /etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini
-     regexp: "{{ item.regex }}"
-     line: "{{ item.line }}"
-   with_items:
-     - { regex: '^post_max_size.*$', line: 'post_max_size = 200M' }
-     - { regex: '^upload_max_filesize.*$', line: 'upload_max_filesize = 200M' }
-     - { regex: '^memory_limit.*$', line: 'memory_limit = 1024M' }
-     - { regex: '^short_open_tag.*$', line: 'short_open_tag = On' }
-     - { regex: '^session.cookie_httponly.*$', line: 'session.cookie_httponly = 1' }
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: PHP - Enable service
    systemd:
@@ -1156,9 +1152,13 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Wait for 20 seconds until shares are removed
-   pause:
-     seconds: 20
+ - name: SHARE - Wait for unshare
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: result
+   with_dict: '{{SHARE}}'
+   until: result.stdout == '0'
+   retries: 6
+   delay: 10
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1256,9 +1256,13 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Wait for 20 seconds until shares are added
-   pause:
-     seconds: 20
+ - name: SHARE - Wait for share
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: result
+   with_dict: '{{SHARE}}'
+   until: result.stdout == '1'
+   retries: 6
+   delay: 10
    when:
      - INSTALL_TYPE != 'p'
 
