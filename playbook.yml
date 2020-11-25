@@ -1,10 +1,10 @@
 ---
 
- - name: install_multisite_dependencies
+ - name: install_relay
    hosts: relay
    remote_user: root
    vars:
-     - PULSE4REPO_URL: 'https://cnam.siveo.net/pulse4.repo'
+     - PULSE4REPO_URL: 'https://git.siveo.net/integration.list'
      - ROOT_PASSWORD: 'siveo'
      - DBHOST: 'localhost'
      - DBPORT: '3306'
@@ -26,9 +26,9 @@
      - INSTALL_TYPE: 'm'
      - INTERFACE_TO_PULSE: 'ens192'
      - INTERFACE: 'ens192'
-     - MULTISITE_ENTITY: ''                                                                                                                                   │····················································
+     - MULTISITE_ENTITY: ''
      - MAIN_ENTITY: ''
-     - PULSE4REPOKEY_URL: ''
+     - PULSE4REPOKEY_URL: 'https://git.siveo.net/pubkey.txt'
      - DEB_PHP_VERSION: '7.0'
 
    roles:
