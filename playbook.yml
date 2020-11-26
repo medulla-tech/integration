@@ -1,7 +1,7 @@
 ---
 
  - name: install_relay
-   hosts: relay
+   hosts: wva_servers
    remote_user: root
    vars:
      - PULSE4REPO_URL: 'https://git.siveo.net/integration.list'
