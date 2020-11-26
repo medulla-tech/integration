@@ -231,8 +231,8 @@
 
  - name: APACHE - Enable and disable apache module
    apache2_module:
-     state: {{ item.state }}
-     name: {{ item.name }}
+     state: '{{ item.state }}'
+     name: '{{ item.name }}'
    with_items:
      - { name: 'proxy', state: 'present' }
      - { name: 'proxy_http', state: 'present' }
@@ -272,7 +272,7 @@
      enabled: yes
      state: restarted
      daemon_reload: yes
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
 
  - name: APACHE - Define APACHE_CONF_PATH for CentOS
    set_fact:
@@ -355,7 +355,7 @@
 
  - name: PHP - Restart apache
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: restarted
 
 ##########################################################
@@ -626,7 +626,7 @@
    systemd:
      enabled: yes
      state: restarted
-     name: {{ TOMCAT_VERSION }}
+     name: '{{ TOMCAT_VERSION }}'
 
  - name: GUACAMOLE - Enable guacd
    systemd:
@@ -731,7 +731,7 @@
 
  - name: GUACAMOLE - Restart tomcat
    systemd:
-     name: {{ TOMCAT_VERSION }}
+     name: '{{ TOMCAT_VERSION }}'
      state: restarted
 
  - name: GUACAMOLE - Configure apache for pulsemain guacamole
@@ -761,7 +761,7 @@
 
  - name: GUACAMOLE - Reload apache
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
      - INSTALL_TYPE == "p"
@@ -798,7 +798,7 @@
 
  - name: GUACAMOLE - Reload apache on pulsemain
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    vars:
      ansible_ssh_user: root
@@ -940,8 +940,8 @@
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
-     path: {{ item.src }}
-     dest: {{ item.dest }}
+     path: '{{ item.src }}'
+     dest: '{{ item.dest }}'
      state: link
      force: yes
    with_items:
@@ -973,8 +973,8 @@
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
-     path: {{ item.src }}
-     dest: {{ item.dest }}
+     path: '{{ item.src }}'
+     dest: '{{ item.dest }}'
      state: link
      force: yes
    with_items:
@@ -1019,8 +1019,8 @@
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
    copy:
-     src: {{ item.src }}
-     dest: {{ item.dest }}
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
    with_items:
      - { src: '/usr/share/syslinux/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
      - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
@@ -1061,8 +1061,8 @@
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
    copy:
-     src: {{ item.src }}
-     dest: {{ item.dest }}
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
    with_items:
      - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
      - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
@@ -1108,7 +1108,7 @@
  - name: IMAGING - Create symlink
    file:
      path: /var/lib/pulse2/imaging/bootmenus/pxelinux.cfg
-     dest: {{ item }}
+     dest: '{{ item }}'
      state: link
      force: yes
    with_items:
@@ -1303,7 +1303,7 @@
 
  - name: SYNCTHING - Reload apache
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
 
  - name: SYNCTHING - Setup pulsemain apache for relay syncthing
@@ -1323,7 +1323,7 @@
 
  - name: SYNCTHING - Reload apache on pulsemain
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    vars:
      ansible_ssh_user: root
@@ -1702,7 +1702,7 @@
 
  - name: SYNCTHING - Reload apache
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
 
  - name: SYNCTHING - Setup pulsemain apache for relay syncthing-depl
@@ -1722,7 +1722,7 @@
 
  - name: SYNCTHING - Reload apache on pulsemain
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    vars:
      ansible_ssh_user: root
@@ -1886,7 +1886,7 @@
 
  - name: MAINPULSE - Reload apache on Debian
    systemd:
-     name: {{ APACHE_DAEMON }}
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
      - ansible_distribution == 'Debian'
