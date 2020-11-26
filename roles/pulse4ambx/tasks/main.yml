@@ -162,6 +162,8 @@
      dest:  /etc/yum.conf
      state: present
      line: exclude= pulse2-common pulse2-package-server python-pulse2-common python-mmc-core pulse2-uuid-resolver python-mmc-backuppc
+   when:
+     - ansible_distribution == 'CentOS'
 
 ##########################################################
 #                    Install base tools                  #
