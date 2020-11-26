@@ -30,6 +30,30 @@
      - MAIN_ENTITY: ''
      - PULSE4REPOKEY_URL: 'https://git.siveo.net/pubkey.txt'
      - DEB_PHP_VERSION: '7.0'
-
+     - SHARE:
+         share_id:
+           share_id_name: 'pulsemaster_packages'
+         share_id:
+           share_id_name: 'pulsemaster_downloads'
+         share_id:
+           share_id_name: 'pulsemaster_bootmenus'
+         share_id:
+           share_id_name: 'pulsemaster_baseremoteagent'
+         syncthing_folder:
+           syncthing_folder_name: 'packages'
+         syncthing_folder:
+           syncthing_folder_name: 'downloads'
+         syncthing_folder:
+           syncthing_folder_name: 'bootmenus'
+         syncthing_folder:
+           syncthing_folder_name: 'baseremoteagent'
+         destination:
+           destination_name: '/telediffusion/4/'
+         destination:
+           destination_name: '/var/lib/pulse2/clients/'
+         destination:
+           destination_name: '/var/lib/pulse2/imaging/bootmenus/'
+         destination:
+           destination_name: '/var/lib/pulse2/xmpp_baseremoteagent/'
    roles:
      - pulse4ambx
