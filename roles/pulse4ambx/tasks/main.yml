@@ -106,7 +106,7 @@
 
  - name: PREPARATION - Delete old siveo repo
    file:
-     path: {{ item }}
+     path: '{{ item }}'
      state: absent
    with_items:
      - /etc/yum.repos.d/siveo.repo
@@ -384,7 +384,7 @@
 
  - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
-     path: {{ item }}
+     path: '{{ item }}'
      state: absent
    with_items:
      - /var/lib/mysql
@@ -874,7 +874,7 @@
 
  - name: IMAGING - Delete old bootloader directory
    file:
-     path: {{ item }}
+     path: '{{ item }}'
      state: absent
      mode: '0755'
    with_items:
@@ -885,7 +885,7 @@
 
  - name: IMAGING - Create new bootloader directory
    file:
-     path: {{ item }}
+     path: '{{ item }}'
      state: directory
    with_items:
      - /var/lib/pulse2/imaging/bootloader
