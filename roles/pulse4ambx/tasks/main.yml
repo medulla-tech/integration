@@ -1159,6 +1159,7 @@
 
  - name: IMAGING - Udp sender extra opt
    command: 'sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf'
+
 ##########################################################
 #                      Install Samba                     #
 ##########################################################
@@ -1517,24 +1518,8 @@
 #               Syncthing share packages                 #
 ##########################################################
 
- - name: SHARE - Set variables for loop
-   vars:
-     SHARE:
-       - share_id_name: 'pulsemaster_packages'
-       - share_id_name: 'pulsemaster_downloads'
-       - share_id_name: 'pulsemaster_bootmenus'
-       - share_id_name: 'pulsemaster_baseremoteagent'
-       - syncthing_folder_name: 'packages'
-       - syncthing_folder_name: 'downloads'
-       - syncthing_folder_name: 'bootmenus'
-       - syncthing_folder_name: 'baseremoteagent'
-       - destination_name: '/telediffusion/4/'
-       - destination_name: '/var/lib/pulse2/clients/'
-       - destination_name: '/var/lib/pulse2/imaging/bootmenus/'
-       - destination_name: '/var/lib/pulse2/xmpp_baseremoteagent/'
-
  - name: SHARE - Unshare folder from main pulse if already shared
-   command: stman folder unshare {{ item.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
@@ -1544,7 +1529,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Wait for unshare
-   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
    loop: '{{ SHARE }}'
    until: result.stdout == '0'
@@ -1555,7 +1540,7 @@
 
  - name: SHARE - Remove destination folders if present
    file:
-     path: '{{ item.destination_name }}'
+     path: '{{ item.value.destination_name }}'
      state: absent
    loop: '{{ SHARE }}'
    when:
@@ -1563,7 +1548,7 @@
 
  - name: SHARE - Remove syncthing folders if present
    file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder_name }}'
+     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
    loop: '{{ SHARE }}'
    when:
@@ -1571,7 +1556,7 @@
 
  - name: SHARE - Create destination folders
    file:
-     path: '{{ item.destination_name }}'
+     path: '{{ item.value.destination_name }}'
      state: directory
    loop: '{{ SHARE }}'
    when:
@@ -1579,7 +1564,7 @@
 
  - name: SHARE - Create syncthing special folder
    file:
-     path: '{{ item.destination_name }}/.stfolder/'
+     path: '{{ item.value.destination_name }}/.stfolder/'
      state: directory
      mode: '0755'
      owner: syncthing
@@ -1613,7 +1598,7 @@
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
-     path: '{{ item.destination_name }}'
+     path: '{{ item.value.destination_name }}'
      etype: group
      entity: syncthing
      recursive: yes
@@ -1626,7 +1611,7 @@
 
  - name: SHARE - Define ACLs on the folders
    acl:
-     path: '{{ item.destination_name }}'
+     path: '{{ item.value.destination_name }}'
      etype: group
      entity: syncthing
      recursive: yes
@@ -1638,7 +1623,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folders to local relay from pulsemain
-   command: stman folder share {{ item.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
    loop: '{{ SHARE }}'
    vars:
@@ -1648,7 +1633,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Wait for share
-   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
    loop: '{{ SHARE }}'
    until: result.stdout == '1'
@@ -1663,7 +1648,7 @@
    ignore_errors: yes
 
  - name: SHARE - Unshare folders from main pulse if share is not added on relay
-   command: stman folder unshare {{ item.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
@@ -1674,7 +1659,7 @@
      - check_share.rc != 0
 
  - name: SHARE - Re-share folders to local relay from pulsemain
-   command: stman folder share {{ item.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
@@ -1700,14 +1685,14 @@
 
  - name: SHARE - Remove syncthing folders from syncthing home
    file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder_name }}'
+     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
    loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Change path to folders in syncthing config file
-   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.share_id_name }}']/@path" -v "{{ item.destination_name }}" /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.value.share_id_name }}']/@path" -v "{{ item.value.destination_name }}" /var/lib/syncthing/.config/syncthing/config.xml
    loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
