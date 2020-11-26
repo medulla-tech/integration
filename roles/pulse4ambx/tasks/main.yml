@@ -336,7 +336,7 @@
 
  - name: PHP - Update php.ini
    lineinfile:
-     dest: {{ PHP_INI_PATH }}
+     dest: '{{ PHP_INI_PATH }}'
      regexp: "{{ item.regex }}"
      line: "{{ item.line }}"
    with_items:
