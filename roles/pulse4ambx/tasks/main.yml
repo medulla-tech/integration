@@ -180,12 +180,19 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: BASE - Install apt-transport-https
+   apt:
+     state: latest
+     pkg:
+       - apt-transport-https
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: BASE - Install tools needed for the setup
    apt:
      update_cache: yes
      state: latest
      pkg:
-       - apt-transport-https
        - crudini
        - pwgen
        - xmlstarlet
