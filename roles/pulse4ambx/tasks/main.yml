@@ -619,7 +619,7 @@
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Get tomcat version
-   shell: basename /etc/default/tomcat*
+   shell: basename /etc/default/tomcat?
    register: versionTC
    changed_when: False
    when:
