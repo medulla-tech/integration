@@ -357,6 +357,16 @@
      enabled: yes
      state: restarted
      name: php-fpm
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PHP - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: php{{ DEB_PHP_VERSION }}-fpm
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: PHP - Restart apache
    systemd:
