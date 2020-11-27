@@ -182,6 +182,7 @@
 
  - name: BASE - Install apt-transport-https
    apt:
+     update_cache: yes
      state: latest
      pkg:
        - apt-transport-https
