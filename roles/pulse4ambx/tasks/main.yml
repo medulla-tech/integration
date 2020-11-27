@@ -912,6 +912,33 @@
      - /var/lib/pulse2/imaging/bootmenus
      - /home/partimag
 
+ - name: IMAGING - Set variable path to syslinux
+   set_fact:
+     SYSLINUX_PATH: /var/lib/pulse2/imaging/bootloader/pxelinux.0
+
+ - name: IMAGING - Create symlink syslinux to imaging bootloader
+   file:
+     path: /usr/share/syslinux/pxelinux.0
+     dest: {{ SYSLINUX_PATH }}
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
+   file:
+     path: /usr/lib/syslinux/modules/bios/pxelinux.0
+     dest: {{ SYSLINUX_PATH }}
+     state: link
+     force: yes
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Verify if link exist pxelinux.0
+   stat:
+     path: {{ SYSLINUX_PATH }}
+   register: symlinkverifier
+
  - name: IMAGING - Create symlink syslinux to imaging bootloader
    file:
      path: /usr/share/syslinux/{{ item }}
@@ -919,7 +946,6 @@
      state: link
      force: yes
    with_items:
-     - pxelinux.0
      - libgpl.c32
      - libutil.c32
      - reboot.c32
@@ -932,6 +958,7 @@
      - poweroff.c32
    when:
      - ansible_distribution == 'CentOS'
+     - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
    file:
@@ -940,7 +967,6 @@
      state: link
      force: yes
    with_items:
-     - pxelinux.0
      - inventory.c32
      - libgpl.c32
      - libutil.c32
@@ -954,6 +980,7 @@
      - poweroff.c32
    when:
      - ansible_distribution == 'Debian'
+     - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
@@ -987,6 +1014,7 @@
      - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/'}
    when:
      - ansible_distribution == 'CentOS'
+     - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
@@ -1033,6 +1061,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
    when:
      - ansible_distribution == 'Debian'
+     - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
    copy:
@@ -1074,7 +1103,8 @@
      - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
    when:
-     - ansible_distribution == 'CentOS"
+     - ansible_distribution == 'CentOS'
+     - symlinkverifier.stat.islnk is not defined
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
    copy:
@@ -1121,6 +1151,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
    when:
      - ansible_distribution == 'Debian'
+     - symlinkverifier.stat.islnk is not defined
 
  - name: IMAGING - Create symlink
    file:
