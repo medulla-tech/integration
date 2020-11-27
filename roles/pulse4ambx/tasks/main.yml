@@ -912,14 +912,14 @@
      - /var/lib/pulse2/imaging/bootmenus
      - /home/partimag
 
- - name: IMAGING - Set variable path to syslinux
+ - name: IMAGING - Set variable path to imaging bootloader pulse
    set_fact:
-     SYSLINUX_PATH: /var/lib/pulse2/imaging/bootloader/pxelinux.0
+     PULSE2_IM_BOOTLOADER: /var/lib/pulse2/imaging/bootloader/pxelinux.0
 
  - name: IMAGING - Create symlink syslinux to imaging bootloader
    file:
      path: /usr/share/syslinux/pxelinux.0
-     dest: {{ SYSLINUX_PATH }}
+     dest: '{{ PULSE2_IM_BOOTLOADER }}'
      state: link
      force: yes
    when:
@@ -928,7 +928,7 @@
  - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
    file:
      path: /usr/lib/syslinux/modules/bios/pxelinux.0
-     dest: {{ SYSLINUX_PATH }}
+     dest: '{{ PULSE2_IM_BOOTLOADER }}'
      state: link
      force: yes
    when:
@@ -936,7 +936,7 @@
 
  - name: IMAGING - Verify if link exist pxelinux.0
    stat:
-     path: {{ SYSLINUX_PATH }}
+     path: '{{ PULSE2_IM_BOOTLOADER }}'
    register: symlinkverifier
 
  - name: IMAGING - Create symlink syslinux to imaging bootloader
