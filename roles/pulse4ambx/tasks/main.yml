@@ -604,9 +604,11 @@
  - name: GUACAMOLE - Guacamole tomcat restart server true
    debconf:
      name: guacamole-tomcat
-     question: uacamole-tomcat/restart-server
-     value: true
+     question: guacamole-tomcat/restart-server
      vtype: boolean
+     value: true
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Install guacamole Debian 10
    apt:
