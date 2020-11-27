@@ -185,6 +185,7 @@
      update_cache: yes
      state: latest
      pkg:
+       - apt-transport-https
        - crudini
        - pwgen
        - xmlstarlet
@@ -322,7 +323,9 @@
      - ansible_distribution == 'Debian'
 
  - name: PHP - Enable modules
-   command: a2enconf php-fpm
+   command: a2enconf php{{ DEB_PHP_VERSION }}-fpm
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Set variable for php.ini path
    set_fact:
