@@ -48,9 +48,9 @@
      - INSTALL_TYPE != 'p'
      - MULTISITE_ENTITY != ''
 
- - name: VARS - Set CLUSTER_NAME to first 6 chars of ansible_hostname if entity not defined
+ - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
-     CLUSTER_NAME: "{{ ansible_hostname[:6] }}"
+     CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
      - MULTISITE_ENTITY == ''
      - MAIN_ENTITY == ''
