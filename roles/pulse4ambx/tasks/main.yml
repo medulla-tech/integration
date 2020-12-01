@@ -48,12 +48,33 @@
      - INSTALL_TYPE != 'p'
      - MULTISITE_ENTITY != ''
 
- - name: VARS - Set CLUSTER_NAME to first 6 chars of ansible_hostname if entity not defined
+ - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
-     CLUSTER_NAME: "{{ ansible_hostname[:6] }}"
+     CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
      - MULTISITE_ENTITY == ''
      - MAIN_ENTITY == ''
+
+ - name: CNAM - Get location of AMBox
+   command: "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} -s glpi -e \"SELECT glpi_locations.completename FROM glpi_locations LEFT JOIN glpi_computers ON glpi_computers.locations_id=glpi_locations.id WHERE glpi_computers.name = '{{ ansible_hostname }}'\""
+   register: ambxlocation
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: CNAM - Set CLUSTER_NAME to MD5 hash of AMBox location prefixed with UCANSS number
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname[:6] }}-{{ ambxlocation.stdout | hash('md5') }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: CNAM - Set CLUSTER_DESCRIPTION to AMBox location
+   set_fact:
+     CLUSTER_DESCRIPTION: "{{ ambxlocation.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
 
 ##########################################################
 #                  Preparation checks                    #
@@ -1557,7 +1578,7 @@
      - existingclusterid.stdout == ''
 
  - name: RELAY - Create cluster if it does not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_DESCRIPTION }}')\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
