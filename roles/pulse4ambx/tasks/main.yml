@@ -1639,6 +1639,14 @@
    when:
      - relay_is_inserted.stdout == "0"
 
+ - name: RELAY - Insert relay in its cluster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - relay_is_inserted.stdout != "0"
+
  - name: RELAY - Create substituteconf records
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
    with_items:
