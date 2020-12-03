@@ -64,15 +64,24 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: CNAM - Set CLUSTER_NAME to MD5 hash of AMBox location prefixed with UCANSS number
-   set_fact:
-     CLUSTER_NAME: "{{ ansible_hostname[:6] }}-{{ ambxlocation.stdout | hash('md5') }}"
+ - name: CNAM - Get entity of AMBox
+   command: "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} -s glpi -e \"SELECT glpi_entities.completename FROM glpi_entities LEFT JOIN glpi_computers ON glpi_computers.entities_id=glpi_entities.id WHERE glpi_computers.name = '{{ ansible_hostname }}'\""
+   register: ambxentity
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: CNAM - Set CLUSTER_DESCRIPTION to AMBox location
+ - name: CNAM - Set CLUSTER_DESCRIPTION to AMBox entity and location
    set_fact:
-     CLUSTER_DESCRIPTION: "{{ ambxlocation.stdout }}"
+     CLUSTER_DESCRIPTION: "{{ ambxentity.stdout.split(' > ')[3:] | join(' > ') }} # {{ ambxlocation.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: CNAM - Set CLUSTER_NAME to MD5 hash of AMBox description prefixed with UCANSS number
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname[:6] }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
    when:
      - INSTALL_TYPE != 'p'
 
