@@ -2280,10 +2280,9 @@
 
  - name: RELAY - Reload apache
    systemd:
-     name: httpd
+     name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
-     - ansible_distribution == 'CentOS'
      - INSTALL_TYPE != "p"
 
  - name: RELAY - Add relay root public key to pulsetransfert authorized keys on pulsemain
