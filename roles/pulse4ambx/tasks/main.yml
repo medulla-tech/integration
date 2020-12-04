@@ -895,7 +895,7 @@
 
  - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
-     port: 22000
+     port: 8384
      delay: 5
 
  - name: SYNCTHING - Get api key from syncthing
