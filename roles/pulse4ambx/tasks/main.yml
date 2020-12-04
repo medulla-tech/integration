@@ -1378,11 +1378,10 @@
        {
            missingok
            daily
-           copytruncate
            rotate 7
+           notifempty
            create 0644 root root
            compress
-           delaycompress
        }
      dest: '/etc/logrotate.d/syncthing'
 
