@@ -1663,6 +1663,33 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Enable publishing of agent updates on relay
+   copy:
+     content: |
+        Alias /downloads /var/lib/pulse2/clients/
+        <Directory /var/lib/pulse2/clients/>
+          Options +Indexes
+          IndexOptions FancyIndexing VersionSort SuppressDescription FoldersFirst XHTML HTMLTable NameWidth=* IgnoreCase SuppressRules IconHeight=16 IconWidth=16
+          IndexOrderDefault Descending Date
+          IndexIgnore agent config templates vpn *.conf *.in generate* create-repos.sh artwork libs *.nsi *.sfx *.7z *.ini *.xml .??* *~ *# *.css *.html *.plist rbash runpulseagent *.buildinfo *.dsc *.changes pulse-agent-linux package Pulse2AgentsInstaller.tar pulse-service.* create-profile.ps1
+          AddIcon /downloads/win/artwork/install.ico Pulse-Agent-windows-FULL-latest.exe Pulse-Agent-windows-MINIMAL-latest.exe Pulse-Agent-mac-MINIMAL-latest.pkg.tar.gz Pulse-Agent-linux-MINIMAL-latest.sh
+          HeaderName "/downloads/HEADER.html"
+          IndexStyleSheet "/downloads/style.css"
+          AllowOverride None
+          Require all granted
+        </Directory>
+     dest: '{{ APACHE_CONF_PATH }}/pulse.conf'
+   when:
+     - INSTALL_TYPE != "p"
+
+ - name: RELAY - Reload apache
+   systemd:
+     name: httpd
+     state: reloaded
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != "p"
+
  - name: RELAY - Add relay root public key to pulsetransfert authorized keys on pulsemain
    authorized_key:
      user: root
