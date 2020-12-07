@@ -1107,7 +1107,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/vesamenu.c32' }
      - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/hdt.c32' }
      - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libcom32.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uef642/libmenu.c32' }
+     - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libmenu.c32' }
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32' }
    when:
      - ansible_distribution == 'Debian'
