@@ -888,12 +888,19 @@
    when:
      - ansible_distribution == 'Debian'
 
+ - name: Ansible check file exists example.
+   stat:
+     path: /usr/share/doc/mmc/contrib/imaging-server/exports
+   register: file_details
+
  - name: IMAGING - Create needed exports
    copy:
      src: '/usr/share/doc/mmc/contrib/imaging-server/exports'
      dest: '/etc/'
      remote_src: yes
      force: yes
+   when:
+     - file_details.stat.exists
 
  - name: IMAGING - Restart service nfs-kernel
    systemd:
