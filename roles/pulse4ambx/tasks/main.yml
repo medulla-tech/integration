@@ -863,6 +863,22 @@
      name: syncthing@syncthing
      state: stopped
 
+ - name: SYNCTHING - Get running processes
+   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   register: syncthing_pid
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
+
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
    when:
@@ -938,6 +954,28 @@
    systemd:
      name: syncthing@syncthing
      state: stopped
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1164,6 +1202,28 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SYNCTHING - Get running processes
+   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SHARE - Remove syncthing folders from syncthing home
    file:
      path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
@@ -1255,6 +1315,22 @@
      name: syncthing@syncthing-depl
      state: stopped
 
+ - name: SYNCTHING - Get running processes
+   shell: "ps -usyncthing-depl | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   register: syncthing_pid
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
+
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing-depl
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
@@ -1337,6 +1413,28 @@
    systemd:
      name: syncthing@syncthing-depl
      state: stopped
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps -usyncthing-depl | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
