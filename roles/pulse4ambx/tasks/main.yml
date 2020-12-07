@@ -335,13 +335,13 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: GUACAMOLE - Set variable for php.ini path
+ - name: PHP - Set variable for php.ini path
    set_fact:
      PHP_INI_PATH: "/etc/php.ini"
    when:
      - ansible_distribution == 'CentOS'
 
- - name: GUACAMOLE - Set variable for php.ini path
+ - name: PHP - Set variable for php.ini path
    set_fact:
      PHP_INI_PATH: "/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini"
    when:
