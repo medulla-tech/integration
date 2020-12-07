@@ -779,7 +779,7 @@
    lineinfile:
      dest: /etc/{{ TOMCAT_VERSION }}/server.xml
      insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
-     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
+     line: '/>        <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
    when:
      - INSTALL_TYPE != "p"
 
