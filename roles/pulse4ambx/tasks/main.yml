@@ -585,13 +585,19 @@
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
-   command: 'xmlstarlet ed --inplace -s "Server[@port=\'8005\']/Service[@name=\'Catalina\']/Engine[@name=\'Catalina\']/Host[@name=\'localhost\']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ IP_ADDRESS }}\"" /etc/tomcat/server.xml'
+   lineinfile:
+     dest: /etc/tomcat/server.xml
+     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
+     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"/>'
    when:
      - INSTALL_TYPE == "p"
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
-   command: 'xmlstarlet ed --inplace -s "Server[@port=\'8005\']/Service[@name=\'Catalina\']/Engine[@name=\'Catalina\']/Host[@name=\'localhost\']" -t elem -n "Valve className=\"org.apache.catalina.valves.RemoteAddrValve\" allow=\"{{ PULSEMAIN_IP }}\"" /etc/tomcat/server.xml'
+   lineinfile:
+     dest: /etc/tomcat/server.xml
+     insertafter: '^.*<Valve className="org.apache.catalina.valves.AccessLogValve".*$'
+     line: '\ \ \ \ \ \ \ \ <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"/>'
    when:
      - INSTALL_TYPE != "p"
      - ansible_distribution == 'CentOS'
