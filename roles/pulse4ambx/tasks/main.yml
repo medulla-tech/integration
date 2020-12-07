@@ -663,8 +663,8 @@
      dest: /etc/default/{{ TOMCAT_VERSION }}
      create: yes
      block: |
-       '# Guacamole env variable'
-       'GUACAMOLE_HOME=/etc/guacamole'
+       # Guacamole env variable
+       GUACAMOLE_HOME=/etc/guacamole
 
  - name: GUACAMOLE - Enable tomcat
    systemd:
