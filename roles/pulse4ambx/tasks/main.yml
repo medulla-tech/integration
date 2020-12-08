@@ -217,11 +217,6 @@
      state: latest
      pkg:
        - pulse-xmpp-agent-relay
-       - python-mmc-ppolicy
-       - mmc-agent
-       - python-mmc-base
-       - python-mmc-core
-       - pulse2-common
    when:
      - ansible_distribution == 'Debian'
 
@@ -385,6 +380,22 @@
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: restarted
+
+##########################################################
+#                  Install dependencies                  #
+##########################################################
+
+ - name: DEPENDENCIES - Install dependencies Python and mcc for Debian
+   apt:
+     state: latest
+     pkg:
+       - python-mmc-ppolicy
+       - mmc-agent
+       - python-mmc-base
+       - python-mmc-core
+       - pulse2-common
+   when:
+     - ansible_distribution == 'Debian'
 
 ##########################################################
 #                     Install mariadb                    #
