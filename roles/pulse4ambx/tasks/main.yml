@@ -389,10 +389,6 @@
    apt:
      state: latest
      pkg:
-       - python-mmc-ppolicy
-       - mmc-agent
-       - python-mmc-base
-       - python-mmc-core
        - pulse2-common
    when:
      - ansible_distribution == 'Debian'
