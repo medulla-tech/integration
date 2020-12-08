@@ -584,6 +584,12 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: GUACAMOLE - Remove RemoteAddrValve directive from Tomcat config
+   command: sed -i '/RemoteAddrValve/d' /etc/tomcat/server.xml
+   when:
+     - INSTALL_TYPE != "p"
+     - ansible_distribution == 'CentOS'
+
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
    command: xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n 'Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"' /etc/tomcat/server.xml
    when:
