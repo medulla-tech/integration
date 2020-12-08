@@ -862,11 +862,14 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
 
  - name: SYNCTHING - Get running processes
-   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
    register: syncthing_pid
 
  - name: SYNCTHING - Wait until processes are stopped
@@ -954,13 +957,16 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Get running processes
-   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
    register: syncthing_pid
    when:
      - INSTALL_TYPE != 'p'
@@ -1199,13 +1205,16 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Get running processes
-   shell: "ps -usyncthing | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
    register: syncthing_pid
    when:
      - INSTALL_TYPE != 'p'
@@ -1314,11 +1323,14 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
 
  - name: SYNCTHING - Get running processes
-   shell: "ps -usyncthing-depl | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
    register: syncthing_pid
 
  - name: SYNCTHING - Wait until processes are stopped
@@ -1413,13 +1425,16 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Get running processes
-   shell: "ps -usyncthing-depl | grep -v grep | grep -w syncthing | awk '{print $1}'"
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
    register: syncthing_pid
    when:
      - INSTALL_TYPE != 'p'
@@ -1468,6 +1483,16 @@
      - { parameter: 'syncthing_gui_apikey', value: '"{{ API_KEY }}"'}
      - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
    no_log: True
+
+ - name: SYNCTHING - Restart syncthing services
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
 
 ##########################################################
 #                   SSH server setup                     #
