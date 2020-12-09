@@ -1264,8 +1264,8 @@
 
  - name: IMAGING - Link masters to /home/partimag
    file:
-     path: /var/lib/pulse2/imaging/masters/
-     dest: /home/partimag/masters/
+     path: /var/lib/pulse2/imaging/masters
+     dest: /home/partimag/masters
      state: link
      force: yes
 
