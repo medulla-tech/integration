@@ -104,6 +104,15 @@
      state: link
      force: yes
 
+ - name: PREPARATION - Install apt-transport-https
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - apt-transport-https
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: PREPARATION - Delete old siveo repo
    file:
      path: '{{ item }}'
@@ -179,15 +188,6 @@
        - xmlstarlet
    when:
      - ansible_distribution == 'CentOS'
-
- - name: BASE - Install apt-transport-https
-   apt:
-     update_cache: yes
-     state: latest
-     pkg:
-       - apt-transport-https
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: BASE - Install tools needed for the setup
    apt:
