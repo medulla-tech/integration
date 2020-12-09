@@ -1298,6 +1298,7 @@
    copy:
      src: /usr/share/doc/mmc/contrib/samba/smb.conf
      dest: /etc/samba/
+     remote_src: yes
 
  - name: SAMBA - Samba root Password
    command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
