@@ -1257,6 +1257,11 @@
      path: /home/partimag
      state: absent
 
+ - name: IMAGING - Create new /home/partimag
+   file:
+     path: /home/partimag
+     state: directory
+
  - name: IMAGING - Link masters to /home/partimag
    file:
      path: /var/lib/pulse2/imaging/masters/
