@@ -1509,8 +1509,27 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
+   register: syncthing_pid
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
 
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
@@ -1585,8 +1604,33 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1776,8 +1820,33 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1857,8 +1926,27 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
+   register: syncthing_pid
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
 
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing-depl
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
@@ -1940,8 +2028,33 @@
 
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Get running processes
+   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
+   register: syncthing_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Wait until processes are stopped
+   wait_for:
+     path: "/proc/{{ item }}/status"
+     state: absent
+   with_items: "{{ syncthing_pid.stdout_lines }}"
+   ignore_errors: yes
+   register: kill_pid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Kill running processes
+   command: "kill -9 {{ item }}"
+   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1972,6 +2085,16 @@
    with_items:
      - { parameter: 'syncthing_gui_apikey', value: '"{{ API_KEY }}"'}
      - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
+
+ - name: SYNCTHING - Restart syncthing services
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
 
 ##########################################################
 #                   SSH server setup                     #
