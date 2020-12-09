@@ -1222,6 +1222,7 @@
      src: /usr/share/doc/mmc/contrib/imaging/template/utilities.menu.in
      dest: /var/lib/pulse2/imaging/tools/utilities.menu
      force: no
+     remote_src: yes
 
  - name: IMAGING - Type TFTP SERVER IP to utilities.menu
    command: 'sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu'
