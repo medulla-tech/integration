@@ -1304,7 +1304,9 @@
    command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
 
  - name: SAMBA - Users /home/drivers no home no group
-   command: useradd -d /home/drivers -s /bin/false --no-create-home --no-user-group --system drivers
+   user:
+     name: /home/drivers
+     shell: /bin/false
 
  - name: SAMBA - Samba drivers Password
    command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
