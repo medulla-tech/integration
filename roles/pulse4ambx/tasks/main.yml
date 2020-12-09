@@ -1254,8 +1254,13 @@
 
  - name: IMAGING - Delete old /home/partimag
    file:
+     path: /home/partimag
+     state: absent
+
+ - name: IMAGING - Link masters to /home/partimag
+   file:
      path: /var/lib/pulse2/imaging/masters/
-     dest: /home/partimag
+     dest: /home/partimag/masters/
      state: link
 
  - name: IMAGING - Udp sender extra opt
