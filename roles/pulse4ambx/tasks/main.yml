@@ -390,6 +390,8 @@
      state: latest
      pkg:
        - pulse2-common
+       - pulse-imaging-scripts
+       - pulse2-davos-client
    when:
      - ansible_distribution == 'Debian'
 
