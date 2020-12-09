@@ -709,6 +709,7 @@
      - "CREATE DATABASE guacamole"
      - "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'"
      - "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost'"
+   no_log: True
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
@@ -783,6 +784,7 @@
      - { regex: '^mysql-database:.*$', line: 'mysql-database: guacamole', state: 'present' }
      - { regex: '^mysql-username:.*$', line: 'mysql-username: guacamole', state: 'present' }
      - { regex: '^mysql-password:.*$', line: 'mysql-password: {{ ROOT_PASSWORD }}', state: 'present' }
+   no_log: True
 
  - name: GUACAMOLE - Change tomcat port from 8080 to 8081
    command: sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/{{ TOMCAT_VERSION }}/server.xml
@@ -2085,6 +2087,7 @@
    with_items:
      - { parameter: 'syncthing_gui_apikey', value: '"{{ API_KEY }}"'}
      - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
+   no_log: True
 
  - name: SYNCTHING - Restart syncthing services
    systemd:
@@ -2182,6 +2185,7 @@
      - { section: 'type', parameter: 'geolocalisation', value: 'False'}
    when:
      - INSTALL_TYPE != 'p'
+   no_log: True
 
  - name: RELAY - Configure relay server public IP if defined
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type {{ item.parameter }} {{ item.value }}
@@ -2483,6 +2487,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
+   no_log: True
 
  - name: CERTS - Set proper permissions on the certificates on pulsemain
    file:
