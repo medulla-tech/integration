@@ -385,7 +385,7 @@
 #                  Install dependencies                  #
 ##########################################################
 
- - name: DEPENDENCIES - Install dependencies Python and mcc for Debian
+ - name: DEPENDENCIES - Install dependencies Python and mmc for Debian
    apt:
      state: latest
      pkg:
@@ -1219,6 +1219,7 @@
    copy:
      src: /usr/share/doc/mmc/contrib/imaging/template/utilities.menu.in
      dest: /var/lib/pulse2/imaging/tools/utilities.menu
+     force: no
 
  - name: IMAGING - Type TFTP SERVER IP to utilities.menu
    command: 'sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu'
