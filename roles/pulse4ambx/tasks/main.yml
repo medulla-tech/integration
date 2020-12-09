@@ -1262,6 +1262,7 @@
      path: /var/lib/pulse2/imaging/masters/
      dest: /home/partimag/masters/
      state: link
+     force: yes
 
  - name: IMAGING - Udp sender extra opt
    command: 'sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf'
