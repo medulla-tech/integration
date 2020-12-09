@@ -22,6 +22,7 @@
      - GLPI_DBUSER: 'root'
      - GLPI_DBPASSWD: 'siveo'
      - GLPI_DBNAME: 'glpi'
+     - DRIVERS_PASSWORD: s3cr3t
      - SERVER_FQDN: 'wva-ars1.siveo.lan'
      - INSTALL_TYPE: 'm'
      - INTERFACE_TO_PULSE: 'ens192'
