@@ -1305,7 +1305,7 @@
 
  - name: SAMBA - Users /home/drivers no home no group
    user:
-     name: /home/drivers
+     name: drivers
      shell: /bin/false
 
  - name: SAMBA - Samba drivers Password
