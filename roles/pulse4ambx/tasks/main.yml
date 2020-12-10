@@ -1728,7 +1728,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
-   debug:
+ - debug:
      msg: '{{ result.stdout }}'
 
  - name: SHARE - Remove destination folders if present
