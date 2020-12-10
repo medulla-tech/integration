@@ -303,9 +303,9 @@
 ##########################################################
 
  - name: PHP - Check if php-fpm exist
-    stat:
-      path: /etc/init.d/php-fpm
-    register: service_status
+   stat:
+     path: /etc/init.d/php-fpm
+   register: service_status
 
  - name: PHP - Uninstall previous version
    yum:
