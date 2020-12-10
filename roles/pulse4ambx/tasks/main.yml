@@ -389,20 +389,6 @@
      state: restarted
 
 ##########################################################
-#                  Install dependencies                  #
-##########################################################
-
- - name: DEPENDENCIES - Install dependencies Python and mmc for Debian
-   apt:
-     state: latest
-     pkg:
-       - pulse2-common
-       - pulse-imaging-scripts
-       - pulse2-davos-client
-   when:
-     - ansible_distribution == 'Debian'
-
-##########################################################
 #                     Install mariadb                    #
 ##########################################################
 
@@ -902,6 +888,16 @@
      state: latest
      pkg:
        - nfs-kernel-server
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Install Pulse imaging
+   apt:
+     state: latest
+     pkg:
+       - pulse2-common
+       - pulse-imaging-scripts
+       - pulse2-davos-client
    when:
      - ansible_distribution == 'Debian'
 
