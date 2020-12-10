@@ -1722,14 +1722,14 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    register: result
    until: result.stdout == '0'
-   retries: 10
+   retries: 6
    delay: 10
+   debug:
+     msg: '{{ result.stdout }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: debug test
-   debug:
-     msg: '{{ result.stdout }}'
+
 
  - name: SHARE - Remove destination folders if present
    file:
