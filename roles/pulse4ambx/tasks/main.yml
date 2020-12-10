@@ -1700,8 +1700,12 @@
 ##########################################################
 
  - name: SHARE - Unshare folder from main pulse if already shared
-   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   loop: '{{ SHARE }}'
+   command: stman folder unshare {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1710,9 +1714,13 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Wait for unshare
-   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    until: result.stdout == '0'
    retries: 6
    delay: 10
@@ -1721,36 +1729,52 @@
 
  - name: SHARE - Remove destination folders if present
    file:
-     path: '{{ item.value.destination_name }}'
+     path: '{{ item.destination }}'
      state: absent
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Remove syncthing folders if present
    file:
-     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
+     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
      state: absent
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create destination folders
    file:
-     path: '{{ item.value.destination_name }}'
+     path: '{{ item.destination }}'
      state: directory
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create syncthing special folder
    file:
-     path: '{{ item.value.destination_name }}/.stfolder/'
+     path: '{{ item.destination }}/.stfolder/'
      state: directory
      mode: '0755'
      owner: syncthing
      group: syncthing
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1779,34 +1803,46 @@
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
-     path: '{{ item.value.destination_name }}'
+     path: '{{ item.destination }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: yes
      state: present
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Define ACLs on the folders
    acl:
-     path: '{{ item.value.destination_name }}'
+     path: '{{ item.destination }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: no
      state: present
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folders to local relay from pulsemain
-   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
+   command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1814,9 +1850,13 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Wait for share
-   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    until: result.stdout == '1'
    retries: 6
    delay: 10
@@ -1829,8 +1869,12 @@
    ignore_errors: yes
 
  - name: SHARE - Unshare folders from main pulse if share is not added on relay
-   command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   loop: '{{ SHARE }}'
+   command: stman folder unshare {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1840,8 +1884,12 @@
      - check_share.rc != 0
 
  - name: SHARE - Re-share folders to local relay from pulsemain
-   command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   loop: '{{ SHARE }}'
+   command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1891,15 +1939,23 @@
 
  - name: SHARE - Remove syncthing folders from syncthing home
    file:
-     path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
+     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
      state: absent
-   loop: '{{ SHARE }}'
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Change path to folders in syncthing config file
-   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.value.share_id_name }}']/@path" -v "{{ item.value.destination_name }}" /var/lib/syncthing/.config/syncthing/config.xml
-   loop: '{{ SHARE }}'
+   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.share_id }}']/@path" -v "{{ item.destination }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    when:
      - INSTALL_TYPE != 'p'
 
