@@ -1695,7 +1695,7 @@
 
  - name: SHARE - Unshare folder from main pulse if already shared
    command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1706,7 +1706,7 @@
  - name: SHARE - Wait for unshare
    command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    until: result.stdout == '0'
    retries: 6
    delay: 10
@@ -1717,7 +1717,7 @@
    file:
      path: '{{ item.value.destination_name }}'
      state: absent
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1725,7 +1725,7 @@
    file:
      path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1733,7 +1733,7 @@
    file:
      path: '{{ item.value.destination_name }}'
      state: directory
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1744,7 +1744,7 @@
      mode: '0755'
      owner: syncthing
      group: syncthing
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1780,7 +1780,7 @@
      permissions: rwx
      default: yes
      state: present
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -1793,14 +1793,14 @@
      permissions: rwx
      default: no
      state: present
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folders to local relay from pulsemain
    command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
    ignore_errors: yes
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1810,7 +1810,7 @@
  - name: SHARE - Wait for share
    command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.value.share_id_name }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    register: result
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    until: result.stdout == '1'
    retries: 6
    delay: 10
@@ -1824,7 +1824,7 @@
 
  - name: SHARE - Unshare folders from main pulse if share is not added on relay
    command: stman folder unshare {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1835,7 +1835,7 @@
 
  - name: SHARE - Re-share folders to local relay from pulsemain
    command: stman folder share {{ item.value.share_id_name }} {{ LOCAL_DEVICE_ID }}
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    ignore_errors: yes
    vars:
      ansible_ssh_user: root
@@ -1887,13 +1887,13 @@
    file:
      path: '/var/lib/syncthing/{{ item.value.syncthing_folder_name }}'
      state: absent
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Change path to folders in syncthing config file
    command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.value.share_id_name }}']/@path" -v "{{ item.value.destination_name }}" /var/lib/syncthing/.config/syncthing/config.xml
-   with_dict: '{{ SHARE }}'
+   loop: '{{ SHARE }}'
    when:
      - INSTALL_TYPE != 'p'
 
