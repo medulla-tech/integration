@@ -1727,6 +1727,10 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: debug test
+   debug:
+     msg: '{{ result.stdout }}'
+
  - name: SHARE - Remove destination folders if present
    file:
      path: '{{ item.destination }}'
