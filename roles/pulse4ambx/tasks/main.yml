@@ -1243,7 +1243,7 @@
      dest: /etc/samba/
      remote_src: yes
 
- - name: SAMBA - Samba root Password
+ - name: SAMBA - Define Samba root password
    command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
 
  - name: SAMBA - Users /home/drivers no home no group
