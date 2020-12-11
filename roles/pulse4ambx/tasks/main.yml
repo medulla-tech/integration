@@ -732,9 +732,9 @@
      line: "{{ item.line }}"
      state: "{{ item.state }}"
    with_items:
-     - { regex: '', line: '# Hostname and port of guacamole proxy', state: '' }
-     - { regex: '', line: 'guacd-hostname: localhost', state: '' }
-     - { regex: '', line: 'guacd-port:     4822', state: '' }
+     - { regex: '', line: '# Hostname and port of guacamole proxy', state: 'present' }
+     - { regex: '', line: 'guacd-hostname: localhost', state: 'present' }
+     - { regex: '', line: 'guacd-port:     4822', state: 'present' }
      - { regex: '^basic-user-mapping.*$', line: '', state: 'absent' }
      - { regex: '^noauth-config:.*$', line: '', state: 'absent' }
      - { regex: '^mysql-disallow-simultaneous-connections:.*$', line: 'mysql-disallow-simultaneous-connections: false', state: 'present' }
