@@ -1251,7 +1251,7 @@
      name: drivers
      shell: /bin/false
 
- - name: SAMBA - Samba drivers Password
+ - name: SAMBA - Define Samba drivers Password
    command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
 
  - name: SAMBA - Set samba service name for CentOS
