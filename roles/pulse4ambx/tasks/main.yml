@@ -681,27 +681,27 @@
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
-     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema/
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
    when:
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
-     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema/
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
    when:
      - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
-     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-mysql/schema/
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-mysql/schema
    when:
      - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Import schemas
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < {{ item }}"
    with_items:
-     - '{{ GUAC_SCHEMAS_PATH }}001-create-schema.sql'
-     - '{{ GUAC_SCHEMAS_PATH }}002-create-admin-user.sql'
+     - '{{ GUAC_SCHEMAS_PATH }}/001-create-schema.sql'
+     - '{{ GUAC_SCHEMAS_PATH }}/002-create-admin-user.sql'
 
  - name: GUACAMOLE - Define guacamole root user password in database
    command: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole -e \"SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1\""
