@@ -1246,7 +1246,7 @@
  - name: SAMBA - Define Samba root password
    command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
 
- - name: SAMBA - Users /home/drivers no home no group
+ - name: SAMBA - Add user /home/drivers with no home and group
    user:
      name: drivers
      shell: /bin/false
