@@ -725,16 +725,6 @@
    when:
      - ansible_distribution == 'CentOS'
 
- - name: GUACAMOLE - Configure guacd hostname and port
-   blockinfile:
-     path: /etc/guacamole/guacamole.properties
-     block: |
-       # Hostname and port of guacamole proxy
-       guacd-hostname: localhost
-       guacd-port:     4822
-       # Auth provider class (authenticates user/pass combination, needed if using the provided login screen)
-       auth-provider: net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider
-
  - name: GUACAMOLE - Configure guacamole.properties
    lineinfile:
      dest: /etc/guacamole/guacamole.properties
@@ -742,6 +732,9 @@
      line: "{{ item.line }}"
      state: "{{ item.state }}"
    with_items:
+     - { regex: '', line: '# Hostname and port of guacamole proxy', state: '' }
+     - { regex: '', line: 'guacd-hostname: localhost', state: '' }
+     - { regex: '', line: 'guacd-port:     4822', state: '' }
      - { regex: '^basic-user-mapping.*$', line: '', state: 'absent' }
      - { regex: '^noauth-config:.*$', line: '', state: 'absent' }
      - { regex: '^mysql-disallow-simultaneous-connections:.*$', line: 'mysql-disallow-simultaneous-connections: false', state: 'present' }
