@@ -1237,7 +1237,7 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: SAMBA - Copy file
+ - name: SAMBA - Copy mmc smb.conf template
    copy:
      src: /usr/share/doc/mmc/contrib/samba/smb.conf
      dest: /etc/samba/
