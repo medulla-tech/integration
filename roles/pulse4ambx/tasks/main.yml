@@ -936,33 +936,6 @@
      - /var/lib/pulse2/imaging/bootmenus
      - /home/partimag
 
- - name: IMAGING - Set variable path to imaging bootloader pulse
-   set_fact:
-     PULSE2_IM_BOOTLOADER: /var/lib/pulse2/imaging/bootloader/pxelinux.0
-
- - name: IMAGING - Create symlink syslinux to imaging bootloader
-   file:
-     path: /usr/share/syslinux/pxelinux.0
-     dest: '{{ PULSE2_IM_BOOTLOADER }}'
-     state: link
-     force: yes
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
-   file:
-     path: /usr/lib/syslinux/modules/bios/pxelinux.0
-     dest: '{{ PULSE2_IM_BOOTLOADER }}'
-     state: link
-     force: yes
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: IMAGING - Verify if link exist pxelinux.0
-   stat:
-     path: '{{ PULSE2_IM_BOOTLOADER }}'
-   register: symlinkverifier
-
  - name: IMAGING - Create symlink syslinux to imaging bootloader
    file:
      path: /usr/share/syslinux/{{ item }}
@@ -970,6 +943,7 @@
      state: link
      force: yes
    with_items:
+     - pxelinux.0
      - libgpl.c32
      - libutil.c32
      - reboot.c32
@@ -982,7 +956,6 @@
      - poweroff.c32
    when:
      - ansible_distribution == 'CentOS'
-     - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
    file:
@@ -991,6 +964,7 @@
      state: link
      force: yes
    with_items:
+     - pxelinux.0
      - inventory.c32
      - libgpl.c32
      - libutil.c32
@@ -1004,7 +978,11 @@
      - poweroff.c32
    when:
      - ansible_distribution == 'Debian'
-     - symlinkverifier.stat.islnk is defined
+
+ - name: IMAGING - Verify if link exist pxelinux.0
+   stat:
+     path: '{{ PULSE2_IM_BOOTLOADER }}'
+   register: symlinkverifier
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
