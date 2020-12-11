@@ -859,13 +859,26 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: IMAGING - Install Pulse imaging
+ - name: IMAGING - Install clonezilla
+   yum:
+     pkg:
+       - clonezilla
+       - pulse2-davos-client
+       - udpcast
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Install Pulse imaging and clonezilla
    apt:
      state: latest
      pkg:
        - pulse2-common
        - pulse-imaging-scripts
        - pulse2-davos-client
+       - clonezilla
+       - pulse2-davos-client
+       - udpcast
    when:
      - ansible_distribution == 'Debian'
 
@@ -1175,26 +1188,6 @@
 
  - name: IMAGING - Type TFTP SERVER IP to utilities.menu
    command: 'sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu'
-
- - name: IMAGING - Install clonezilla
-   yum:
-     pkg:
-       - clonezilla
-       - pulse2-davos-client
-       - udpcast
-     state: latest
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: IMAGING - Install clonezilla
-   apt:
-     pkg:
-       - clonezilla
-       - pulse2-davos-client
-       - udpcast
-     state: latest
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Prevent clonezilla from being upgraded
    dpkg_selections:
