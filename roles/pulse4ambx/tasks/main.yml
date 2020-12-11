@@ -593,7 +593,7 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: GUACAMOLE - Install guacamole Debian 10
+ - name: GUACAMOLE - Install guacamole
    apt:
      pkg:
        - guacamole-tomcat
@@ -606,7 +606,7 @@
    when:
      - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
 
- - name: GUACAMOLE - Install guacamole Debian 9
+ - name: GUACAMOLE - Install guacamole
    apt:
      pkg:
        - guacamole-tomcat
