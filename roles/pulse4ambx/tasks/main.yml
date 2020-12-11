@@ -555,31 +555,6 @@
     sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 1 min\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: EJABBERD - Update ejabberd.yml
-   shell: |
-    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 1 min\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: EJABBERD - Restart service
    systemd:
