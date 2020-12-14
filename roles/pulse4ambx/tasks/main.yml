@@ -2297,6 +2297,24 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Force relay to re-register in case of upgrade
+   copy:
+     content: ""
+     dest: /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION
+     force: no
+   when:
+     - INSTALL_TYPE != 'p'
+     - ansible_distribution == 'CentOS'
+
+ - name: RELAY - Force relay to re-register in case of upgrade
+   copy:
+     content: ""
+     dest: /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION
+     force: no
+   when:
+     - INSTALL_TYPE != 'p'
+     - ansible_distribution == 'Debian'
+
  - name: RELAY - Enable service
    systemd:
      enabled: yes
