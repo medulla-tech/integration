@@ -994,7 +994,7 @@
 
  - name: IMAGING - Verify if link exist pxelinux.0
    stat:
-     path: '{{ PULSE2_IM_BOOTLOADER }}'
+     path: '/var/lib/pulse2/imaging/bootloader/pxelinux.0'
    register: symlinkverifier
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
