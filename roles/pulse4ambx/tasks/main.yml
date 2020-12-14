@@ -307,7 +307,7 @@
  - name: PHP - Check if php-fpm exist
    stat:
      path: /etc/init.d/php-fpm
-   register: service_status
+   register: phpfpm_exists
 
  - name: PHP - Uninstall previous version
    yum:
@@ -317,7 +317,7 @@
      state: absent
    when:
      - ansible_distribution == 'CentOS'
-     - service_status.stat.exist == false
+     - phpfpm_exists.stat.exist == false
 
  - name: PHP - Install php
    yum:
