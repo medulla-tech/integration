@@ -187,6 +187,7 @@
        - crudini
        - pwgen
        - xmlstarlet
+       - acl
    when:
      - ansible_distribution == 'CentOS'
 
@@ -198,6 +199,7 @@
        - crudini
        - pwgen
        - xmlstarlet
+       - acl
    when:
      - ansible_distribution == 'Debian'
 
