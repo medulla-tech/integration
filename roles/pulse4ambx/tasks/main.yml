@@ -2178,7 +2178,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Get connection password from pulsemain
-   shell: 'crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password'
+   command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2487,18 +2487,14 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Disable Quick deploy
-   blockinfile:
-     dest: /etc/pulse-xmpp-agent/relayconf.ini.local
-     block: |
-       [quick_deploy]
-       max_size_stanza_xmpp = 0
-     state: present
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
+
 
 ##########################################################
 #                Certificate Generation                  #
 ##########################################################
 
- - name: CERTS - Remove relay from certificat trust, we will redo it.
+ - name: CERTS - Remove relay from certificate trust
    lineinfile:
      dest: /var/lib/pulse2/pki/index.txt
      state: absent
@@ -2570,13 +2566,6 @@
    systemd:
      name: ejabberd
      state: restarted
-
-##########################################################
-#                   Specifique CNAM                      #
-##########################################################
-
- - name: CNAM - crudini quick_deploy max_size_stanza_xmpp 0
-   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
 
 ##########################################################
 #                     Final steps                        #
