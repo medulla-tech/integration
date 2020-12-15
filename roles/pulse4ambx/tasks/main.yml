@@ -1742,23 +1742,33 @@
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
-     path: '/var/lib/pulse2/packages/'
+     path: '{{ item.destination }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: yes
      state: present
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
  - name: SHARE - Define ACLs on the folders
    acl:
-     path: '/var/lib/pulse2/packages/'
+     path: '{{ item.destination }}'
      etype: group
      entity: syncthing
      recursive: yes
      permissions: rwx
      default: no
      state: present
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
  - name: SHARE - Share folders to local relay from pulsemain
    command: stman folder share {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
