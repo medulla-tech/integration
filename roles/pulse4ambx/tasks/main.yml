@@ -879,7 +879,6 @@
        - pulse-imaging-scripts
        - pulse2-davos-client
        - clonezilla
-       - pulse2-davos-client
        - udpcast
    when:
      - ansible_distribution == 'Debian'
