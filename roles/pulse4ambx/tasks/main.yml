@@ -1267,15 +1267,12 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: SAMBA -  Restart service SAMBA
+ - name: SAMBA - Restart and Enable service
    systemd:
-     name: '{{ SAMBA_SERVICE }}'
-     state: restarted
-
- - name: SAMBA -  Restart service SAMBA
-   systemd:
-     name: '{{ SAMBA_SERVICE }}'
      enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: '{{ SAMBA_SERVICE }}'
 
 ##########################################################
 #                    Install syncthing                   #
