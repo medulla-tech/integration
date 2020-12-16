@@ -1344,22 +1344,21 @@
      mode: 0666
      state: touch
 
- - name: SYNCTHING - Separate syncthing logs
-   lineinfile:
-     dest: "/usr/lib/systemd/system/syncthing@.service"
-     regexp: "{{ item.regex }}"
-     line: "{{ item.line }}"
-     insertafter: "{{ item.insertafter }}"
-   with_items:
-     - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
-     - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
-     - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
+ - name: SYNCTHING - Make variable for syncthing service path
+   set_fact:
+     SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/system/syncthing@.service'
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: SYNCTHING - Make variable for syncthing service path
+   set_fact:
+     SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/user/syncthing.service'
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: SYNCTHING - Separate syncthing logs
    lineinfile:
-     dest: "/usr/lib/systemd/user/syncthing.service"
+     dest: "{{ SYNCTHING_SERVICE_PATH }}"
      regexp: "{{ item.regex }}"
      line: "{{ item.line }}"
      insertafter: "{{ item.insertafter }}"
@@ -1367,8 +1366,6 @@
      - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
      - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
      - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
-   when:
-     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Setup rotation of syncthing logs
    copy:
