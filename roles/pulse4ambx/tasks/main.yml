@@ -1665,7 +1665,7 @@
      - INSTALL_TYPE != 'p'
    with_items:
      - { name: 'filesystemType', value: 'basic' }
-     - { name: 'device id="{{ LOCAL_DEVICE_ID }}"', value: '' }
+     - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
      - { name: 'minDiskFree unit=""', value: '1' }
      - { name: 'versioning', value: '' }
      - { name: 'copiers', value: '0' }
