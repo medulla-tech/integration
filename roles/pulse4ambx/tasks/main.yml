@@ -1645,6 +1645,52 @@
    when:
      - INSTALL_TYPE != 'p'
 
+
+#  /!\  TEST  /!\
+#  /!\  TEST  /!\
+
+ - name: SHARE - Share folder from main pulse if not already shared in ars, folder balise
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']" -t elem -n 'folder id="{{ LOCAL_DEVICE_ID }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@label='{{ item.syncthing_folder }}']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   with_items:
+     - { name: 'filesystemType', value: 'basic' }
+     - { name: 'device id="{{ LOCAL_DEVICE_ID }}"', value: '' }
+     - { name: 'minDiskFree unit=""', value: '1' }
+     - { name: 'versioning', value: '' }
+     - { name: 'copiers', value: '0' }
+     - { name: 'pullerMaxPendingKiB', value: '0' }
+     - { name: 'hashers', value: '0' }
+     - { name: 'order', value: 'random' }
+     - { name: 'ignoreDelete', value: 'false' }
+     - { name: 'scanProgressIntervalS', value: '0' }
+     - { name: 'pullerPauseS', value: '0' }
+     - { name: 'MaxConflicts', value: '-1' }
+     - { name: 'disableSparseFiles', value: 'false' }
+     - { name: 'disableTempIndexes', value: 'false' }
+     - { name: 'paused', value: 'false' }
+     - { name: 'weakHashThresholdPct', value: '25' }
+     - { name: 'markerName', value: '.stfolder' }
+     - { name: 'copyOwnershipFromParent', value: 'false' }
+     - { name: 'modTimeWindowS', value: '0' }
+     - { name: 'maxConcurrentWrites', value: '2' }
+     - { name: 'disableFsync', value: 'false' }
+     - { name: 'blockPullOrder', value: 'standard' }
+
+#  /!\  TEST  /!\
+#  /!\  TEST  /!\
+
+
  - name: SHARE - Wait for unshare
    command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
    with_items:
