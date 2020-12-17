@@ -1660,7 +1660,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@label='{{ item.syncthing_folder }}']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
    with_items:
@@ -1686,10 +1686,6 @@
      - { name: 'maxConcurrentWrites', value: '2' }
      - { name: 'disableFsync', value: 'false' }
      - { name: 'blockPullOrder', value: 'standard' }
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
 #  /!\  TEST  /!\
 #  /!\  TEST  /!\
