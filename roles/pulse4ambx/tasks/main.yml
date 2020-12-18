@@ -1654,7 +1654,7 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    until: result.stdout != '0'
-   delegate_to: {{ PULSEMAIN_IP }}
+   delegate_to: '{{ PULSEMAIN_IP }}'
    retries: 6
    delay: 10
    when:
