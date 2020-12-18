@@ -1664,29 +1664,29 @@
    when:
      - INSTALL_TYPE != 'p'
    with_items:
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'filesystemType', value: 'basic', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'minDiskFree unit=""', value: '', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'versioning', value: '', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'copiers', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'pullerMaxPendingKiB', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'hashers', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'order', value: 'random', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'ignoreDelete', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'scanProgressIntervalS', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'pullerPauseS', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'MaxConflicts', value: '-1', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableSparseFiles', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableTempIndexes', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'paused', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'weakHashThresholdPct', value: '25', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'markerName', value: '.stfolder', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'copyOwnershipFromParent', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'modTimeWindowS', value: '0', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'maxConcurrentWrites', value: '2', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableFsync', value: 'false', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'blockPullOrder', value: 'standard', option: 'elem' }
-     - { path: 'configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit=""]', name: '1', value: 'standard', option: 'text' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'filesystemType', value: 'basic', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'minDiskFree unit=""', value: '', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'versioning', value: '', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'copiers', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'pullerMaxPendingKiB', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'hashers', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'order', value: 'random', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'ignoreDelete', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'scanProgressIntervalS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'pullerPauseS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'MaxConflicts', value: '-1', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'disableSparseFiles', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'disableTempIndexes', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'paused', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'weakHashThresholdPct', value: '25', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'markerName', value: '.stfolder', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'copyOwnershipFromParent', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'modTimeWindowS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'maxConcurrentWrites', value: '2', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'disableFsync', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]', name: 'blockPullOrder', value: 'standard', option: 'elem' }
+     - { path: 'configuration[@version="30"]/folder[@type="sendreceive"]/minDiskFree[@unit=""]', name: '1', value: 'standard', option: 'text' }
 
 #  /!\  TEST  /!\
 #  /!\  TEST  /!\
