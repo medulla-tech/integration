@@ -1631,17 +1631,32 @@
 #               Syncthing share packages                 #
 ##########################################################
 
- - name: SHARE - Unshare folder from main pulse if already shared
-   command: stman folder unshare {{ item.share_id }} {{ LOCAL_DEVICE_ID }}
+ - name: SHARE - Unshare folder from ars if already shared
+   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: result
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   ignore_errors: yes
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
+   until: result.stdout != '0'
+   retries: 6
+   delay: 10
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Unshare folder from main pulse if already shared
+   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   register: result
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   until: result.stdout != '0'
+   delegate_to: {{ PULSEMAIN_IP }}
+   retries: 6
+   delay: 10
    when:
      - INSTALL_TYPE != 'p'
 
