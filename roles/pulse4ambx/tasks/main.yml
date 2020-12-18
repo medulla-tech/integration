@@ -1649,6 +1649,8 @@
 #  /!\  TEST  /!\
 #  /!\  TEST  /!\
 
+#ARS
+
  - name: SHARE - Share folder from main pulse if not already shared in ars, folder balise
    command: xmlstarlet ed --inplace -s "configuration[@version='30']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
@@ -1687,8 +1689,57 @@
      - { name: 'disableFsync', value: 'false' }
      - { name: 'blockPullOrder', value: 'standard' }
 
- - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
+ - name: SHARE - Add 1 in balise minDiskFree, in folders balise
    command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '1' -v '1' /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+#PULSE
+
+ - name: SHARE - Share folder from main pulse if not already shared in pulse, folder balise
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="60" fsWatcherEnabled="false" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Share folder from main pulse if not already shared in pulse, in folder balise
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   with_items:
+     - { name: 'filesystemType', value: 'basic' }
+     - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
+     - { name: 'device id="{{ PULSEMAIN_DEVICE_ID }}" introducedBy=""', value: '' }
+     - { name: 'minDiskFree unit=""', value: '' }
+     - { name: 'versioning', value: '' }
+     - { name: 'copiers', value: '0' }
+     - { name: 'pullerMaxPendingKiB', value: '0' }
+     - { name: 'hashers', value: '0' }
+     - { name: 'order', value: 'random' }
+     - { name: 'ignoreDelete', value: 'false' }
+     - { name: 'scanProgressIntervalS', value: '0' }
+     - { name: 'pullerPauseS', value: '0' }
+     - { name: 'MaxConflicts', value: '10' }
+     - { name: 'disableSparseFiles', value: 'false' }
+     - { name: 'disableTempIndexes', value: 'false' }
+     - { name: 'paused', value: 'false' }
+     - { name: 'weakHashThresholdPct', value: '25' }
+     - { name: 'markerName', value: '.stfolder' }
+     - { name: 'copyOwnershipFromParent', value: 'false' }
+     - { name: 'modTimeWindowS', value: '0' }
+     - { name: 'maxConcurrentWrites', value: '0' }
+     - { name: 'disableFsync', value: 'false' }
+     - { name: 'blockPullOrder', value: 'standard' }
+
+ - name: SHARE - Add 0 in balise minDiskFree, in folders balise
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '0' -v '0' /var/lib/syncthing/.config/syncthing/config.xml
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
