@@ -1781,6 +1781,7 @@
    with_items:
      - { name: 'filesystemType', value: 'basic' }
      - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
+     - { name: 'device id="{{ PULSEMAIN_DEVICE_ID }}" introducedBy=""', value: '' }
      - { name: 'minDiskFree unit="%"', value: '' }
      - { name: 'versioning', value: '' }
      - { name: 'copiers', value: '0' }
@@ -1862,7 +1863,7 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   until: result.stdout == '1'
+   until: result.stdout != '0'
    retries: 6
    delay: 10
    when:
