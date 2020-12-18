@@ -1666,7 +1666,7 @@
    with_items:
      - { name: 'filesystemType', value: 'basic' }
      - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'minDiskFree unit="%", value: '' }
+     - { name: 'minDiskFree unit="%"', value: '' }
      - { name: 'versioning', value: '' }
      - { name: 'copiers', value: '0' }
      - { name: 'pullerMaxPendingKiB', value: '0' }
