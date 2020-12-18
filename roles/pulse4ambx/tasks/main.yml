@@ -1666,6 +1666,7 @@
    with_items:
      - { name: 'filesystemType', value: 'basic' }
      - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
+     - { name: 'minDiskFree unit="%", value: '' }
      - { name: 'versioning', value: '' }
      - { name: 'copiers', value: '0' }
      - { name: 'pullerMaxPendingKiB', value: '0' }
@@ -1687,7 +1688,7 @@
      - { name: 'blockPullOrder', value: 'standard' }
 
  - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='']" -t text -n 'minDiskFree unit="%"' -v '1' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '1' -v '' /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
