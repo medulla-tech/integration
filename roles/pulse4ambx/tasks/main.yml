@@ -1660,32 +1660,33 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "{{ item.path }}" -t '{{ item.option }}' -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
    with_items:
-     - { name: 'filesystemType', value: 'basic' }
-     - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'minDiskFree unit=""', value: '1' }
-     - { name: 'versioning', value: '' }
-     - { name: 'copiers', value: '0' }
-     - { name: 'pullerMaxPendingKiB', value: '0' }
-     - { name: 'hashers', value: '0' }
-     - { name: 'order', value: 'random' }
-     - { name: 'ignoreDelete', value: 'false' }
-     - { name: 'scanProgressIntervalS', value: '0' }
-     - { name: 'pullerPauseS', value: '0' }
-     - { name: 'MaxConflicts', value: '-1' }
-     - { name: 'disableSparseFiles', value: 'false' }
-     - { name: 'disableTempIndexes', value: 'false' }
-     - { name: 'paused', value: 'false' }
-     - { name: 'weakHashThresholdPct', value: '25' }
-     - { name: 'markerName', value: '.stfolder' }
-     - { name: 'copyOwnershipFromParent', value: 'false' }
-     - { name: 'modTimeWindowS', value: '0' }
-     - { name: 'maxConcurrentWrites', value: '2' }
-     - { name: 'disableFsync', value: 'false' }
-     - { name: 'blockPullOrder', value: 'standard' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'filesystemType', value: 'basic', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'minDiskFree unit=""', value: '', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'versioning', value: '', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'copiers', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'pullerMaxPendingKiB', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'hashers', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'order', value: 'random', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'ignoreDelete', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'scanProgressIntervalS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'pullerPauseS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'MaxConflicts', value: '-1', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableSparseFiles', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableTempIndexes', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'paused', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'weakHashThresholdPct', value: '25', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'markerName', value: '.stfolder', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'copyOwnershipFromParent', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'modTimeWindowS', value: '0', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'maxConcurrentWrites', value: '2', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'disableFsync', value: 'false', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']', name: 'blockPullOrder', value: 'standard', option: 'elem' }
+     - { path: 'configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit=""]', name: '1', value: 'standard', option: 'text' }
 
 #  /!\  TEST  /!\
 #  /!\  TEST  /!\
