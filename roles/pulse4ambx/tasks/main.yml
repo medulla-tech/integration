@@ -1688,7 +1688,7 @@
      - { name: 'blockPullOrder', value: 'standard' }
 
  - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='']" -t '{{ item.option }}' -n text -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='']" -t text -n text -v '1' /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
