@@ -1631,21 +1631,6 @@
 #               Syncthing share packages                 #
 ##########################################################
 
-# Cette commande en version 2.4 d'ansible pourrait permettre de verifier la presence de balise folder avant de unshare
-#- name: Read attribute value
- - name: SYNCTHING - Verify if config exist
-   xml:
-     path: /var/lib/syncthing/.config/syncthing/config.xml
-     xpath: configuration/folder
-     content: attribute
-     attribute: '{{ item.share_id }}'
-   register: xmlresp
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-
  - name: SHARE - Unshare folder from ars if already shared
    command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
    register: result
@@ -1655,6 +1640,7 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    until: result.stdout != '0'
+   ignore_errors: yes
    retries: 6
    delay: 10
    when:
@@ -1676,21 +1662,6 @@
    when:
      - INSTALL_TYPE != 'p'
      - xmlresp == ''
-
- - name: SHARE - Wait for unshare
-   command: xmlstarlet sel -t -c "configuration/folder[@id='{{ item.share_id }}']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   register: result
-   until: result.stdout == '0'
-   retries: 6
-   delay: 10
-   ignore_errors: yes
-   when:
-     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Remove destination folders if present
    file:
