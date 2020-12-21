@@ -1663,7 +1663,7 @@
      - xmlresp == ''
 
  - name: SHARE - Unshare folder from main pulse if already shared
-   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c
+   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
    register: result
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
@@ -1671,6 +1671,7 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    until: result.stdout != '0'
+   ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
    retries: 6
    delay: 10
