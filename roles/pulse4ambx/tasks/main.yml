@@ -1875,13 +1875,6 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Wait for 40 seconds until shares are added
-   pause:
-     seconds: 40
-   when:
-     - INSTALL_TYPE != 'p'
-     - check_share.rc != 0
-
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
