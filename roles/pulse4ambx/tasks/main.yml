@@ -1631,6 +1631,21 @@
 #               Syncthing share packages                 #
 ##########################################################
 
+ - name: SYNCTHING - Stop service before editing configuration
+   systemd:
+     name: syncthing@syncthing
+     state: stopped
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Stop service before editing configuration in pulse
+   systemd:
+     name: syncthing@syncthing
+     state: stopped
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SHARE - Unshare folder from ars if already shared
    command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
    register: result
