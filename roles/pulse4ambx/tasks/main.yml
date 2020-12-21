@@ -556,7 +556,7 @@
     sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 1 min\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 60\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
 
  - name: EJABBERD - Restart service
    systemd:
