@@ -1633,6 +1633,7 @@
 
 # Cette commande en version 2.4 d'ansible pourrait permettre de verifier la presence de balise folder avant de unshare
 #- name: Read attribute value
+ - name: SYNCTHING - Verify if config exist
    xml:
      path: /var/lib/syncthing/.config/syncthing/config.xml
      xpath: configuration/folder
