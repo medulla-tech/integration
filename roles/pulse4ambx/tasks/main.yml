@@ -1875,6 +1875,16 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SYNCTHING - Restart service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
@@ -2159,6 +2169,17 @@
    with_items:
      - syncthing
      - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart syncthing services
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2532,7 +2553,6 @@
 
  - name: RELAY - Disable Quick deploy
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
-
 
 ##########################################################
 #                Certificate Generation                  #
