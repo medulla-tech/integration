@@ -1564,6 +1564,7 @@
    command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    vars:
      ansible_ssh_user: root
+   ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
