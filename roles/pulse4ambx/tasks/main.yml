@@ -9,6 +9,12 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: VARS - Set XMPP_DOMAIN to pulse if on pulsemain
+   set_fact:
+     XMPP_DOMAIN: 'pulse'
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: VARS - Set SERVER_FQDN to ansible_fqdn
    set_fact:
      SERVER_FQDN: "{{ ansible_fqdn }}"
@@ -47,6 +53,13 @@
    when:
      - INSTALL_TYPE != 'p'
      - MULTISITE_ENTITY != ''
+
+ - name: VARS - Set CLUSTER_NAME to MAIN_ENTITY for pulsemain
+   set_fact:
+     CLUSTER_NAME: "{{ MAIN_ENTITY }}"
+   when:
+     - (MAIN_ENTITY is defined) and (MAIN_ENTITY|length > 0)
+     - INSTALL_TYPE == 'p'
 
  - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
