@@ -19,40 +19,40 @@
    set_fact:
      SERVER_FQDN: "{{ ansible_fqdn }}"
    when:
-     - SERVER_FQDN == ''
+     - (SERVER_FQDN is undefined) or (SERVER_FQDN|length == 0)
 
  - name: VARS - Set IP_ADDRESS if INTERFACE defined
    set_fact:
      IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
    when:
-     - INTERFACE != ''
+     - (INTERFACE is defined) and (INTERFACE|length > 0)
 
  - name: VARS - Set IP_ADDRESS if INTERFACE not defined
    set_fact:
      IP_ADDRESS: "{{ ansible_default_ipv4.address }}"
    when:
-     - INTERFACE == ''
+     - (INTERFACE is undefined) or (INTERFACE|length == 0)
 
  - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE defined
    set_fact:
      IP_REMOTE_SERVER: "{{ vars['ansible_'~INTERFACE_TO_PULSE].ipv4.address }}"
    when:
-     - INTERFACE_TO_PULSE != ''
+     - (INTERFACE_TO_PULSE is defined) and (INTERFACE_TO_PULSE|length > 0)
      - INSTALL_TYPE != 'p'
 
  - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE not defined
    set_fact:
      IP_REMOTE_SERVER: "{{ ansible_default_ipv4.address }}"
    when:
-     - INTERFACE_TO_PULSE == ''
      - INSTALL_TYPE != 'p'
+     - (INTERFACE_TO_PULSE is undefined) or (INTERFACE_TO_PULSE|length == 0)
 
  - name: VARS - Set CLUSTER_NAME to MULTISITE_ENTITY for relay
    set_fact:
      CLUSTER_NAME: "{{ MULTISITE_ENTITY }}"
    when:
+     - (MULTISITE_ENTITY is defined) and (MULTISITE_ENTITY|length > 0)
      - INSTALL_TYPE != 'p'
-     - MULTISITE_ENTITY != ''
 
  - name: VARS - Set CLUSTER_NAME to MAIN_ENTITY for pulsemain
    set_fact:
@@ -65,8 +65,8 @@
    set_fact:
      CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
-     - MULTISITE_ENTITY == ''
-     - MAIN_ENTITY == ''
+     - MULTISITE_ENTITY is undefined
+     - MAIN_ENTITY is undefined
 
 ##########################################################
 #                  Preparation checks                    #
