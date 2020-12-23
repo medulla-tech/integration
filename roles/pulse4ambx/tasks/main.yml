@@ -118,7 +118,6 @@
      state: latest
      pkg:
        - apt-transport-https
-       - python-apt
    when:
      - ansible_distribution == 'Debian'
 
