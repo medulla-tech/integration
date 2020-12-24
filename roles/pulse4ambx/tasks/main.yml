@@ -1321,7 +1321,7 @@
  - name: SYNCTHING - Install additional packages on pulsemain
    apt:
      pkg:
-       - syncthing_discosrv
+       - syncthing-discosrv
        - syncthing-systemd-addons
      state: latest
    when:
