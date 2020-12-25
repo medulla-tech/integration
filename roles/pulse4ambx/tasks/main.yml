@@ -2395,7 +2395,13 @@
    pause:
      minutes: 2
 
- - name: RELAY - Get cluster id if it exists
+ - name: RELAY - Get cluster id for pulsemain if it exists
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
+   register: existingclusterid
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get cluster id for relay if it exists
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
    register: existingclusterid
    vars:
@@ -2408,8 +2414,14 @@
    set_fact:
      CLUSTER_ID: "{{ existingclusterid.stdout }}"
    when:
-     - INSTALL_TYPE != 'p'
      - existingclusterid.stdout != ''
+
+ - name: RELAY - Set CLUSTER_ID for pulsemain when cluster does not exist
+   set_fact:
+     CLUSTER_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
+     - existingclusterid.stdout == ''
 
  - name: RELAY - Get MAX_ID FROM cluster_ars when cluster does not exist
    command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"'
@@ -2421,20 +2433,33 @@
      - INSTALL_TYPE != 'p'
      - existingclusterid.stdout == ''
 
- - name: RELAY - Set CLUSTER_ID
+ - name: RELAY - Set CLUSTER_ID for relay when cluster does not exist
    set_fact:
      CLUSTER_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - INSTALL_TYPE != 'p'
      - existingclusterid.stdout == ''
 
- - name: RELAY - Create cluster if it does not exist
+ - name: RELAY - Create cluster for pulsemain if it does not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
+   when:
+     - INSTALL_TYPE == 'p'
+     - existingclusterid.stdout == ''
+
+ - name: RELAY - Create cluster for relay if it does not exist
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
+     - INSTALL_TYPE != 'p'
      - existingclusterid.stdout == ''
+
+ - name: RELAY - Set NEXT_ID for pulsemain
+   set_fact:
+     NEXT_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
 
  - name: RELAY - Get MAX_ID FROM has_cluster_ars
    command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"'
@@ -2445,13 +2470,19 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Set NEXT_ID
+ - name: RELAY - Set NEXT_ID for relay
    set_fact:
      NEXT_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Get RELAYSERVER_ID FROM relayserver
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE jid LIKE 'rspulse@pulse/%'\""
+   register: relayserverid
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
    vars:
@@ -2463,33 +2494,53 @@
  - name: RELAY - Set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: "{{ relayserverid.stdout }}"
-   when:
-     - INSTALL_TYPE != 'p'
 
- - name: RELAY - Relay check if id_ars is already inserted
+ - name: RELAY - Relay check if id_ars is already inserted for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
+   register: relay_is_inserted
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Relay check if id_ars is already inserted for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: relay_is_inserted
+   when:
+     - INSTALL_TYPE != 'p'
 
- - name: RELAY - Insert relay in its cluster
+ - name: RELAY - Insert relay in its cluster for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
+   when:
+     - relay_is_inserted.stdout == "0"
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Insert relay in its cluster for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
+   when:
+     - relay_is_inserted.stdout != "0"
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Insert relay in its cluster for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - relay_is_inserted.stdout == "0"
+     - INSTALL_TYPE != 'p'
 
- - name: RELAY - Insert relay in its cluster
+ - name: RELAY - Insert relay in its cluster for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - relay_is_inserted.stdout != "0"
+     - INSTALL_TYPE != 'p'
 
- - name: RELAY - Create substituteconf records
+ - name: RELAY - Create substituteconf records for pulsemain
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
@@ -2497,6 +2548,19 @@
      - { type: 'registration', jid: 'master_reg@pulse' }
      - { type: 'inventory', jid: 'master_inv@pulse' }
      - { type: 'logger', jid: 'master_log@pulse' }
+     - { type: 'monitoring', jid: 'master_mon@pulse' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Create substituteconf records for relay
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
+   with_items:
+     - { type: 'assessor', jid: 'master_asse@pulse' }
+     - { type: 'subscription', jid: 'master_subs@pulse' }
+     - { type: 'registration', jid: 'master_reg@pulse' }
+     - { type: 'inventory', jid: 'master_inv@pulse' }
+     - { type: 'logger', jid: 'master_log@pulse' }
+     - { type: 'monitoring', jid: 'master_mon@pulse' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
