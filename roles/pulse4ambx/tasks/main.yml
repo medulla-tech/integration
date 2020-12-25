@@ -964,7 +964,7 @@
 
  - name: IMAGING - Create symlink syslinux to imaging bootloader
    file:
-     path: /usr/share/syslinux/{{ item }}
+     src: /usr/share/syslinux/{{ item }}
      dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
      state: link
      force: yes
@@ -985,7 +985,7 @@
 
  - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
    file:
-     path: /usr/lib/syslinux/modules/bios/{{ item }}
+     src: /usr/lib/syslinux/modules/bios/{{ item }}
      dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
      state: link
      force: yes
@@ -1012,7 +1012,7 @@
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
-     path: '{{ item.src }}'
+     src: '{{ item.src }}'
      dest: '{{ item.dest }}'
      state: link
      force: yes
@@ -1046,7 +1046,7 @@
 
  - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
    file:
-     path: '{{ item.src }}'
+     src: '{{ item.src }}'
      dest: '{{ item.dest }}'
      state: link
      force: yes
@@ -1183,7 +1183,7 @@
 
  - name: IMAGING - Create symlink
    file:
-     path: /var/lib/pulse2/imaging/bootmenus/pxelinux.cfg
+     src: /var/lib/pulse2/imaging/bootmenus/pxelinux.cfg
      dest: '{{ item }}'
      state: link
      force: yes
@@ -1221,7 +1221,7 @@
 
  - name: IMAGING - Link masters to /home/partimag
    file:
-     path: /var/lib/pulse2/imaging/masters
+     src: /var/lib/pulse2/imaging/masters
      dest: /home/partimag/masters
      state: link
      force: yes
