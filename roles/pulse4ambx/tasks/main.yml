@@ -2213,6 +2213,83 @@
      state: restarted
 
 ##########################################################
+#                     Grafana setup                      #
+##########################################################
+
+ - name: GRAFANA - Install grafana
+   yum:
+     pkg:
+       - grafana
+       - grafana-image-renderer
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Install grafana
+   apt:
+     pkg:
+       - grafana
+       - grafana-image-renderer
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Enable apache module
+   apache2_module:
+     state: present
+     name: headers
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Setup apache for grafana
+   copy:
+     content: |
+       ProxyPass /grafana/ http://localhost:3000/
+       <Location /grafana/>
+           ProxyPassReverse http://localhost:3000/
+           Require all granted
+           Header set X-Frame-Options: "SAMEORIGIN"
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/grafana.conf'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Enable grafana module
+   command: a2enconf grafana
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: GRAFANA - Configure grafana
+   command: crudini --set /etc/grafana/grafana.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'server', parameter: 'root_url', value: '%(protocol)s://%(domain)s:%(http_port)s/grafana/'}
+     - { section: 'auth.anonymous', parameter: 'enabled', value: 'true'}
+     - { section: 'auth.anonymous', parameter: 'org_name', value: 'Main Org.'}
+     - { section: 'auth.anonymous', parameter: 'org_role', value: 'Viewer'}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Restart and Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: grafana-server
+   when:
+     - INSTALL_TYPE == 'p'
+
+##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
 
