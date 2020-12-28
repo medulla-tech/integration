@@ -471,6 +471,9 @@
      - "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
      - "FLUSH PRIVILEGES"
 
+ - name: MARIADB - Enable event scheduler
+   command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql -e "SET GLOBAL event_scheduler = ON"'
+
 ##########################################################
 #                    Install ejabberd                    #
 ##########################################################
