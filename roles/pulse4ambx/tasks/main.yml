@@ -216,26 +216,6 @@
      - ansible_distribution == 'Debian'
 
 ##########################################################
-#                   Install pulse relay                  #
-##########################################################
-
- - name: PULSE - Install pulse-xmpp-agent-relay
-   yum:
-     state: latest
-     pkg:
-       - pulse-xmpp-agent-relay
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: PULSE - Install pulse-xmpp-agent-relay
-   apt:
-     state: latest
-     pkg:
-       - pulse-xmpp-agent-relay
-   when:
-     - ansible_distribution == 'Debian'
-
-##########################################################
 #                     Install apache                     #
 ##########################################################
 
@@ -2328,6 +2308,65 @@
 #                Main Pulse server setup                 #
 ##########################################################
 
+ - name: MAINPULSE - Install pulse packages
+   yum:
+     state: latest
+     pkg:
+       - pulse2
+       - mmc-web-backuppc
+       - python-mmc-backuppc
+       - mmc-web-dashboard
+       - python-mmc-dashboard
+       - mmc-web-glpi
+       - python-mmc-glpi
+       - mmc-web-ppolicy
+       - python-mmc-ppolicy
+       - mmc-web-services
+       - python-mmc-services
+       - mmc-web-support
+       - python-mmc-support
+       - mmc-web-base
+       - python-mmc-xmppmaster
+       - python-mmc-guacamole
+       - pulse-xmppmaster-agentplugins
+       - pulse-xmpp-agent-relay
+       - pulse-agent-installers
+       - pulse-xmpp-master-substitute
+       - pulse2-uuid-resolver
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Install pulse packages
+   apt:
+     state: latest
+     pkg:
+       - pulse2
+       - mmc-web-backuppc
+       - python-mmc-backuppc
+       - mmc-web-dashboard
+       - python-mmc-dashboard
+       - mmc-web-glpi
+       - python-mmc-glpi
+       - mmc-web-ppolicy
+       - python-mmc-ppolicy
+       - mmc-web-services
+       - python-mmc-services
+       - mmc-web-support
+       - python-mmc-support
+       - mmc-web-xmppmaster
+       - python-mmc-xmppmaster
+       - python-mmc-guacamole
+       - pulse-xmppmaster-agentplugins
+       - pulse-xmpp-agent-relay
+       - pulse-agent-installers
+       - pulse-xmpp-master-substitute
+       - pulse-update-manager
+       - pulse2-uuid-resolver
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
  - name: MAINPULSE - Active pulse module
    command: a2enconf pulse
    when:
@@ -2345,6 +2384,24 @@
 ##########################################################
 #                  Relay server setup                    #
 ##########################################################
+
+ - name: RELAY - Install relay packages
+   yum:
+     state: latest
+     pkg:
+       - pulse-xmpp-agent-relay
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Install relay packages
+   apt:
+     state: latest
+     pkg:
+       - pulse-xmpp-agent-relay
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
 
  - name: RELAY - Get current plugins list from pulsemain
    command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
