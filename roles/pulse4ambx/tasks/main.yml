@@ -1538,12 +1538,12 @@
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
    register: apikey
 
- - name: SYNCTHING - Set API_KEY
+ - name: SYNCTHING - Set SYNCTHING_API_KEY
    set_fact:
-     API_KEY: "{{ apikey.stdout }}"
+     SYNCTHING_API_KEY: "{{ apikey.stdout }}"
 
- - name: SYNCTHING - Configure API_KEY in stman
-   command: 'stman configure -k {{ API_KEY }}'
+ - name: SYNCTHING - Configure SYNCTHING_API_KEY in stman
+   command: 'stman configure -k {{ SYNCTHING_API_KEY }}'
 
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
    command: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
@@ -2044,12 +2044,12 @@
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
    register: apikey
 
- - name: SYNCTHING - Set API_KEY
+ - name: SYNCTHING - Set SYNCTHING_DEPL_API_KEY
    set_fact:
-     API_KEY: "{{ apikey.stdout }}"
+     SYNCTHING_DEPL_API_KEY: "{{ apikey.stdout }}"
 
- - name: SYNCTHING - Configure API_KEY in stman
-   command: "stman configure -k {{ API_KEY }} -p 8385 -n depl"
+ - name: SYNCTHING - Configure SYNCTHING_DEPL_API_KEY in stman
+   command: "stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl"
 
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
    command: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
@@ -2138,13 +2138,6 @@
 
  - name: SYNCTHING - Delete the default share
    command: 'stman -d depl folder remove "Default Folder"'
-
- - name: SYNCTHING - Update relay config with apikey and device id
-   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local syncthing-deploy {{ item.parameter }} {{ item.value }}
-   with_items:
-     - { parameter: 'syncthing_gui_apikey', value: '"{{ API_KEY }}"'}
-     - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
-   no_log: True
 
  - name: SYNCTHING - Restart syncthing services
    systemd:
@@ -2492,6 +2485,13 @@
    ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Update relay config with syncthing apikey and device id
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local syncthing-deploy {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'syncthing_gui_apikey', value: '"{{ SYNCTHING_DEPL_API_KEY }}"'}
+     - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
+   no_log: True
 
  - name: RELAY - Enable package watching service
    systemd:
