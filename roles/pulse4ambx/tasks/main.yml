@@ -2293,6 +2293,38 @@
      - INSTALL_TYPE == 'p'
 
 ##########################################################
+#                      GLPI setup                        #
+##########################################################
+
+ - name: GLPI - Install glpi
+   yum:
+     pkg:
+       - glpi
+       - glpi-fusioninventory
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Install glpi
+   apt:
+     pkg:
+       - glpi
+       - fusioninventory-for-glpi
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Initialise glpi database
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
 
