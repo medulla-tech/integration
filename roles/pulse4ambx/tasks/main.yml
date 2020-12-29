@@ -2246,6 +2246,20 @@
    when:
      - INSTALL_TYPE == "p"
 
+ - name: GRAFANA - Stop service
+   systemd:
+     state: stopped
+     name: grafana-server
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Delete previous database
+   file:
+     path: /var/lib/grafana/grafana.db
+     state: absent
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: GRAFANA - Configure grafana
    command: crudini --set /etc/grafana/grafana.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
    with_items:
@@ -2262,6 +2276,37 @@
      state: restarted
      daemon_reload: yes
      name: grafana-server
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Pause for 5 to 300 seconds to enable grafana start
+   wait_for:
+     port: 3000
+     delay: 5
+
+ - name: GRAFANA - Reset admin password
+   command: grafana-cli admin reset-admin-password {{ ROOT_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Generate api key
+   uri:
+     url: "http://localhost:3000/api/auth/keys"
+     url_username: admin
+     url_password: '{{ ROOT_PASSWORD }}'
+     force_basic_auth: yes
+     method: POST
+     body_format: json
+     body:
+       name: adminkey
+       role: Admin
+   register: admin_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Get api key
+   set_fact:
+     GRAFANA_ADMIN_KEY: '{{ admin_key.json.key }}'
    when:
      - INSTALL_TYPE == 'p'
 
@@ -2372,6 +2417,43 @@
      state: reloaded
    when:
      - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Get database password for configuring grafana data source
+   command: crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbpasswd
+   register: mmcuser_dbpass
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Configure grafana data source
+   uri:
+     url: "http://localhost:3000/api/datasources"
+     headers:
+       Authorization: 'Bearer {{ GRAFANA_ADMIN_KEY }}'
+     method: POST
+     body_format: json
+     body:
+       name: xmppmaster
+       type: mysql
+       host: '{{ DBHOST }}:{{ DBPORT }}'
+       user: mmc
+       password: '{{ mmcuser_dbpass.stdout }}'
+       database: xmppmaster
+       access: direct
+   register: admin_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Add grafana parameters to xmppmaster config file
+   command: crudini --set /etc/mmc/plugins/xmppmaster.ini.local grafana_api api_key {{ GRAFANA_ADMIN_KEY }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Restart mmc-agent
+   systemd:
+     name: mmc-agent
+     state: restarted
+   when:
      - INSTALL_TYPE == 'p'
 
 ##########################################################
