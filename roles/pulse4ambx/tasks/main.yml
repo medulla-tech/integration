@@ -2336,9 +2336,33 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
- - name: GLPI - Initialise glpi database
+ - name: GLPI - Initialise glpi database on debian
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ DBHOST }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password {{ DBADMINPASSWD }} --default-language=fr_FR --force
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB == True
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Initialise glpi database on centos
    command: php /usr/share/glpi/scripts/cliinstall.php --host={{ DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
    when:
+     - ansible_distribution == 'CentOS'
+     - RESET_DB == True
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Upgrade glpi database if needed on debian
+   command: php /usr/share/glpi/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Upgrade glpi database if needed on centos
+   command: php /usr/share/glpi/scripts/cliupdate.php
+   when:
+     - ansible_distribution == 'CentOS'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
