@@ -1069,7 +1069,7 @@
    command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -e "{{ item }}"'
    with_items:
      - "DROP DATABASE IF EXISTS guacamole"
-     - "DELETE FROM mysql.user WHERE user='guacamole'"
+     - "DROP USER IF EXISTS 'guacamole'"
      - "FLUSH PRIVILEGES"
      - "CREATE DATABASE guacamole"
      - "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'"
