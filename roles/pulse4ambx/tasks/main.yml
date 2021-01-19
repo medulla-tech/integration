@@ -251,6 +251,288 @@
      - ansible_distribution == 'Debian'
 
 ##########################################################
+#                     PKI Generatiom                     #
+##########################################################
+
+ - name: PKI - Install openssl and ca-certificates package
+   yum:
+     state: latest
+     pkg:
+       - openssl
+       - ca-certificates
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PKI - Install openssl and ca-certificates package
+   apt:
+     state: latest
+     pkg:
+       - openssl
+       - ca-certificates
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PKI - Create pki folder tree
+   file:
+     path: '{{ item.path }}'
+     state: '{{ item.state }}'
+     mode: '{{ item.mode }}'
+   with_items:
+     - { path: '/var/lib/pulse2/pki', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/serial', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/crlnumber', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/index.txt', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/index.txt.attr', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/conf', state: 'directory', mode: '0700' }
+     - { path: '/var/lib/pulse2/pki/private', state: 'directory', mode: '0700' }
+     - { path: '/var/lib/pulse2/pki/newcerts', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/req', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/crl', state: 'directory', mode: '0755' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create root ca
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/rootca.key.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create root ca csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/rootca.csr
+     privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     common_name: PulseRootCA
+     country_name: FR
+     organization_name: SIVEO
+     key_usage:
+       - cRLSign
+       - keyCertSign
+     basic_constraints:
+       - CA:TRUE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Self-sign root ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/rootca.cert.pem
+     privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     csr_path: /var/lib/pulse2/pki/req/rootca.csr
+     provider: selfsigned
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create intermediate ca
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/cakey.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create intermediate ca csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/ca.csr
+     privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     common_name: PulseIntermediateCA
+     country_name: FR
+     organization_name: SIVEO
+     key_usage:
+       - cRLSign
+       - keyCertSign
+     basic_constraints:
+       - CA:TRUE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Sign intermediate ca using root ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/cacert.pem
+     csr_path: /var/lib/pulse2/pki/req/ca.csr
+     ownca_path: /var/lib/pulse2/pki/rootca.cert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     provider: ownca
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create certificate chain
+   shell: cat /var/lib/pulse2/pki/cacert.pem /var/lib/pulse2/pki/rootca.cert.pem > /var/lib/pulse2/pki/ca-chain.cert.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create ca-certificates folder
+   file:
+     path: /usr/local/share/ca-certificates
+     state: directory
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
+     remote_src: yes
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /etc/pki/ca-trust/source/anchors/
+     remote_src: yes
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Fetch ca-chain.cert.pem from pulsemain
+   fetch:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /tmp/ca-chain.cert.pem
+     flat: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Copy ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /tmp/ca-chain.cert.pem
+     dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Copy ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /tmp/ca-chain.cert.pem
+     dest: /etc/pki/ca-trust/source/anchors/
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Add pulse ca to ca certs
+   command: update-ca-certificates
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PKI - Add pulse ca to ca certs
+   command: update-ca-trust extract
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PKI - Create local private key
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay private key on pulsemain
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Create local csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     privatekey_path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+     common_name: 127.0.0.1
+     country_name: FR
+     organization_name: SIVEO
+     subject_alt_name: 'DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+     key_usage:
+       - nonRepudiation
+       - digitalSignature
+       - keyEncipherment
+       - dataEncipherment
+     basic_constraints:
+       - CA:FALSE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay csr on pulsemain
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     privatekey_path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+     common_name: 127.0.0.1
+     country_name: FR
+     organization_name: SIVEO
+     subject_alt_name: 'DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+     key_usage:
+       - nonRepudiation
+       - digitalSignature
+       - keyEncipherment
+       - dataEncipherment
+     extended_key_usage:
+       - serverAuth
+     basic_constraints:
+       - CA:FALSE
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Sign local key using intermadiate ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+     csr_path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     ownca_path: /var/lib/pulse2/pki/cacert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     provider: ownca
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Sign relay key using intermadiate ca on pulsemain
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+     csr_path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     ownca_path: /var/lib/pulse2/pki/cacert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     provider: ownca
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Create local pem file
+   shell: cat /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem > /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay pem file on pulsemain
+   shell: cat /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem > /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Remove csr files
+   file:
+     path: '/var/lib/pulse2/pki/req/{{ item }}'
+     state: absent
+   with_items:
+     - rootca.csr
+     - ca.csr
+     - '{{ SERVER_FQDN }}-req.pem'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Remove relay csr file on pulsemain
+   file:
+     path: '/var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem'
+     state: absent
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+##########################################################
 #                     Install apache                     #
 ##########################################################
 
@@ -543,6 +825,38 @@
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
    shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
+
+ - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
+   fetch:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "/tmp/{{ ansible_hostname }}-temp.pem"
+     flat: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: EJABBERD/PKI - Copy relay certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   copy:
+     src: "/tmp/{{ ansible_hostname }}-temp.pem"
+     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: EJABBERD/PKI - Copy pulsemain certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   copy:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+     remote_src: yes
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: EJABBERD/PKI - Replace ejabberd.pem by the certificate
+   lineinfile:
+     dest: /etc/ejabberd/ejabberd.yml
+     regexp: '^\s*certfile: .*$'
+     line: '    certfile: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"'
 
  - name: EJABBERD - Restart service
    systemd:
@@ -2928,83 +3242,6 @@
 
  - name: RELAY - Disable Quick deploy
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
-
-##########################################################
-#                Certificate Generation                  #
-##########################################################
-
- - name: CERTS - Remove relay from certificate trust
-   lineinfile:
-     dest: /var/lib/pulse2/pki/index.txt
-     state: absent
-     regexp: '{{ SERVER_FQDN }}$'
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: CERTS - Create the certificates on pulsemain
-   shell: "{{ item }}"
-   with_items:
-     - 'crudini --set /var/lib/pulse2/pki/conf/pulse.cnf alt_names DNS.1 {{ SERVER_FQDN }}'
-     - 'crudini --set /var/lib/pulse2/pki/conf/pulse.cnf alt_names DNS.2 {{ XMPP_DOMAIN }}'
-     - 'openssl req -config /var/lib/pulse2/pki/conf/pulse.cnf -subj "/countryName=FR/organizationName=SIVEO/commonName={{ SERVER_FQDN }}" -passout pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem'
-     - 'openssl ca -config /var/lib/pulse2/pki/conf/pulse.cnf -name CA_Intermediate -passin pass:{{ PKI_PASSWORD }} -batch -extensions server_cert -extfile /var/lib/pulse2/pki/conf/pulse.cnf -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem -infiles /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem'
-     - 'openssl rsa -passin pass:{{ PKI_PASSWORD }} -in /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem -out /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem'
-     - 'cat /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem >> /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem'
-     - 'crudini --del /var/lib/pulse2/pki/conf/pulse.cnf alt_names'
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-   no_log: True
-
- - name: CERTS - Set proper permissions on the certificates on pulsemain
-   file:
-     path: "{{ item.path }}"
-     mode: "{{ item.mode }}"
-     state: "{{ item.state }}"
-   with_items:
-     - { path: '/var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem', mode: '0600', state: 'file' }
-     - { path: '/var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem', mode: '0644', state: 'file' }
-     - { path: '/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem', mode: '0644', state: 'file' }
-     - { path: '/var/lib/pulse2/pki/req/{{ SERVER_FQDN }}.req.pem', mode: '', state: 'absent' }
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-
- - name: CERTS - Fetch relay certificate from pulsemain
-   fetch:
-     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
-     dest: "/tmp/{{ ansible_hostname }}-temp.pem"
-     flat: yes
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: CERTS - Copy relay certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
-   copy:
-     src: "/tmp/{{ ansible_hostname }}-temp.pem"
-     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: CERTS - Replace ejabberd.pem by the certificate
-   lineinfile:
-     dest: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*certfile: .*$'
-     line: '    certfile: "/etc/ejabberd/ejabberd.pem"'
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: CERTS - Restart service
-   systemd:
-     name: ejabberd
-     state: restarted
 
 ##########################################################
 #                     Final steps                        #
