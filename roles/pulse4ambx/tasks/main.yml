@@ -3744,3 +3744,12 @@
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
+
+##########################################################
+#                        DEBUG                           #
+##########################################################
+
+# - name: DEBUG
+#   debug:
+#     msg:
+#     - "admin_key contents: {{ admin_key }}"
