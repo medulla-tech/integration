@@ -75,6 +75,36 @@
      - (MAIN_ENTITY is undefined) or (MAIN_ENTITY|length == 0)
      - INSTALL_TYPE == 'p'
 
+ - name: VARS - Generate needed passwords specific to pulsemain
+   set_fact:
+     XMPP_MASTER_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+     XMPP_MUCROOM_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+     AES_KEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Generate needed passwords
+   set_fact:
+     GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+
+ - name: VARS - Set LDAP_BASEDN
+   set_fact:
+     LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Set PYTHON_BASEDIR
+   set_fact:
+     PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: VARS - Set PYTHON_BASEDIR
+   set_fact:
+     PYTHON_BASEDIR: /usr/lib/python2.7/site-packages
+   when:
+     - ansible_distribution == 'CentOS'
+
 ##########################################################
 #                  Preparation checks                    #
 ##########################################################
