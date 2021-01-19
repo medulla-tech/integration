@@ -1235,6 +1235,28 @@
      - INSTALL_TYPE != "p"
 
 ##########################################################
+#                   Setup File Browser                   #
+##########################################################
+
+ - name: FILEBROWSER - Create file-transfer folder and link
+   file:
+     src: '{{ item.src }}'
+     path: '{{ item.path }}'
+     state: '{{ item.state }}'
+   with_items:
+     - { src: '', path: '/var/lib/pulse2/file-transfer', state: 'directory'}
+     - { src: '/var/lib/pulse2/file-transfer/', path: '/var/www/html/file-transfer', state: 'link'}
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: FILEBROWSER - Enable apache rewrite module
+   apache2_module:
+     name: rewrite
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE == "p"
+
+##########################################################
 #                     Imaging_Server                     #
 ##########################################################
 
