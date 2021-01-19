@@ -3334,22 +3334,36 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Register master account
-   command: "ejabberdctl register master {{ XMPP_DOMAIN }} {{ connection_pass.stdout }}"
+ - name: RELAY - set XMPP_MASTER_PASSWORD from pulsemain
+   set_fact:
+     XMPP_MASTER_PASSWORD: "{{ connection_pass.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/EJABBERD - Register master account
+   command: "ejabberdctl register master {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}"
    when:
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Configure relay server
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
    with_items:
-     - { section: 'plugin', parameter: 'pluginlist', value: '"{{ plugin_list.stdout }}"'}
-     - { section: 'connection', parameter: 'password', value: '"{{ connection_pass.stdout }}"'}
-     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}'}
-     - { section: 'type', parameter: 'guacamole_baseurl', value: '"http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"'}
-     - { section: 'chat', parameter: 'domain', value: '{{ XMPP_DOMAIN }}'}
-     - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"'}
-     - { section: 'global', parameter: 'allow_order', value: 'master_reg'}
-     - { section: 'type', parameter: 'geolocalisation', value: 'False'}
+     - { section: 'connection', parameter: 'password', value: '"{{ XMPP_MASTER_PASSWORD }}"' }
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'chat', parameter: 'domain', value: '{{ XMPP_DOMAIN }}' }
+     - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"' }
+     - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
+     - { section: 'type', parameter: 'geolocalisation', value: 'False' }
+   no_log: True
+
+ - name: RELAY - Configure guacamole_baseurl parameter
+   command: 'crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"'
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: RELAY - Configure guacamole_baseurl parameter
+   command: 'crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"'
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -3361,52 +3375,54 @@
      - { parameter: 'public_ip', value: '{{ PUBLIC_IP }}'}
    when:
      - PUBLIC_IP != ''
-     - INSTALL_TYPE != 'p'
-
- - name: RELAY - Add gucamoleconf to list of plugins
-   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamoleconf"
 
  - name: RELAY - Configure guacamoleconf plugin
    command: "crudini --set /etc/pulse-xmpp-agent/guacamoleconf.ini.local parameters guacamole_dbpasswd {{ ROOT_PASSWORD }}"
 
- - name: RELAY - Fetch plugin ini files from pulsemain
-   fetch:
-     src: "/etc/pulse-xmpp-agent/{{ item }}.ini.local"
-     dest: "/tmp/{{ ansible_hostname }}-{{ item }}.ini.local"
-     flat: yes
+ - name: RELAY - Add guacamoleconf to list of plugins to be loaded
+   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamoleconf"
+
+ - name: RELAY - Configure plugins for alternate clients ssh port
+   command: "crudini --set /etc/pulse-xmpp-agent/{{ item }}.ini.local parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}"
    with_items:
      - applicationdeploymentjson
      - downloadfileexpert
      - downloadfile
      - guacamole
-     - reverse_ssh_on
-     - manage_scheduler_relay
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   ignore_errors: yes
    when:
-     - INSTALL_TYPE != 'p'
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
 
- - name: RELAY - Copy plugin ini files to relay
-   copy:
-     src: "/tmp/{{ ansible_hostname }}-{{ item }}.ini.local"
-     dest: "/etc/pulse-xmpp-agent/{{ item }}.ini.local"
-     owner: root
-     group: root
-     mode: '644'
+ - name: RELAY - Add configured plugins to list of plugins to be loaded
+   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist {{ item }}"
    with_items:
      - applicationdeploymentjson
      - downloadfileexpert
      - downloadfile
      - guacamole
-     - reverse_ssh_on
-     - manage_scheduler_relay
-   ignore_errors: yes
    when:
-     - INSTALL_TYPE != 'p'
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
 
- - name: RELAY - Update relay config with syncthing apikey and device id
+ - name: RELAY - Configure guacamole plugin for alternate clients vnc port
+   command: "crudini --set /etc/pulse-xmpp-agent/guacamole.ini.local parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+
+ - name: RELAY - Add guacamole to list of plugins to be loaded
+   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamole"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+
+ - name: RELAY - Configure reverse_ssh_on plugin for alternate reversessh ssh port
+   command: "crudini --set /etc/pulse-xmpp-agent/reverse_ssh_on.ini.local parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}"
+   when:
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
+
+ - name: RELAY - Add reverse_ssh_on to list of plugins to be loaded
+   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist reverse_ssh_on"
+   when:
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
+
+ - name: RELAY/SYNCTHING - Update relay config with syncthing apikey and device id
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local syncthing-deploy {{ item.parameter }} {{ item.value }}
    with_items:
      - { parameter: 'syncthing_gui_apikey', value: '"{{ SYNCTHING_DEPL_API_KEY }}"'}
@@ -3421,16 +3437,13 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Delete lines from /etc/hosts
+ - name: RELAY - Add pulse to /etc/hosts
    lineinfile:
-     dest: "/etc/hosts"
-     regexp: "{{ item }}"
-     state: absent
-   with_items:
-     - '^.* pulse$'
-     - '^.* {{ XMPP_DOMAIN }}$'
+     dest: /etc/hosts
+     regexp: '^.* {{ XMPP_DOMAIN }}$'
+     line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
    when:
-     - INSTALL_TYPE != 'p'
+     - INSTALL_TYPE == 'p'
 
  - name: RELAY - Update /etc/hosts
    lineinfile:
@@ -3456,37 +3469,22 @@
 
  - name: RELAY - Force relay to re-register in case of upgrade
    copy:
-     content: ""
-     dest: /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION
+     content: ''
+     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION'
      force: no
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == 'CentOS'
-
- - name: RELAY - Force relay to re-register in case of upgrade
-   copy:
-     content: ""
-     dest: /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION
-     force: no
-   when:
-     - INSTALL_TYPE != 'p'
-     - ansible_distribution == 'Debian'
 
  - name: RELAY - Enable service
    systemd:
      enabled: yes
      state: restarted
      name: pulse-xmpp-agent-relay
-   when:
-     - INSTALL_TYPE != 'p'
 
  - name: RELAY - Pause for 2 minutes to start and register the relay
    pause:
      minutes: 2
 
- - name: RELAY - Get cluster id for pulsemain if it exists
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
-   register: existingclusterid
+ - name: RELAY - Update cluster for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"UPDATE cluster_ars set name = '{{ CLUSTER_NAME }}', description = '{{ CLUSTER_NAME }}' where id = 1\""
    when:
      - INSTALL_TYPE == 'p'
 
@@ -3503,14 +3501,8 @@
    set_fact:
      CLUSTER_ID: "{{ existingclusterid.stdout }}"
    when:
+     - INSTALL_TYPE != 'p'
      - existingclusterid.stdout != ''
-
- - name: RELAY - Set CLUSTER_ID for pulsemain when cluster does not exist
-   set_fact:
-     CLUSTER_ID: 1
-   when:
-     - INSTALL_TYPE == 'p'
-     - existingclusterid.stdout == ''
 
  - name: RELAY - Get MAX_ID FROM cluster_ars when cluster does not exist
    command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"'
@@ -3527,12 +3519,6 @@
      CLUSTER_ID: "{{ maxid.stdout | int + 1 }}"
    when:
      - INSTALL_TYPE != 'p'
-     - existingclusterid.stdout == ''
-
- - name: RELAY - Create cluster for pulsemain if it does not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
-   when:
-     - INSTALL_TYPE == 'p'
      - existingclusterid.stdout == ''
 
  - name: RELAY - Create cluster for relay if it does not exist
@@ -3571,6 +3557,17 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: RELAY - Set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: "{{ relayserverid.stdout }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Insert relay in its cluster for pulsemain
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = 1 WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
@@ -3583,12 +3580,8 @@
  - name: RELAY - Set RELAYSERVER_ID
    set_fact:
      RELAYSERVER_ID: "{{ relayserverid.stdout }}"
-
- - name: RELAY - Relay check if id_ars is already inserted for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
-   register: relay_is_inserted
    when:
-     - INSTALL_TYPE == 'p'
+     - INSTALL_TYPE != 'p'
 
  - name: RELAY - Relay check if id_ars is already inserted for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
@@ -3599,26 +3592,14 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Insert relay in its cluster for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
-   when:
-     - relay_is_inserted.stdout == "0"
-     - INSTALL_TYPE == 'p'
-
- - name: RELAY - Insert relay in its cluster for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
-   when:
-     - relay_is_inserted.stdout != "0"
-     - INSTALL_TYPE == 'p'
-
  - name: RELAY - Insert relay in its cluster for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id,id_ars,id_cluster) VALUES ('{{ NEXT_ID }}','{{ RELAYSERVER_ID }}','{{ CLUSTER_ID }}')\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ('{{ NEXT_ID }}', '{{ RELAYSERVER_ID }}', '{{ CLUSTER_ID }}')\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - relay_is_inserted.stdout == "0"
      - INSTALL_TYPE != 'p'
+     - relay_is_inserted.stdout == "0"
 
  - name: RELAY - Insert relay in its cluster for relay
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
@@ -3626,11 +3607,11 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - relay_is_inserted.stdout != "0"
      - INSTALL_TYPE != 'p'
+     - relay_is_inserted.stdout != "0"
 
  - name: RELAY - Create substituteconf records for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')\""
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
      - { type: 'subscription', jid: 'master_subs@pulse' }
@@ -3642,7 +3623,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Create substituteconf records for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type,jidsubtitute,relayserver_id) VALUES ('{{ item.type }}','{{ item.jid }}','{{ RELAYSERVER_ID }}')\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')\""
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
      - { type: 'subscription', jid: 'master_subs@pulse' }
