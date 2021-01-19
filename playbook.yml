@@ -2,5 +2,6 @@
 - name: install pulse
   hosts: all
   remote_user: root
+  serial: 1
   roles:
     - pulse4ambx
