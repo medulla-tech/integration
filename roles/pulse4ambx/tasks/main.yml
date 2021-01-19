@@ -3513,10 +3513,6 @@
      state: restarted
      name: pulse-xmpp-agent-relay
 
- - name: RELAY - Pause for 2 minutes to start and register the relay
-   pause:
-     minutes: 2
-
  - name: RELAY - Update cluster for pulsemain
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"UPDATE cluster_ars set name = '{{ CLUSTER_NAME }}', description = '{{ CLUSTER_NAME }}' where id = 1\""
    when:
@@ -3585,9 +3581,12 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Get RELAYSERVER_ID FROM relayserver for pulsemain
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for pulsemain waiting up to 5 minutes
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE jid LIKE 'rspulse@pulse/%'\""
    register: relayserverid
+   until: relayserverid.stdout != ''
+   retries: 10
+   delay: 30
    when:
      - INSTALL_TYPE == 'p'
 
@@ -3602,9 +3601,12 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay waiting up to 5 minutes
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
+   until: relayserverid.stdout != ''
+   retries: 10
+   delay: 30
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
