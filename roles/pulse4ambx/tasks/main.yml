@@ -1006,14 +1006,6 @@
      state: restarted
      name: guacd
 
- - name: GUACAMOLE - Generate Guacamole password
-   command: pwgen --secure 40 1
-   register: guacamole_pass
-
- - name: GUACAMOLE - Define GUACAMOLE_ROOT_PASSWORD variable
-   set_fact:
-     GUACAMOLE_ROOT_PASSWORD: "{{ guacamole_pass.stdout }}"
-
  - name: GUACAMOLE - Reset guacamole database
    command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -e "{{ item }}"'
    with_items:
