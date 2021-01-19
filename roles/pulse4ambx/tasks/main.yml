@@ -861,13 +861,28 @@
    shell: "usermod ejabberd -d /var/lib/ejabberd"
 
  - name: EJABBERD - Set XMPP domain in ejabberd.yml
-   command: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
+   blockinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     insertafter: "^hosts:$"
+     marker: "# {mark} ANSIBLE MANAGED BLOCK hosts"
+     block: |2
+       - "{{ XMPP_DOMAIN }}"
 
  - name: EJABBERD - Add root@{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
-   command: 'sed -i "/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - "root@{{ XMPP_DOMAIN }}"" /etc/ejabberd/ejabberd.yml'
+   blockinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     insertafter: "^acl:$"
+     marker: "# {mark} ANSIBLE MANAGED BLOCK acl"
+     block: |2
+       admin:
+         user :
+           - root@{{ XMPP_DOMAIN }}
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
-   shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
+   lineinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '^\s*starttls: .*$'
+     line: '    starttls: false'
 
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
