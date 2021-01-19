@@ -1849,7 +1849,6 @@
    command: a2enconf syncthing
    when:
      - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == 'p'
 
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
@@ -1878,7 +1877,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == 'p'
+     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
@@ -2402,7 +2401,6 @@
    command: a2enconf syncthing-depl
    when:
      - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == 'p'
 
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
@@ -2431,7 +2429,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == 'p'
+     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
