@@ -2713,7 +2713,9 @@
    wait_for:
      port: 3000
      delay: 5
-
+   when:
+     - INSTALL_TYPE == 'p'
+     
  - name: GRAFANA - Reset admin password
    command: grafana-cli admin reset-admin-password {{ ROOT_PASSWORD }}
    when:
