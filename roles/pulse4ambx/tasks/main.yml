@@ -1882,12 +1882,7 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: RELAY - Pause for 2 minutes to start and register the relay
-   pause:
-     minutes: 2
-   no_log: True
-
- - name: RELAY - Get cluster id if it exists
+ - name: RELAY - Get cluster id for relay if it exists
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
    register: existingclusterid
    vars:
@@ -1950,9 +1945,12 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: RELAY - Get RELAYSERVER_ID FROM relayserver
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
    register: relayserverid
+   until: relayserverid.stdout != ''
+   retries: 10
+   delay: 30
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
