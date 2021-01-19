@@ -1875,6 +1875,12 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to LOCAL_DEVICE_ID on pulsemain
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ LOCAL_DEVICE_ID }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: SYNCTHING - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
@@ -2167,7 +2173,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
  - name: SHARE - Share folder from main pulse if not already shared in ars, folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='1']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
@@ -2206,12 +2212,12 @@
      - { name: 'blockPullOrder', value: 'standard' }
 
  - name: SHARE - Add 1 in balise minDiskFree, in folders balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '1' -v '1' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '1' -v '1' /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folder from main pulse if not already shared in pulse, folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="60" fsWatcherEnabled="false" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='1']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="60" fsWatcherEnabled="false" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
@@ -2222,7 +2228,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share folder from main pulse if not already shared in pulse, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -2252,7 +2258,7 @@
      - { name: 'blockPullOrder', value: 'standard' }
 
  - name: SHARE - Add 0 in balise minDiskFree, in folders balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '0' -v '0' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '0' -v '0' /var/lib/syncthing/.config/syncthing/config.xml
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
