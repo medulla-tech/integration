@@ -1162,7 +1162,7 @@
      name: '{{ TOMCAT_VERSION }}'
      state: restarted
 
- - name: GUACAMOLE - Configure apache for pulsemain guacamole
+ - name: GUACAMOLE/APACHE - Configure apache for pulsemain guacamole
    copy:
      content: |
         <Location /guacamole/>
@@ -1187,14 +1187,14 @@
    when:
      - INSTALL_TYPE == "p"
 
- - name: GUACAMOLE - Reload apache
+ - name: GUACAMOLE/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
      - INSTALL_TYPE == "p"
 
- - name: GUACAMOLE - Configure apache for pulsemain guacamole
+ - name: GUACAMOLE/APACHE - Configure apache for pulsemain guacamole
    copy:
      content: |
         <Location /guacamole-{{ XMPP_DOMAIN }}/>
@@ -1224,7 +1224,7 @@
    when:
      - INSTALL_TYPE != "p"
 
- - name: GUACAMOLE - Reload apache on pulsemain
+ - name: GUACAMOLE/APACHE - Reload apache on pulsemain
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
@@ -1833,7 +1833,7 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: SYNCTHING - Setup local apache for syncthing
+ - name: SYNCTHING/APACHE - Setup local apache for syncthing
    copy:
      content: |
        ProxyPass /syncthing/ http://localhost:8384/
@@ -1843,12 +1843,12 @@
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing.conf'
 
- - name: SYNCTHING - Reload apache
+ - name: SYNCTHING/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
 
- - name: SYNCTHING - Setup pulsemain apache for relay syncthing
+ - name: SYNCTHING/APACHE - Setup pulsemain apache for relay syncthing
    copy:
      content: |
        ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
@@ -1863,7 +1863,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Reload apache on pulsemain
+ - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
@@ -2371,7 +2371,7 @@
    set_fact:
      LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: SYNCTHING - Setup local apache for syncthing-depl
+ - name: SYNCTHING/APACHE - Setup local apache for syncthing-depl
    copy:
      content: |
        ProxyPass /syncthing-depl/ http://localhost:8385/
@@ -2381,12 +2381,12 @@
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-depl.conf'
 
- - name: SYNCTHING - Reload apache
+ - name: SYNCTHING/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
 
- - name: SYNCTHING - Setup pulsemain apache for relay syncthing-depl
+ - name: SYNCTHING/APACHE - Setup pulsemain apache for relay syncthing-depl
    copy:
      content: |
        ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/
@@ -2401,7 +2401,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Reload apache on pulsemain
+ - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
@@ -2640,7 +2640,7 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
- - name: GRAFANA - Enable apache module
+ - name: GRAFANA/APACHE - Enable apache module
    apache2_module:
      state: present
      name: headers
@@ -2648,7 +2648,7 @@
      - ansible_distribution == "Debian"
      - INSTALL_TYPE == 'p'
 
- - name: GRAFANA - Setup apache for grafana
+ - name: GRAFANA/APACHE - Setup apache for grafana
    copy:
      content: |
        ProxyPass /grafana/ http://localhost:3000/
@@ -2661,13 +2661,13 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: GRAFANA - Enable grafana module
+ - name: GRAFANA/APACHE - Enable grafana module
    command: a2enconf grafana
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
- - name: GRAFANA - Reload apache
+ - name: GRAFANA/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
@@ -2980,7 +2980,7 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: MAINPULSE - Add grafana parameters to xmppmaster config file
+ - name: MAINPULSE/GRAFANA - Add grafana parameters to xmppmaster config file
    command: crudini --set /etc/mmc/plugins/xmppmaster.ini.local grafana_api api_key {{ GRAFANA_ADMIN_KEY }}
    when:
      - INSTALL_TYPE == 'p'
@@ -3365,7 +3365,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: RELAY - Enable publishing of agent updates on relay
+ - name: RELAY/APACHE - Enable publishing of agent updates on relay
    copy:
      content: |
         Alias /downloads /var/lib/pulse2/clients/
@@ -3384,7 +3384,7 @@
    when:
      - INSTALL_TYPE != "p"
 
- - name: RELAY - Reload apache
+ - name: RELAY/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
