@@ -868,7 +868,7 @@
      insertafter: "^hosts:$"
      marker: "# {mark} ANSIBLE MANAGED BLOCK hosts"
      block: |2
-       - "{{ XMPP_DOMAIN }}"
+         - "{{ XMPP_DOMAIN }}"
 
  - name: EJABBERD - Add root@{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
    blockinfile:
@@ -876,9 +876,9 @@
      insertafter: "^acl:$"
      marker: "# {mark} ANSIBLE MANAGED BLOCK acl"
      block: |2
-       admin:
-         user :
-           - root@{{ XMPP_DOMAIN }}
+         admin:
+           user :
+             - root@{{ XMPP_DOMAIN }}
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
    lineinfile:
