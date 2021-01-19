@@ -865,20 +865,19 @@
  - name: EJABBERD - Set XMPP domain in ejabberd.yml
    blockinfile:
      path: /etc/ejabberd/ejabberd.yml
-     insertafter: "^hosts:$"
-     marker: "# {mark} ANSIBLE MANAGED BLOCK hosts"
+     insertafter: '^hosts:$'
+     marker: '# {mark} ANSIBLE MANAGED BLOCK hosts'
      block: |2
          - "{{ XMPP_DOMAIN }}"
 
- - name: EJABBERD - Add root@{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
+ - name: EJABBERD - Add root@ and master@ {{ XMPP_DOMAIN }} as admin user in ejabberd.yml
    blockinfile:
      path: /etc/ejabberd/ejabberd.yml
-     insertafter: "^acl:$"
-     marker: "# {mark} ANSIBLE MANAGED BLOCK acl"
+     insertafter: '^     user:$'
+     marker: '# {mark} ANSIBLE MANAGED BLOCK acl'
      block: |2
-         admin:
-           user :
-             - root@{{ XMPP_DOMAIN }}
+              - root@{{ XMPP_DOMAIN }}
+              - master@{{ XMPP_DOMAIN }}
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
    lineinfile:
@@ -913,10 +912,10 @@
      - INSTALL_TYPE == 'p'
 
  - name: EJABBERD/PKI - Replace ejabberd.pem by the certificate
-   lineinfile:
-     dest: /etc/ejabberd/ejabberd.yml
+   replace:
+     path: /etc/ejabberd/ejabberd.yml
      regexp: '^\s*certfile: .*$'
-     line: '    certfile: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"'
+     replace: '    certfile: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"'
 
  - name: EJABBERD - Restart service
    systemd:
@@ -940,28 +939,39 @@
    command: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
 
  - name: EJABBERD - Update ejabberd.yml
-   shell: |
-    sed -i '/^[[:space:]]*- "root@${XMPP_DOMAIN}"/{p;s/root/master/;}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*subject.*/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i  '/^[[:space:]]*body.*/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/body: ""/ {n;N; s/^/    ##/gm }' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 60\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
+   lineinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '{{ item.regexp }}'
+     line: '{{ item.line }}'
+   with_items:
+     - { regexp: '^#*\s*registration_timeout: .*$', line: 'registration_timeout: infinity' }
+     - { regexp: '^\s*#*\s*mod_register:$', line: '  mod_register:' }
+     - { regexp: '^\s*max_stanza_size: .*$', line: '    max_stanza_size: 8388608' }
+     - { regexp: '^max_fsm_queue: .*$', line: 'max_fsm_queue: 5000' }
+     - { regexp: '^\s*normal: .*$', line: '  normal: 100000000' }
+     - { regexp: '^\s*fast: .*$', line: '  fast: 1000000000' }
+     - { regexp: '^\s*mod_ping: {}$', line: '  mod_ping:' }
+     - { regexp: '^\s*- allow: loopback$', line: '    - allow: all' }
+
+ - name: EJABBERD - Configure mod_register
+   blockinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     insertafter: '^  mod_register:$'
+     marker: '# {mark} ANSIBLE MANAGED BLOCK mod_register'
+     block: |2
+           welcome_message:
+             subject: ""
+           ip_access: trusted_network
+
+ - name: EJABBERD - Configure mod_ping
+   blockinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     insertafter: '^  mod_ping:$'
+     marker: '# {mark} ANSIBLE MANAGED BLOCK mod_ping'
+     block: |2
+           send_pings: true
+           ping_interval: 60
+           timeout_action: kill
 
  - name: EJABBERD - Restart service
    systemd:
