@@ -65,8 +65,15 @@
    set_fact:
      CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
-     - MULTISITE_ENTITY is undefined
-     - MAIN_ENTITY is undefined
+     - (MULTISITE_ENTITY is undefined) or (MULTISITE_ENTITY|length == 0)
+     - INSTALL_TYPE != 'p'
+
+ - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname }}"
+   when:
+     - (MAIN_ENTITY is undefined) or (MAIN_ENTITY|length == 0)
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                  Preparation checks                    #
