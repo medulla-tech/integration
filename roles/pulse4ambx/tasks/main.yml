@@ -1845,6 +1845,12 @@
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing.conf'
 
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
@@ -1864,6 +1870,15 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-{{ XMPP_DOMAIN }}
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
@@ -2383,6 +2398,12 @@
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-depl.conf'
 
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-depl
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
@@ -2402,6 +2423,15 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-depl-{{ XMPP_DOMAIN }}
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
    systemd:
@@ -3223,7 +3253,7 @@
      - master-all-RSA.key
    when:
      - INSTALL_TYPE == 'p'
-     
+
  - name: MAINPULSE - Restart substitutes
    systemd:
      enabled: yes
