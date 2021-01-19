@@ -692,6 +692,57 @@
      state: restarted
 
 ##########################################################
+#                  Install LDAP server                   #
+##########################################################
+
+ - name: LDAP - Define parameters for debian
+   debconf:
+     name: slapd
+     question: '{{ item }}'
+     vtype: password
+     value: '{{ ROOT_PASSWORD }}'
+   with_items:
+     - slapd/password1
+     - slapd/password2
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: LDAP - Install ldap server
+   apt:
+     state: latest
+     pkg:
+       - ldap-server
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Install ldap server
+   yum:
+     state: latest
+     pkg:
+       - openldap-servers
+       - openldap-clients
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Set variable for ldap server config path
+   set_fact:
+     LDAP_CONFIG_PATH: /etc/openldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Set variable for ldap server config path
+   set_fact:
+     LDAP_CONFIG_PATH: /etc/ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+##########################################################
 #                     Install mariadb                    #
 ##########################################################
 
