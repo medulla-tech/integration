@@ -2715,7 +2715,7 @@
      delay: 5
    when:
      - INSTALL_TYPE == 'p'
-     
+
  - name: GRAFANA - Reset admin password
    command: grafana-cli admin reset-admin-password {{ ROOT_PASSWORD }}
    when:
@@ -3221,7 +3221,9 @@
    with_items:
      - master-public-RSA.key
      - master-all-RSA.key
-
+   when:
+     - INSTALL_TYPE == 'p'
+     
  - name: MAINPULSE - Restart substitutes
    systemd:
      enabled: yes
