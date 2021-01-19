@@ -924,6 +924,7 @@
 
  - name: EJABBERD - Update ejabberd.yml
    shell: |
+    sed -i '/^[[:space:]]*- "root@${XMPP_DOMAIN}"/{p;s/root/master/;}' /etc/ejabberd/ejabberd.yml
     sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
