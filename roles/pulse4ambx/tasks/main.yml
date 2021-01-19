@@ -234,7 +234,6 @@
      state: latest
      pkg:
        - crudini
-       - pwgen
        - xmlstarlet
        - acl
    when:
@@ -246,7 +245,6 @@
      state: latest
      pkg:
        - crudini
-       - pwgen
        - xmlstarlet
        - acl
    when:
