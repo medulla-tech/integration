@@ -1937,22 +1937,6 @@
      - syncthing
      - syncthing-depl
 
- - name: SYNCTHING - Get running processes
-   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
-   register: syncthing_pid
-
- - name: SYNCTHING - Wait until processes are stopped
-   wait_for:
-     path: "/proc/{{ item }}/status"
-     state: absent
-   with_items: "{{ syncthing_pid.stdout_lines }}"
-   ignore_errors: yes
-   register: kill_pid
-
- - name: SYNCTHING - Kill running processes
-   command: "kill -9 {{ item }}"
-   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
-
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
    when:
@@ -2015,7 +1999,6 @@
    command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
    vars:
      ansible_ssh_user: root
-   ignore_errors: yes
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
@@ -2032,28 +2015,6 @@
    with_items:
      - syncthing
      - syncthing-depl
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Get running processes
-   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
-   register: syncthing_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Wait until processes are stopped
-   wait_for:
-     path: "/proc/{{ item }}/status"
-     state: absent
-   with_items: "{{ syncthing_pid.stdout_lines }}"
-   ignore_errors: yes
-   register: kill_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Kill running processes
-   command: "kill -9 {{ item }}"
-   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2080,56 +2041,80 @@
    command: 'stman folder remove "Default Folder"'
 
 ##########################################################
-#               Syncthing share packages                 #
+#                   Syncthing shares                     #
 ##########################################################
 
- - name: SYNCTHING - Stop service before editing configuration
+ - name: SHARE - Stop service for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
-   when:
-     - INSTALL_TYPE != 'p'
+   with_items:
+     - syncthing
+     - syncthing-depl
 
- - name: SYNCTHING - Stop service before editing configuration in pulse
+ - name: SHARE - Stop service on pulsemain for editing configuration
    systemd:
-     name: syncthing@syncthing
+     name: syncthing@{{ item }}
      state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Unshare folder from ars if already shared
+ - name: SHARE - Delete shares on main pulse before recreating them
    command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
-   register: result
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   until: result.stdout != '0'
    ignore_errors: yes
-   retries: 6
-   delay: 10
    when:
-     - INSTALL_TYPE != 'p'
-     - xmlresp == ''
+     - INSTALL_TYPE == 'p'
 
- - name: SHARE - Unshare folder from main pulse if already shared
-   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
-   register: result
+ - name: SHARE - Create shares on main pulse
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   until: result.stdout != '0'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Edit shares on main pulse
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'device id=\"{{ LOCAL_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@type='sendonly']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Delete all shares on ars
+   command: xmlstarlet ed --inplace -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
    ignore_errors: yes
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   retries: 6
-   delay: 10
    when:
      - INSTALL_TYPE != 'p'
-     - xmlresp == ''
+
+ - name: SHARE - Unshare all folders from main pulse if already shared
+   command: xmlstarlet ed --inplace -d "configuration/folder[@type='sendonly']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Remove destination folders if present
    file:
@@ -2177,8 +2162,20 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+
+ - name: SHARE - Create stignore file for downloads on main pulse
+   copy:
+     content: |
+       config
+       generate-*
+       reversessh
+       .generation_options
+     dest: /var/lib/pulse2/clients/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
    when:
-     - INSTALL_TYPE != 'p'
+     - INSTALL_TYPE == 'p'
 
  - name: SHARE - Create stignore file for downloads on relay
    copy:
@@ -2189,6 +2186,30 @@
      group: syncthing
    when:
      - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create stignore file for bootmenus on main pulse
+   copy:
+     content: "default"
+     dest: /var/lib/pulse2/imaging/bootmenus/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Define ACLs on the folders
+   acl:
+     path: '{{ item.destination }}'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
@@ -2205,23 +2226,8 @@
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
 
- - name: SHARE - Define ACLs on the folders
-   acl:
-     path: '{{ item.destination }}'
-     etype: group
-     entity: syncthing
-     recursive: yes
-     permissions: rwx
-     default: no
-     state: present
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-
- - name: SHARE - Share folder from main pulse if not already shared in ars, folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='1']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SHARE - Create shares on relay
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
@@ -2230,174 +2236,64 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Share folder from main pulse if not already shared in ars, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='30']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
-   when:
-     - INSTALL_TYPE != 'p'
+ - name: SHARE - Edit shares on relay
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
-     - { name: 'filesystemType', value: 'basic' }
-     - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'device id="{{ PULSEMAIN_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'minDiskFree unit="%"', value: '' }
-     - { name: 'versioning', value: '' }
-     - { name: 'copiers', value: '0' }
-     - { name: 'pullerMaxPendingKiB', value: '0' }
-     - { name: 'hashers', value: '0' }
-     - { name: 'order', value: 'random' }
-     - { name: 'ignoreDelete', value: 'false' }
-     - { name: 'scanProgressIntervalS', value: '0' }
-     - { name: 'pullerPauseS', value: '0' }
-     - { name: 'MaxConflicts', value: '-1' }
-     - { name: 'disableSparseFiles', value: 'false' }
-     - { name: 'disableTempIndexes', value: 'false' }
-     - { name: 'paused', value: 'false' }
-     - { name: 'weakHashThresholdPct', value: '25' }
-     - { name: 'markerName', value: '.stfolder' }
-     - { name: 'copyOwnershipFromParent', value: 'false' }
-     - { name: 'modTimeWindowS', value: '0' }
-     - { name: 'maxConcurrentWrites', value: '2' }
-     - { name: 'disableFsync', value: 'false' }
-     - { name: 'blockPullOrder', value: 'standard' }
-
- - name: SHARE - Add 1 in balise minDiskFree, in folders balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '1' -v '1' /var/lib/syncthing/.config/syncthing/config.xml
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ LOCAL_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@type='sendreceive']/minDiskFree", operation: "-v '1'" }
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Share folder from main pulse if not already shared in pulse, folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='1']" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="60" fsWatcherEnabled="false" fsWatcherDelayS="10" ignorePerms="false"  autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+ - name: SHARE - Share all folders with ars from pulsemain
+   command: xmlstarlet ed --inplace -s "configuration/folder[@type='sendonly']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Share folder from main pulse if not already shared in pulse, in folder balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']" -t elem -n '{{ item.name }}' -v '{{ item.value }}' /var/lib/syncthing/.config/syncthing/config.xml
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-   with_items:
-     - { name: 'filesystemType', value: 'basic' }
-     - { name: 'device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'device id="{{ PULSEMAIN_DEVICE_ID }}" introducedBy=""', value: '' }
-     - { name: 'minDiskFree unit=""', value: '' }
-     - { name: 'versioning', value: '' }
-     - { name: 'copiers', value: '0' }
-     - { name: 'pullerMaxPendingKiB', value: '0' }
-     - { name: 'hashers', value: '0' }
-     - { name: 'order', value: 'random' }
-     - { name: 'ignoreDelete', value: 'false' }
-     - { name: 'scanProgressIntervalS', value: '0' }
-     - { name: 'pullerPauseS', value: '0' }
-     - { name: 'MaxConflicts', value: '10' }
-     - { name: 'disableSparseFiles', value: 'false' }
-     - { name: 'disableTempIndexes', value: 'false' }
-     - { name: 'paused', value: 'false' }
-     - { name: 'weakHashThresholdPct', value: '25' }
-     - { name: 'markerName', value: '.stfolder' }
-     - { name: 'copyOwnershipFromParent', value: 'false' }
-     - { name: 'modTimeWindowS', value: '0' }
-     - { name: 'maxConcurrentWrites', value: '0' }
-     - { name: 'disableFsync', value: 'false' }
-     - { name: 'blockPullOrder', value: 'standard' }
-
- - name: SHARE - Add 0 in balise minDiskFree, in folders balise
-   command: xmlstarlet ed --inplace -s "configuration[@version='1']/folder[@type='sendreceive']/minDiskFree[@unit='%']" -t text -n '0' -v '0' /var/lib/syncthing/.config/syncthing/config.xml
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Restart service for editing configuration
+ - name: SHARE - Restart service on pulsemain after editing configuration
    systemd:
      name: syncthing@{{ item }}
      state: restarted
    with_items:
      - syncthing
      - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Stop service for editing configuration
+ - name: SHARE - Restart service after editing configuration
    systemd:
      name: syncthing@{{ item }}
-     state: stopped
+     state: restarted
    with_items:
      - syncthing
      - syncthing-depl
-   when:
-     - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Get running processes
-   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
-   register: syncthing_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Wait until processes are stopped
-   wait_for:
-     path: "/proc/{{ item }}/status"
-     state: absent
-   with_items: "{{ syncthing_pid.stdout_lines }}"
-   ignore_errors: yes
-   register: kill_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Kill running processes
-   command: "kill -9 {{ item }}"
-   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SHARE - Remove syncthing folders from syncthing home
-   file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
-     state: absent
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SHARE - Change path to folders in syncthing config file
-   command: xmlstarlet ed --inplace -u "configuration/folder[@id='{{ item.share_id }}']/@path" -v "{{ item.destination }}" /var/lib/syncthing/.config/syncthing/config.xml
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Restart service after editing configuration
-   systemd:
-     name: syncthing@syncthing
-     state: restarted
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+ - name: SHARE - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
      port: 22000
      delay: 5
-   when:
-     - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Get local device id for syncthing-depl
+##########################################################
+#                 Syncthing deployment                   #
+##########################################################
+
+ - name: SYNCTHINGDEPL - Get local device id for syncthing-depl
    command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
    register: localdeviceid
 
- - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing-depl
+ - name: SYNCTHINGDEPL - Set LOCAL_DEVICE_ID for syncthing-depl
    set_fact:
      LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
- - name: SYNCTHING/APACHE - Setup local apache for syncthing-depl
+ - name: SYNCTHINGDEPL/APACHE - Setup local apache for syncthing-depl
    copy:
      content: |
        ProxyPass /syncthing-depl/ http://localhost:8385/
@@ -2407,17 +2303,17 @@
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-depl.conf'
 
- - name: SYNCTHING/APACHE - Enable syncthing configuration
+ - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
    command: a2enconf syncthing-depl
    when:
      - ansible_distribution == 'Debian'
 
- - name: SYNCTHING/APACHE - Reload apache
+ - name: SYNCTHINGDEPL/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
 
- - name: SYNCTHING/APACHE - Setup pulsemain apache for relay syncthing-depl
+ - name: SYNCTHINGDEPL/APACHE - Setup pulsemain apache for relay syncthing-depl
    copy:
      content: |
        ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/
@@ -2432,7 +2328,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING/APACHE - Enable syncthing configuration
+ - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
    command: a2enconf syncthing-depl-{{ XMPP_DOMAIN }}
    vars:
      ansible_ssh_user: root
@@ -2441,7 +2337,7 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING/APACHE - Reload apache on pulsemain
+ - name: SYNCTHINGDEPL/APACHE - Reload apache on pulsemain
    systemd:
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
@@ -2451,7 +2347,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Stop service for editing configuration
+ - name: SYNCTHINGDEPL - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
      state: stopped
@@ -2459,70 +2355,57 @@
      - syncthing
      - syncthing-depl
 
- - name: SYNCTHING - Get running processes
-   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
-   register: syncthing_pid
-
- - name: SYNCTHING - Wait until processes are stopped
-   wait_for:
-     path: "/proc/{{ item }}/status"
-     state: absent
-   with_items: "{{ syncthing_pid.stdout_lines }}"
-   ignore_errors: yes
-   register: kill_pid
-
- - name: SYNCTHING - Kill running processes
-   command: "kill -9 {{ item }}"
-   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
-
- - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing-depl
+ - name: SYNCTHINGDEPL - Define global announce server as pulsemain on relay syncthing-depl
    command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Disable use of relays
+ - name: SYNCTHINGDEPL - Disable use of relays
    command: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: SYNCTHING - Disable use of local announce
+ - name: SYNCTHINGDEPL - Disable use of local announce
    command: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: SYNCTHING - Add root user
+ - name: SYNCTHINGDEPL - Add root user
    command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: SYNCTHING - Set root password to ENCRYPTED_PASS
+ - name: SYNCTHINGDEPL - Set root password to ENCRYPTED_PASS
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml
 
- - name: SYNCTHING - Define listen port to 23000
+ - name: SYNCTHINGDEPL - Define listen port to 23000
    command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: SYNCTHING - Define gui listen port to 8385
+ - name: SYNCTHINGDEPL - Define gui listen port to 8385
    command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
 
- - name: SYNCTHING - Restart service after editing configuration
+ - name: SYNCTHINGDEPL - Restart service after editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
 
- - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+ - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
      port: 23000
      delay: 5
 
- - name: SYNCTHING - Get api key from syncthing-depl
+ - name: SYNCTHINGDEPL - Get api key from syncthing-depl
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
    register: apikey
 
- - name: SYNCTHING - Set SYNCTHING_DEPL_API_KEY
+ - name: SYNCTHINGDEPL - Set SYNCTHING_DEPL_API_KEY
    set_fact:
      SYNCTHING_DEPL_API_KEY: "{{ apikey.stdout }}"
 
- - name: SYNCTHING - Configure SYNCTHING_DEPL_API_KEY in stman
+ - name: SYNCTHINGDEPL - Configure SYNCTHING_DEPL_API_KEY in stman
    command: "stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl"
 
- - name: SYNCTHING - Define XMPP_DOMAIN for device name
+ - name: SYNCTHINGDEPL - Define XMPP_DOMAIN for device name
    command: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
 
- - name: SYNCTHING - Add relayserver device as introducer on pulsemain syncthing-depl
+ - name: SYNCTHINGDEPL - Add relayserver device as introducer on pulsemain syncthing-depl
    command: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
    vars:
      ansible_ssh_user: root
@@ -2530,7 +2413,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Find pulsemain device id
+ - name: SYNCTHINGDEPL - Find pulsemain device id
    command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
    vars:
      ansible_ssh_user: root
@@ -2539,7 +2422,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
+ - name: SYNCTHINGDEPL - Set PULSEMAIN_DEVICE_ID
    set_fact:
      PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
    vars:
@@ -2548,12 +2431,12 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing-depl
+ - name: SYNCTHINGDEPL - Add pulsemain device as introducer on relay syncthing-depl
    command: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Stop service for editing configuration
+ - name: SYNCTHINGDEPL - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
      state: stopped
@@ -2563,51 +2446,32 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Get running processes
-   shell: "ps aux | grep -v grep | grep -w syncthing | awk '{print $2}'"
-   register: syncthing_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Wait until processes are stopped
-   wait_for:
-     path: "/proc/{{ item }}/status"
-     state: absent
-   with_items: "{{ syncthing_pid.stdout_lines }}"
-   ignore_errors: yes
-   register: kill_pid
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Kill running processes
-   command: "kill -9 {{ item }}"
-   with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Auto-accept shares coming from pulsemain
+ - name: SYNCTHINGDEPL - Auto-accept shares coming from pulsemain
    command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Restart service after editing configuration
+ - name: SYNCTHINGDEPL - Restart service after editing configuration
    systemd:
-     name: syncthing@syncthing-depl
+     name: syncthing@{{ item }}
      state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+ - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
      port: 23000
      delay: 5
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Delete the default share
+ - name: SYNCTHINGDEPL - Delete the default share
    command: 'stman -d depl folder remove "Default Folder"'
 
- - name: SYNCTHING - Restart syncthing services
+ - name: SYNCTHINGDEPL - Restart syncthing services
    systemd:
      name: syncthing@{{ item }}
      state: restarted
@@ -2617,13 +2481,15 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Restart syncthing services
+ - name: SYNCTHINGDEPL - Restart syncthing services on pulsemain
    systemd:
      name: syncthing@{{ item }}
      state: restarted
    with_items:
      - syncthing
      - syncthing-depl
+   vars:
+     ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
