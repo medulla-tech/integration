@@ -3603,6 +3603,44 @@
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
 
 ##########################################################
+#                     Pulse Agent                        #
+##########################################################
+
+ - name: PULSEAGENT - Add clients alternate ssh port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate vnc port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --vnc-port={{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate agent
+   command: '{{ item }}'
+   with_items:
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} {{ CLIENTS_OPTIONS }}
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads {{ CLIENTS_OPTIONS }}
+     - /var/lib/pulse2/clients/generate-agent-package
+   when:
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate agent
+   command: '{{ item }}'
+   with_items:
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }}
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads
+     - /var/lib/pulse2/clients/generate-agent-package
+   when:
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+##########################################################
 #                     Final steps                        #
 ##########################################################
 
