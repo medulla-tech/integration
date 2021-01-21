@@ -3580,6 +3580,12 @@
    when:
      - INSTALL_TYPE != "p"
 
+ - name: MAINPULSE/APACHE - Enable pulse module
+   command: a2enconf pulse
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
  - name: RELAY/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
