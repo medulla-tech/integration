@@ -444,7 +444,7 @@
      common_name: 127.0.0.1
      country_name: FR
      organization_name: SIVEO
-     subject_alt_name: 'DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+     subject_alt_name: 'DNS:127.0.0.1,DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
      key_usage:
        - nonRepudiation
        - digitalSignature
