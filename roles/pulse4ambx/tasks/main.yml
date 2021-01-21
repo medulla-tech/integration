@@ -2883,6 +2883,8 @@
      - /etc/mmc/agent/keys/privkey.pem
      - /etc/mmc/pulse2/inventory-server/keys/cacert.pem
      - /etc/mmc/pulse2/inventory-server/keys/privkey.pem
+     - /etc/mmc/pulse2/package-server/keys/cacert.pem
+     - /etc/mmc/pulse2/package-server/keys/privkey.pem
    when:
      - INSTALL_TYPE == 'p'
 
