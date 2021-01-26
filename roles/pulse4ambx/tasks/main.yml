@@ -670,7 +670,7 @@
      - { regex: '^upload_max_filesize.*$', line: 'upload_max_filesize = 200M' }
      - { regex: '^memory_limit.*$', line: 'memory_limit = 1024M' }
      - { regex: '^short_open_tag.*$', line: 'short_open_tag = On' }
-     - { regex: '^date.timezone.*$', line: 'date.timezone = Europe\/Paris/' }
+     - { regex: '^date.timezone.*$', line: 'date.timezone = Europe/Paris' }
      - { regex: '^session.cookie_httponly.*$', line: 'session.cookie_httponly = 1' }
 
  - name: PHP - Enable service
