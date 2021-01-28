@@ -3207,6 +3207,15 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: MAINPULSE - Configure interface
+   command: crudini --set /etc/mmc/mmc.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'global', parameter: 'community', value: 'no' }
+     - { section: 'global', parameter: 'maxperpage', value: '20' }
+     - { section: 'server_01', parameter: 'description', value: '{{ SERVER_FQDN }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+
 ##########################################################
 #                  Relay server setup                    #
 ##########################################################
