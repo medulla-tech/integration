@@ -1200,6 +1200,12 @@
    when:
      - INSTALL_TYPE == "p"
 
+ - name: GUACAMOLE/APACHE - Enable guacamole configuration
+   command: a2enconf guacamole
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+
  - name: GUACAMOLE/APACHE - Reload apache
    systemd:
      name: '{{ APACHE_DAEMON }}'
@@ -1235,6 +1241,12 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
+     - INSTALL_TYPE != "p"
+
+ - name: GUACAMOLE/APACHE - Enable guacamole configuration
+   command: a2enconf guacamole-{{ XMPP_DOMAIN }}
+   when:
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != "p"
 
  - name: GUACAMOLE/APACHE - Reload apache on pulsemain
