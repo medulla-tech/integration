@@ -1221,8 +1221,8 @@
             Order Deny,Allow
             Deny from all
             Allow from env=GUACAMOLE_ALLOWED
-            ProxyPass http://{{ XMPP_DOMAIN }}:8081/guacamole/ max=20 flushpackets=on
-            ProxyPassReverse http://{{ XMPP_DOMAIN }}:8081/guacamole/
+            ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
         </Location>
         <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
@@ -1230,8 +1230,8 @@
             Order Deny,Allow
             Deny from all
             Allow from env=GUACAMOLE_ALLOWED
-            ProxyPass ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
-            ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
@@ -1883,7 +1883,7 @@
      content: |
        ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
        <Location /syncthing-{{ XMPP_DOMAIN }}/>
-           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           ProxyPassReverse http://{{ SERVER_FQDN }}/syncthing/
            Require all granted
        </Location>
      dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
