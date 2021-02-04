@@ -1,4 +1,18 @@
 ---
+
+##########################################################
+#                         Version                        #
+##########################################################
+
+ - name: VERSION - Set version for this playbook
+   set_fact:
+     PLAYBOOK_VERSION: '3.0.0'
+
+ - name: VERSION - Display version
+   debug:
+     msg:
+     - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
 ##########################################################
 #                    Compute variables                   #
 ##########################################################
