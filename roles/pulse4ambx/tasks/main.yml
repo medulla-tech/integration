@@ -12,6 +12,17 @@
    debug:
      msg:
      - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+     
+     
+##########################################################
+#                         Checks                         #
+##########################################################
+
+ - name: PRE-CHECKS - Check platform requierement
+   fail:
+     msg: The OS platform is outdated ( "{{ ansible_distribution }}" , "{{ ansible_distribution_version }}" )
+   when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_version'] != "7.6")
+   
 
 ##########################################################
 #                    Compute variables                   #
