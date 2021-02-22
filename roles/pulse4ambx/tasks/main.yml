@@ -675,17 +675,14 @@
      - ansible_distribution == 'Debian'
 
  - name: PHP - Update php.ini
-   lineinfile:
-     dest: '{{ PHP_INI_PATH }}'
-     regexp: "{{ item.regex }}"
-     line: "{{ item.line }}"
+   command: crudini --set {{ PHP_INI_PATH }} {{ item.section }} {{ item.parameter }} {{ item.value }}
    with_items:
-     - { regex: '^post_max_size.*$', line: 'post_max_size = 200M' }
-     - { regex: '^upload_max_filesize.*$', line: 'upload_max_filesize = 200M' }
-     - { regex: '^memory_limit.*$', line: 'memory_limit = 1024M' }
-     - { regex: '^short_open_tag.*$', line: 'short_open_tag = On' }
-     - { regex: '^date.timezone.*$', line: 'date.timezone = Europe/Paris' }
-     - { regex: '^session.cookie_httponly.*$', line: 'session.cookie_httponly = 1' }
+     - { section: 'PHP', parameter: 'post_max_size', value: '200M' }
+     - { section: 'PHP', parameter: 'upload_max_filesize', value: '200M' }
+     - { section: 'PHP', parameter: 'memory_limit', value: '1024M' }
+     - { section: 'PHP', parameter: 'short_open_tag', value: 'On' }
+     - { section: 'Date', parameter: 'date.timezone', value: 'Europe/Paris' }
+     - { section: 'Session', parameter: 'session.cookie_httponly', value: '1' }
 
  - name: PHP - Enable service
    systemd:
