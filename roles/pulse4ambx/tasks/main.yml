@@ -3177,8 +3177,8 @@
      regexp: '{{ item.regexp }}'
      line: '{{ item.line }}'
    with_items:
-     - { regexp: 'SetEnvIf Referer "^https?://.*/" FILEMANAGER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEMANAGER_ALLOWED'}
-     - { regexp: 'SetEnvIf Referer "^https?://.*/" FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
+     - { regexp: 'SetEnvIf Referer .* FILEMANAGER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEMANAGER_ALLOWED'}
+     - { regexp: 'SetEnvIf Referer .* FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
    when:
      - INSTALL_TYPE == "p"
 
