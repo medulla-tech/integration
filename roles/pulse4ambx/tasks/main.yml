@@ -239,6 +239,36 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: PREPARATION - Configure locales
+   lineinfile:
+     dest: /etc/locale.gen
+     state: present
+     line: '{{ item }}'
+   with_items:
+     - da_DK.UTF-8 UTF-8
+     - de_DE.UTF-8 UTF-8
+     - en_US.UTF-8 UTF-8
+     - es_ES.UTF-8 UTF-8
+     - fr_FR.UTF-8 UTF-8
+     - it_IT.UTF-8 UTF-8
+     - ja_JP.UTF-8 UTF-8
+     - nb_NO.UTF-8 UTF-8
+     - pl_PL.UTF-8 UTF-8
+     - pt_BR.UTF-8 UTF-8
+     - ru_RU.UTF-8 UTF-8
+     - uk_UA.UTF-8 UTF-8
+     - zh_CN.UTF-8 UTF-8
+     - zh_TW.UTF-8 UTF-8
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Generate locales
+   command: locale-gen
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
