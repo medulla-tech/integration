@@ -2095,6 +2095,36 @@
    command: 'stman folder remove "Default Folder"'
 
 ##########################################################
+#                   Install tftp_server                  #
+##########################################################
+
+ - name: TFTP_SERVER - Install packages tftp_server
+   apt:
+     pkg:
+       - tftpd-hpa
+       - pulse2-register-pxe
+       - pulse2-utilities
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: TFTP_SERVER - Install packages tftp_server
+   yum:
+     pkg:
+       - tftp
+       - tftp-server
+       - pulse2-register-pxe
+       - pulse2-utilities
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: TFTP_SERVER - Enable service register-pxe
+   systemd:
+     name: pulse2-register-pxe
+     enabled: True
+
+##########################################################
 #                   Syncthing shares                     #
 ##########################################################
 
