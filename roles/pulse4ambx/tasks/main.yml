@@ -2122,8 +2122,58 @@
  - name: TFTP_SERVER - Enable service register-pxe
    systemd:
      name: pulse2-register-pxe
-     enabled: True
+     enabled: yes
 
+ - name: TFTP_SERVER - Define tftp directory
+   command: sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: TFTP_SERVER - Define tftp options
+   command: sed -i 's!^TFTP_OPTIONS=.*$!TFTP_OPTIONS="--secure --create"!' /etc/default/tftpd-hpa
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: TFTP_SERVER - Restart service
+   systemd:
+     name: tftpd-hpa
+     state: restarted
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: TFTP_SERVER - Copy service file from usr lib to systemd
+   copy:
+     src: /usr/lib/systemd/system/tftp.service
+     dest: /etc/systemd/system/tftp-server.service
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: TFTP_SERVER - Copy socket file from usr lib to systemd
+   copy:
+     src: /usr/lib/systemd/system/tftp.socket
+     dest: /etc/systemd/system/tftp-server.socket
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: TFTP_SERVER - Define tftp socket in service
+   command: sed -i 's/tftp.socket/tftp-server.socket/g' /etc/systemd/system/tftp-server.service
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: TFTP_SERVER - Define tftp boot in service
+   command: sed -i 's!-s /var/lib/tftpboot!--secure --create /var/lib/pulse2/imaging!' /etc/systemd/system/tftp-server.service
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: TFTP_SERVER - Daemon_reload
+   systemd:
+     state: started
+     enabled: yes
+     daemon_reload: yes
+     name: tftp-server
+   when:
+     - ansible_distribution == 'CentOS'
+     
 ##########################################################
 #                   Syncthing shares                     #
 ##########################################################
