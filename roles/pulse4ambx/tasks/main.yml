@@ -2789,6 +2789,7 @@
      pkg:
        - glpi-{{ GLPI_VERSION }}.*
        - glpi-fusioninventory-{{ GLPI_VERSION }}+*
+       - php-ldap
    when:
      - ansible_distribution == 'CentOS'
      - GLPI_DBHOST == 'localhost'
@@ -2799,6 +2800,7 @@
      pkg:
        - glpi={{ GLPI_VERSION }}.*
        - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
+       - php-ldap
    when:
      - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
