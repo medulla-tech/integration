@@ -269,6 +269,42 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
+ - name: PREPARATION - Install ntp
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Install ntp
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntpd'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntp'
+   when:
+     - ansible_distribution == 'Debian'
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
