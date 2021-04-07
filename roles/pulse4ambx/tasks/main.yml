@@ -1322,6 +1322,7 @@
 
  - name: GUACAMOLE/APACHE - Enable guacamole configuration
    command: a2enconf guacamole-{{ XMPP_DOMAIN }}
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != "p"
