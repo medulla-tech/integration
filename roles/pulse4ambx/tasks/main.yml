@@ -269,6 +269,42 @@
      - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
+ - name: PREPARATION - Install ntp
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Install ntp
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntpd'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntp'
+   when:
+     - ansible_distribution == 'Debian'
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
@@ -2789,6 +2825,7 @@
      pkg:
        - glpi-{{ GLPI_VERSION }}.*
        - glpi-fusioninventory-{{ GLPI_VERSION }}+*
+       - php-ldap
    when:
      - ansible_distribution == 'CentOS'
      - GLPI_DBHOST == 'localhost'
@@ -2799,6 +2836,7 @@
      pkg:
        - glpi={{ GLPI_VERSION }}.*
        - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
+       - php-ldap
    when:
      - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - GLPI_DBHOST == 'localhost'
