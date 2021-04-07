@@ -111,7 +111,7 @@
    set_fact:
      PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: VARS - Set PYTHON_BASEDIR
    set_fact:
@@ -184,7 +184,7 @@
      pkg:
        - apt-transport-https
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
    get_url:
@@ -198,7 +198,7 @@
      url: '{{ PULSE4REPO_URL }}'
      dest: /etc/apt/sources.list.d/pulse4.list
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PREPARATION - Find out URL of SIVEO public key
    command: "grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo"
@@ -219,7 +219,7 @@
      state: present
      url: '{{ PULSE4REPOKEY_URL }}'
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PREPARATION - Clean yum repo metadata
    command: yum clean metadata
@@ -260,13 +260,13 @@
      - zh_CN.UTF-8 UTF-8
      - zh_TW.UTF-8 UTF-8
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: PREPARATION - Generate locales
    command: locale-gen
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
 ##########################################################
@@ -293,7 +293,7 @@
        - xmlstarlet
        - acl
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 ##########################################################
 #                     PKI Generatiom                     #
@@ -317,7 +317,7 @@
        - ca-certificates
        - python-openssl
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PKI - Create pki folder tree
    file:
@@ -409,7 +409,7 @@
      path: /usr/local/share/ca-certificates
      state: directory
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
    copy:
@@ -417,7 +417,7 @@
      dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
      remote_src: yes
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
@@ -445,7 +445,7 @@
      src: /tmp/ca-chain.cert.pem
      dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != 'p'
 
  - name: PKI - Copy ca-chain.cert.pem to add to ca certs
@@ -459,7 +459,7 @@
  - name: PKI - Add pulse ca to ca certs
    command: update-ca-certificates
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PKI - Add pulse ca to ca certs
    command: update-ca-trust extract
@@ -597,7 +597,7 @@
      pkg:
        - apache2
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: APACHE - Enable and disable apache module
    apache2_module:
@@ -627,7 +627,7 @@
      APACHE_USER: "www-data"
      APACHE_CONF_PATH: "/etc/apache2/conf-available"
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
    file:
@@ -685,12 +685,12 @@
        - php-fpm
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PHP - Enable modules
    command: a2enconf php{{ DEB_PHP_VERSION }}-fpm
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PHP - Set variable for php.ini path
    set_fact:
@@ -702,7 +702,7 @@
    set_fact:
      PHP_INI_PATH: "/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini"
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PHP - Update php.ini
    command: crudini --set {{ PHP_INI_PATH }} {{ item.section }} {{ item.parameter }} {{ item.value }}
@@ -728,7 +728,7 @@
      state: restarted
      name: php{{ DEB_PHP_VERSION }}-fpm
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PHP - Restart apache
    systemd:
@@ -749,7 +749,7 @@
      - slapd/password1
      - slapd/password2
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
    no_log: True
 
@@ -759,7 +759,7 @@
      pkg:
        - ldap-server
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: LDAP - Install ldap server
@@ -783,7 +783,7 @@
    set_fact:
      LDAP_CONFIG_PATH: /etc/ldap
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
 ##########################################################
@@ -808,7 +808,7 @@
        - mariadb-server-10.3
        - mariadb-server-core-10.3
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
@@ -876,7 +876,7 @@
      pkg:
        - ejabberd
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: EJABBERD - Enable service
    systemd:
@@ -1050,7 +1050,7 @@
      vtype: boolean
      value: true
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: GUACAMOLE - Install guacamole
    apt:
@@ -1063,7 +1063,7 @@
        - libmysql-java
      state: latest
    when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Install guacamole
    apt:
@@ -1076,7 +1076,7 @@
        - mysql-connector-java
      state: latest
    when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
@@ -1091,13 +1091,13 @@
    register: versionTC
    changed_when: False
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
      TOMCAT_VERSION: "{{ versionTC.stdout }}"
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
@@ -1140,13 +1140,13 @@
    set_fact:
      GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
    when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
      GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-mysql/schema
    when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Import schemas
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < {{ item }}"
@@ -1244,7 +1244,7 @@
  - name: GUACAMOLE/APACHE - Enable guacamole configuration
    command: a2enconf guacamole
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == "p"
 
  - name: GUACAMOLE/APACHE - Reload apache
@@ -1287,7 +1287,7 @@
  - name: GUACAMOLE/APACHE - Enable guacamole configuration
    command: a2enconf guacamole-{{ XMPP_DOMAIN }}
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != "p"
 
  - name: GUACAMOLE/APACHE - Reload apache on pulsemain
@@ -1342,7 +1342,7 @@
      pkg:
        - nfs-kernel-server
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Install clonezilla
    yum:
@@ -1364,7 +1364,7 @@
        - clonezilla
        - udpcast
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Create needed exports
    copy:
@@ -1385,7 +1385,7 @@
      name: nfs-kernel-server
      state: restarted
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Install pxe-linux
    yum:
@@ -1408,7 +1408,7 @@
        - syslinux-common
        - syslinux-efi
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Delete old bootloader directory
    file:
@@ -1474,7 +1474,7 @@
      - libmenu.c32
      - poweroff.c32
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Verify if link exist pxelinux.0
    stat:
@@ -1559,7 +1559,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libmenu.c32' }
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32' }
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
@@ -1649,7 +1649,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - symlinkverifier.stat.islnk is not defined
 
  - name: IMAGING - Create symlink
@@ -1678,7 +1678,7 @@
      name: clonezilla
      selection: hold
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: IMAGING - Delete old /home/partimag
    file:
@@ -1719,7 +1719,7 @@
        - smbclient
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SAMBA - Copy mmc smb.conf template
    copy:
@@ -1748,7 +1748,7 @@
    set_fact:
      SAMBA_SERVICE: smbd
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SAMBA - Restart and Enable service
    systemd:
@@ -1777,7 +1777,7 @@
        - syncthingmanager
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SYNCTHING - Install additional packages on pulsemain
    yum:
@@ -1796,7 +1796,7 @@
        - syncthing-systemd-addons
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == "p"
 
  - name: SYNCTHING - Reset syncthing
@@ -1837,7 +1837,7 @@
    set_fact:
      SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/user/syncthing.service'
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SYNCTHING - Separate syncthing logs
    lineinfile:
@@ -1912,7 +1912,7 @@
  - name: SYNCTHING/APACHE - Enable syncthing configuration
    command: a2enconf syncthing
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
@@ -1940,7 +1940,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
@@ -2106,7 +2106,7 @@
        - pulse2-utilities
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: TFTP_SERVER - Install packages tftp_server
    yum:
@@ -2127,19 +2127,19 @@
  - name: TFTP_SERVER - Define tftp directory
    command: sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: TFTP_SERVER - Define tftp options
    command: sed -i 's!^TFTP_OPTIONS=.*$!TFTP_OPTIONS="--secure --create"!' /etc/default/tftpd-hpa
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: TFTP_SERVER - Restart service
    systemd:
      name: tftpd-hpa
      state: restarted
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: TFTP_SERVER - Copy service file from usr lib to systemd
    copy:
@@ -2173,7 +2173,7 @@
      name: tftp-server
    when:
      - ansible_distribution == 'CentOS'
-     
+
 ##########################################################
 #                   Syncthing shares                     #
 ##########################################################
@@ -2440,7 +2440,7 @@
  - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
    command: a2enconf syncthing-depl
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: SYNCTHINGDEPL/APACHE - Reload apache
    systemd:
@@ -2468,7 +2468,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL/APACHE - Reload apache on pulsemain
@@ -2677,7 +2677,7 @@
        - grafana-image-renderer
      state: latest
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: GRAFANA/APACHE - Enable apache module
@@ -2704,7 +2704,7 @@
  - name: GRAFANA/APACHE - Enable grafana module
    command: a2enconf grafana
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: GRAFANA/APACHE - Reload apache
@@ -2800,7 +2800,7 @@
        - glpi={{ GLPI_VERSION }}.*
        - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
@@ -2822,7 +2822,7 @@
  - name: GLPI - Initialise glpi 9.2 database on debian
    command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
@@ -2831,7 +2831,7 @@
  - name: GLPI - Initialise glpi 9.4 database on debian
    command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password {{ DBADMINPASSWD }} --default-language=fr_FR --force
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
@@ -2848,7 +2848,7 @@
  - name: GLPI - Upgrade glpi 9.2 database if needed on debian
    command: php /usr/share/glpi/scripts/cliupdate.php
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
@@ -2856,7 +2856,7 @@
  - name: GLPI - Upgrade glpi 9.4 database if needed on debian
    command: php /usr/share/glpi/bin/console -n db:update
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
@@ -2980,7 +2980,7 @@
        - pulse-update-manager
        - pulse2-uuid-resolver
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/APACHE - Enable pulse and mmc modules
@@ -2989,7 +2989,7 @@
      - pulse
      - mmc
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/APACHE - Reload apache on Debian
@@ -2997,7 +2997,7 @@
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/LDAP - Import mmc schemas to ldap server
@@ -3368,7 +3368,7 @@
      pkg:
        - pulse-xmpp-agent-relay
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Get current plugins list from pulsemain
@@ -3727,7 +3727,7 @@
  - name: MAINPULSE/APACHE - Enable pulse module
    command: a2enconf pulse
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/APACHE - Reload apache
