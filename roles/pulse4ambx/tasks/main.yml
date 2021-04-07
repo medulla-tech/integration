@@ -285,7 +285,7 @@
      pkg:
        - ntp
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
  - name: PREPARATION - Enable ntp
    systemd:
@@ -303,7 +303,7 @@
      daemon_reload: yes
      name: 'ntp'
    when:
-     - ansible_distribution == 'Debian'
+     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 ##########################################################
 #                    Install base tools                  #
