@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.0.0'
+     PLAYBOOK_VERSION: '3.1.2'
 
  - name: VERSION - Display version
    debug:
@@ -111,7 +111,7 @@
    set_fact:
      PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: VARS - Set PYTHON_BASEDIR
    set_fact:
@@ -184,7 +184,7 @@
      pkg:
        - apt-transport-https
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
    get_url:
@@ -198,7 +198,7 @@
      url: '{{ PULSE4REPO_URL }}'
      dest: /etc/apt/sources.list.d/pulse4.list
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Find out URL of SIVEO public key
    command: "grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo"
@@ -219,7 +219,7 @@
      state: present
      url: '{{ PULSE4REPOKEY_URL }}'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Clean yum repo metadata
    command: yum clean metadata
@@ -260,13 +260,13 @@
      - zh_CN.UTF-8 UTF-8
      - zh_TW.UTF-8 UTF-8
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: PREPARATION - Generate locales
    command: locale-gen
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: PREPARATION - Install ntp
@@ -285,7 +285,7 @@
      pkg:
        - ntp
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Enable ntp
    systemd:
@@ -303,7 +303,7 @@
      daemon_reload: yes
      name: 'ntp'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
 ##########################################################
 #                    Install base tools                  #
@@ -329,7 +329,7 @@
        - xmlstarlet
        - acl
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
 ##########################################################
 #                     PKI Generatiom                     #
@@ -353,7 +353,7 @@
        - ca-certificates
        - python-openssl
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PKI - Create pki folder tree
    file:
@@ -445,7 +445,7 @@
      path: /usr/local/share/ca-certificates
      state: directory
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
    copy:
@@ -453,7 +453,7 @@
      dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
      remote_src: yes
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
@@ -481,7 +481,7 @@
      src: /tmp/ca-chain.cert.pem
      dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
  - name: PKI - Copy ca-chain.cert.pem to add to ca certs
@@ -495,7 +495,7 @@
  - name: PKI - Add pulse ca to ca certs
    command: update-ca-certificates
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PKI - Add pulse ca to ca certs
    command: update-ca-trust extract
@@ -633,7 +633,7 @@
      pkg:
        - apache2
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: APACHE - Enable and disable apache module
    apache2_module:
@@ -663,7 +663,7 @@
      APACHE_USER: "www-data"
      APACHE_CONF_PATH: "/etc/apache2/conf-available"
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
    file:
@@ -721,12 +721,12 @@
        - php-fpm
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PHP - Enable modules
    command: a2enconf php{{ DEB_PHP_VERSION }}-fpm
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PHP - Set variable for php.ini path
    set_fact:
@@ -738,7 +738,7 @@
    set_fact:
      PHP_INI_PATH: "/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini"
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PHP - Update php.ini
    command: crudini --set {{ PHP_INI_PATH }} {{ item.section }} {{ item.parameter }} {{ item.value }}
@@ -764,7 +764,7 @@
      state: restarted
      name: php{{ DEB_PHP_VERSION }}-fpm
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: PHP - Restart apache
    systemd:
@@ -785,7 +785,7 @@
      - slapd/password1
      - slapd/password2
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
    no_log: True
 
@@ -795,7 +795,7 @@
      pkg:
        - ldap-server
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: LDAP - Install ldap server
@@ -819,7 +819,7 @@
    set_fact:
      LDAP_CONFIG_PATH: /etc/ldap
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
 ##########################################################
@@ -844,7 +844,7 @@
        - mariadb-server-10.3
        - mariadb-server-core-10.3
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
@@ -912,7 +912,7 @@
      pkg:
        - ejabberd
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: EJABBERD - Enable service
    systemd:
@@ -1086,7 +1086,7 @@
      vtype: boolean
      value: true
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Install guacamole
    apt:
@@ -1099,7 +1099,7 @@
        - libmysql-java
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '10'
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Install guacamole
    apt:
@@ -1112,7 +1112,7 @@
        - mysql-connector-java
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '9'
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
@@ -1127,13 +1127,13 @@
    register: versionTC
    changed_when: False
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Set variable of tomcat version
    set_fact:
      TOMCAT_VERSION: "{{ versionTC.stdout }}"
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
    blockinfile:
@@ -1176,13 +1176,13 @@
    set_fact:
      GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '9'
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
  - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
    set_fact:
      GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-mysql/schema
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' and ansible_distribution_major_version == '10'
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Import schemas
    shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < {{ item }}"
@@ -1280,7 +1280,7 @@
  - name: GUACAMOLE/APACHE - Enable guacamole configuration
    command: a2enconf guacamole
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
  - name: GUACAMOLE/APACHE - Reload apache
@@ -1326,7 +1326,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != "p"
 
  - name: GUACAMOLE/APACHE - Reload apache on pulsemain
@@ -1381,7 +1381,7 @@
      pkg:
        - nfs-kernel-server
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Install clonezilla
    yum:
@@ -1403,7 +1403,7 @@
        - clonezilla
        - udpcast
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Create needed exports
    copy:
@@ -1424,7 +1424,7 @@
      name: nfs-kernel-server
      state: restarted
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Install pxe-linux
    yum:
@@ -1447,7 +1447,7 @@
        - syslinux-common
        - syslinux-efi
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Delete old bootloader directory
    file:
@@ -1513,7 +1513,7 @@
      - libmenu.c32
      - poweroff.c32
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Verify if link exist pxelinux.0
    stat:
@@ -1598,7 +1598,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libmenu.c32' }
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32' }
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - symlinkverifier.stat.islnk is defined
 
  - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
@@ -1688,7 +1688,7 @@
      - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
      - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - symlinkverifier.stat.islnk is not defined
 
  - name: IMAGING - Create symlink
@@ -1717,7 +1717,7 @@
      name: clonezilla
      selection: hold
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: IMAGING - Delete old /home/partimag
    file:
@@ -1758,7 +1758,7 @@
        - smbclient
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SAMBA - Copy mmc smb.conf template
    copy:
@@ -1787,7 +1787,7 @@
    set_fact:
      SAMBA_SERVICE: smbd
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SAMBA - Restart and Enable service
    systemd:
@@ -1816,7 +1816,7 @@
        - syncthingmanager
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Install additional packages on pulsemain
    yum:
@@ -1835,7 +1835,7 @@
        - syncthing-systemd-addons
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
  - name: SYNCTHING - Reset syncthing
@@ -1876,7 +1876,7 @@
    set_fact:
      SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/user/syncthing.service'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING - Separate syncthing logs
    lineinfile:
@@ -1951,7 +1951,7 @@
  - name: SYNCTHING/APACHE - Enable syncthing configuration
    command: a2enconf syncthing
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHING/APACHE - Reload apache
    systemd:
@@ -1979,7 +1979,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING/APACHE - Reload apache on pulsemain
@@ -2145,7 +2145,7 @@
        - pulse2-utilities
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: TFTP_SERVER - Install packages tftp_server
    yum:
@@ -2166,19 +2166,19 @@
  - name: TFTP_SERVER - Define tftp directory
    command: sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: TFTP_SERVER - Define tftp options
    command: sed -i 's!^TFTP_OPTIONS=.*$!TFTP_OPTIONS="--secure --create"!' /etc/default/tftpd-hpa
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: TFTP_SERVER - Restart service
    systemd:
      name: tftpd-hpa
      state: restarted
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: TFTP_SERVER - Copy service file from usr lib to systemd
    copy:
@@ -2238,24 +2238,19 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Delete shares on main pulse before recreating them
-   command: xmlstarlet ed -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-   ignore_errors: yes
+ - name: SHARE - Delete all shares on main pulse before recreating them
+   command: xmlstarlet ed -d "configuration/folder[@type='sendonly']" /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE == 'p'
 
  - name: SHARE - Create shares on main pulse
    command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -2269,6 +2264,35 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: SHARE - Check if cluster share exists on pulsemain
+   command: xmlstarlet sel -t -v "/configuration/folder[@id=\"pulsemaster_{{ CLUSTER_NAME }}\"]/@id" -n /var/lib/syncthing/.config/syncthing/config.xml
+   register: shareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create cluster share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="pulsemaster_{{ CLUSTER_NAME }}" label="{{ CLUSTER_NAME }}" path="/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
+ - name: SHARE - Edit cluster share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
  - name: SHARE - Delete all shares on ars
    command: xmlstarlet ed --inplace -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
@@ -2276,11 +2300,13 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Unshare all folders from main pulse if already shared
+ - name: SHARE - Unshare all folders with relay from main pulse if already shared
    command: xmlstarlet ed --inplace -d "configuration/folder[@type='sendonly']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
    ignore_errors: yes
    vars:
@@ -2298,6 +2324,8 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2310,6 +2338,8 @@
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2318,10 +2348,28 @@
      path: '{{ item.destination }}'
      state: directory
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+
+ - name: SHARE - Create folder named after the cluster
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     state: directory
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create folder named after the cluster on pulsemain
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     state: directory
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create syncthing special folder
    file:
@@ -2331,10 +2379,34 @@
      owner: syncthing
      group: syncthing
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+
+ - name: SHARE - Create syncthing special folder for cluster
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create syncthing special folder for cluster on pulsemain
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create stignore file for downloads on main pulse
    copy:
@@ -2379,10 +2451,36 @@
      permissions: rwx
      state: present
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+
+ - name: SHARE - Define ACLs on the folders for cluster
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders for cluster on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
@@ -2394,18 +2492,47 @@
      default: yes
      state: present
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+
+ - name: SHARE - Define ACLs on the folders with inheritance for cluster
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance for cluster on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SHARE - Create shares on relay
    command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
      - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
      - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2479,7 +2606,7 @@
  - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
    command: a2enconf syncthing-depl
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
 
  - name: SYNCTHINGDEPL/APACHE - Reload apache
    systemd:
@@ -2507,7 +2634,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL/APACHE - Reload apache on pulsemain
@@ -2716,7 +2843,7 @@
        - grafana-image-renderer
      state: latest
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: GRAFANA/APACHE - Enable apache module
@@ -2743,7 +2870,7 @@
  - name: GRAFANA/APACHE - Enable grafana module
    command: a2enconf grafana
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: GRAFANA/APACHE - Reload apache
@@ -2827,7 +2954,8 @@
    yum:
      pkg:
        - glpi-{{ GLPI_VERSION }}.*
-       - glpi-fusioninventory-{{ GLPI_VERSION }}+*
+       - glpi
+       - fusioninventory-{{ GLPI_VERSION }}+*
        - php-ldap
    when:
      - ansible_distribution == 'CentOS'
@@ -2841,7 +2969,7 @@
        - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
        - php-ldap
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
@@ -2863,7 +2991,7 @@
  - name: GLPI - Initialise glpi 9.2 database on debian
    command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
@@ -2872,7 +3000,7 @@
  - name: GLPI - Initialise glpi 9.4 database on debian
    command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password {{ DBADMINPASSWD }} --default-language=fr_FR --force
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
@@ -2889,7 +3017,7 @@
  - name: GLPI - Upgrade glpi 9.2 database if needed on debian
    command: php /usr/share/glpi/scripts/cliupdate.php
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
@@ -2897,7 +3025,7 @@
  - name: GLPI - Upgrade glpi 9.4 database if needed on debian
    command: php /usr/share/glpi/bin/console -n db:update
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
@@ -2931,7 +3059,6 @@
      - "UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'"
      - "UPDATE glpi_users SET password = MD5('{{ ROOT_PASSWORD }}') where name = 'root'"
      - "UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0"
-     - "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
      - "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')"
      - "INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)"
    when:
@@ -3021,7 +3148,7 @@
        - pulse-update-manager
        - pulse2-uuid-resolver
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/APACHE - Enable pulse and mmc modules
@@ -3030,7 +3157,7 @@
      - pulse
      - mmc
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/APACHE - Reload apache on Debian
@@ -3038,7 +3165,7 @@
      name: '{{ APACHE_DAEMON }}'
      state: reloaded
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/LDAP - Import mmc schemas to ldap server
@@ -3132,6 +3259,9 @@
      - { section: 'mscdatabase', parameter: 'msc_dbhost', value: '{{ DBHOST }}' }
      - { section: 'mscdatabase', parameter: 'msc_dbport', value: '{{ DBPORT }}' }
      - { section: 'mscdatabase', parameter: 'msc_dbpasswd', value: '{{ mmcuser_dbpass.stdout }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbport', value: '{{ DBPORT }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbpasswd', value: '{{ mmcuser_dbpass.stdout }}' }
    when:
      - INSTALL_TYPE == 'p'
    no_log: True
@@ -3340,6 +3470,32 @@
    when:
      - INSTALL_TYPE == "p"
 
+ - name: MAINPULSE/SHARE - Enable management of shares
+   command: crudini --set /etc/mmc/plugins/pkgs.ini.local pkgs centralizedmultiplesharing True
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/SHARE - Reset shares db on main pulse
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} pkgs -e "DELETE FROM {{ item }} WHERE 1"
+   with_items:
+     - pkgs_rules_local
+     - pkgs_shares
+   ignore_errors: yes
+   when:
+     - RESET_DB|bool
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/SHARE - Set up global and cluster shares and root user on main pulse
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} pkgs -e "{{ item }}"
+   with_items:
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (2, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', 1, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 2)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: MAINPULSE/IMAGING - Associate imaging server with root entity
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} imaging -e 'UPDATE ImagingServer SET associated=1 WHERE id=1'"
    when:
@@ -3409,7 +3565,7 @@
      pkg:
        - pulse-xmpp-agent-relay
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Get current plugins list from pulsemain
@@ -3765,10 +3921,10 @@
    when:
      - INSTALL_TYPE != "p"
 
- - name: MAINPULSE/APACHE - Enable pulse module
+ - name: RELAY/APACHE - Enable pulse module
    command: a2enconf pulse
    when:
-     - ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+     - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/APACHE - Reload apache
@@ -3777,6 +3933,44 @@
      state: reloaded
    when:
      - INSTALL_TYPE != "p"
+
+ - name: RELAY/GLPI - Create entity in GLPI
+   command: 'mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "{{ item }}"'
+   with_items:
+     - "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY/GLPI - Create entity in GLPI
+   command: 'mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "{{ item }}"'
+   with_items:
+     - "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/SHARE - Create cluster share in database if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
+ - name: RELAY/SHARE - Get id from pkgs_shares for the previous insert if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
+   register: shareid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
 
  - name: RELAY - Add relay root public key to pulsetransfert authorized keys on pulsemain
    authorized_key:
