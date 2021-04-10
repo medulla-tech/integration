@@ -3935,23 +3935,30 @@
      - INSTALL_TYPE != "p"
 
  - name: RELAY/GLPI - Create entity in GLPI
-   command: 'mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "{{ item }}"'
-   with_items:
-     - "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
- - name: RELAY/GLPI - Create entity in GLPI
-   command: 'mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "{{ item }}"'
-   with_items:
-     - "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
+ - name: RELAY/GLPI - Check if entity exists in glpi
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
+   register: entityexists
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE != 'p'
+
+ - name: RELAY/GLPI - Create entity in GLPI if it does not exist
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE != 'p'
+     - entityexists.stdout == ''
 
  - name: RELAY/SHARE - Create cluster share in database if it did not exist
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')\""
