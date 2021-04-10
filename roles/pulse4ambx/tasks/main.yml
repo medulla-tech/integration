@@ -3972,6 +3972,15 @@
      - INSTALL_TYPE != 'p'
      - shareexists.stdout == ''
 
+ - name: RELAY/SHARE - Create rw permission for root on cluster share if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ shareid.stdout }})\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
  - name: RELAY - Add relay root public key to pulsetransfert authorized keys on pulsemain
    authorized_key:
      user: root
