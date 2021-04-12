@@ -201,7 +201,7 @@
      - ansible_distribution == 'Debian'
 
  - name: PREPARATION - Find out URL of SIVEO public key
-   command: "grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo"
+   command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
    register: grep_output
    ignore_errors: true
    when:
@@ -883,7 +883,7 @@
    command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
 
  - name: MARIADB - Secure installation
-   command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql -e "{{ item }}"'
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' mysql -e "{{ item }}"
    with_items:
      - "FLUSH PRIVILEGES"
      - "DELETE FROM mysql.user WHERE User='{{ DBADMINUSER }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
@@ -892,7 +892,7 @@
      - "FLUSH PRIVILEGES"
 
  - name: MARIADB - Enable event scheduler
-   command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql -e "SET GLOBAL event_scheduler = ON"'
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' mysql -e "SET GLOBAL event_scheduler = ON"
 
 ##########################################################
 #                    Install ejabberd                    #
@@ -1014,7 +1014,7 @@
      mode: '400'
 
  - name: EJABBERD - register root account
-   command: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
+   command: ejabberdctl register root {{ XMPP_DOMAIN }} '{{ ROOT_PASSWORD }}'
 
  - name: EJABBERD - Update ejabberd.yml
    lineinfile:
@@ -1028,8 +1028,7 @@
      - { regexp: '^max_fsm_queue: .*$', line: 'max_fsm_queue: 5000' }
      - { regexp: '^\s*normal: .*$', line: '  normal: 100000000' }
      - { regexp: '^\s*fast: .*$', line: '  fast: 1000000000' }
-     - { regexp: '^\s*mod_ping: {}$', line: '  mod_ping:' }
-     - { regexp: '^\s*- allow: loopback$', line: '    - allow: all' }
+     - { regexp: '^\s*mod_ping:.*$', line: '  mod_ping:' }
 
  - name: EJABBERD - Configure mod_register
    blockinfile:
@@ -1040,6 +1039,14 @@
            welcome_message:
              subject: ""
            ip_access: trusted_network
+
+ - name: EJABBERD - Configure trusted_network
+   blockinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     insertafter: '^  trusted_network:'
+     marker: '# {mark} ANSIBLE MANAGED BLOCK trusted_network'
+     block: |2
+           - allow: all
 
  - name: EJABBERD - Configure mod_ping
    blockinfile:
@@ -1156,7 +1163,7 @@
      name: guacd
 
  - name: GUACAMOLE - Reset guacamole database
-   command: 'mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -e "{{ item }}"'
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
    with_items:
      - "DROP DATABASE IF EXISTS guacamole"
      - "DROP USER IF EXISTS 'guacamole'"
@@ -1185,13 +1192,13 @@
      - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
 
  - name: GUACAMOLE - Import schemas
-   shell: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole < {{ item }}"
+   shell: "mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole < {{ item }}"
    with_items:
      - '{{ GUAC_SCHEMAS_PATH }}/001-create-schema.sql'
      - '{{ GUAC_SCHEMAS_PATH }}/002-create-admin-user.sql'
 
  - name: GUACAMOLE - Define guacamole root user password in database
-   command: "mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} guacamole -e \"SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1\""
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
 
  - name: GUACAMOLE - Create /etc/guacamole/lib/
    file:
@@ -1710,7 +1717,7 @@
      remote_src: yes
 
  - name: IMAGING - Type TFTP SERVER IP to utilities.menu
-   command: 'sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu'
+   command: sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu
 
  - name: IMAGING - Prevent clonezilla from being upgraded
    dpkg_selections:
@@ -1737,7 +1744,7 @@
      force: yes
 
  - name: IMAGING - Configure UDP Sender
-   command: 'sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf'
+   command: sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
 
 ##########################################################
 #                      Install Samba                     #
@@ -2031,7 +2038,7 @@
      - syncthing-depl
 
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
-   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2045,7 +2052,7 @@
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
 
  - name: SYNCTHING - Generate Syncthing root user hash
-   shell: "htpasswd -bnBC 10 '' {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/'"
+   shell: "htpasswd -bnBC 10 '' '{{ ROOT_PASSWORD }}' | tr -d ':\n' | sed 's/$2y/$2a/'"
    register: syncthing_pass
 
  - name: SYNCTHING - Define ENCRYPTED_PASS
@@ -2074,13 +2081,13 @@
      SYNCTHING_API_KEY: "{{ apikey.stdout }}"
 
  - name: SYNCTHING - Configure SYNCTHING_API_KEY in stman
-   command: 'stman configure -k {{ SYNCTHING_API_KEY }}'
+   command: stman configure -k {{ SYNCTHING_API_KEY }}
 
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
-   command: 'stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}'
+   command: stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
 
  - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
-   command: 'stman device remove {{ XMPP_DOMAIN }}'
+   command: stman device remove {{ XMPP_DOMAIN }}
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2089,7 +2096,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Add relayserver device to pulsemain syncthing
-   command: 'stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}'
+   command: stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2097,7 +2104,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing
-   command: 'stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
+   command: stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2131,7 +2138,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Delete the default share
-   command: 'stman folder remove "Default Folder"'
+   command: stman folder remove "Default Folder"
 
 ##########################################################
 #                   Install tftp_server                  #
@@ -2656,27 +2663,27 @@
      - syncthing-depl
 
  - name: SYNCTHINGDEPL - Define global announce server as pulsemain on relay syncthing-depl
-   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Disable use of relays
-   command: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Disable use of local announce
-   command: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Add root user
-   command: 'xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Set root password to ENCRYPTED_PASS
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Define listen port to 23000
-   command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Define gui listen port to 8385
-   command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   command: xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml
 
  - name: SYNCTHINGDEPL - Restart service after editing configuration
    systemd:
@@ -2700,13 +2707,13 @@
      SYNCTHING_DEPL_API_KEY: "{{ apikey.stdout }}"
 
  - name: SYNCTHINGDEPL - Configure SYNCTHING_DEPL_API_KEY in stman
-   command: "stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl"
+   command: stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl
 
  - name: SYNCTHINGDEPL - Define XMPP_DOMAIN for device name
-   command: "stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}"
+   command: stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
 
  - name: SYNCTHINGDEPL - Add relayserver device as introducer on pulsemain syncthing-depl
-   command: 'stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer'
+   command: stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2732,7 +2739,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Add pulsemain device as introducer on relay syncthing-depl
-   command: 'stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}'
+   command: stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2769,7 +2776,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Delete the default share
-   command: 'stman -d depl folder remove "Default Folder"'
+   command: stman -d depl folder remove "Default Folder"
 
  - name: SYNCTHINGDEPL - Restart syncthing services
    systemd:
@@ -2921,7 +2928,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: GRAFANA - Reset admin password
-   command: grafana-cli admin reset-admin-password {{ ROOT_PASSWORD }}
+   command: grafana-cli admin reset-admin-password '{{ ROOT_PASSWORD }}'
    when:
      - INSTALL_TYPE == 'p'
 
@@ -2974,7 +2981,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Drop and recreate glpi database and user
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -e "{{ item }}"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
    with_items:
      - "DROP DATABASE IF EXISTS {{ GLPI_DBNAME }}"
      - "DROP USER IF EXISTS '{{ GLPI_DBUSER }}'"
@@ -2989,7 +2996,7 @@
    no_log: True
 
  - name: GLPI - Initialise glpi 9.2 database on debian
-   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
@@ -2998,7 +3005,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Initialise glpi 9.4 database on debian
-   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password {{ DBADMINPASSWD }} --default-language=fr_FR --force
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
@@ -3007,7 +3014,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Initialise glpi database on centos
-   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass={{ DBADMINPASSWD }} --lang=fr_FR --force
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
    when:
      - ansible_distribution == 'CentOS'
      - RESET_DB|bool
@@ -3038,13 +3045,13 @@
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Create view for pulse
-   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Get glpi superadmin id
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
    register: GLPI_SUPERADMIN_ID
    when:
      - RESET_DB|bool
@@ -3052,7 +3059,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Prepare glpi database for Pulse
-   command: 'mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "{{ item }}"'
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
    with_items:
      - "DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'"
      - "DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'"
@@ -3071,7 +3078,7 @@
    command: '{{ item }}'
    with_items:
      - "php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root"
-     - "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} {{ GLPI_DBNAME }} -e \"UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'\""
+     - "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' {{ GLPI_DBNAME }} -e \"UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'\""
    when:
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
@@ -3190,7 +3197,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/EJABBERD - Register master and substitute accounts
-   command: "ejabberdctl register {{ item }} {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}"
+   command: ejabberdctl register {{ item }} {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}
    with_items:
      - master
      - master_reg
@@ -3205,13 +3212,13 @@
      - (INSTALL_TYPE == 'p') and (RESET_DB|bool)
 
  - name: MAINPULSE - Run pulse2-setup with database reset
-   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd={{ DBADMINPASSWD }} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd={{ ROOT_PASSWORD }} --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd={{ GLPI_DBPASSWD }} --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd={{ ROOT_PASSWORD }} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}' --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
    when:
      - RESET_DB|bool
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE - Run pulse2-setup without database reset
-   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd={{ DBADMINPASSWD }} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd={{ ROOT_PASSWORD }} --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd={{ GLPI_DBPASSWD }} --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd={{ ROOT_PASSWORD }} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}' --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
    when:
      - not RESET_DB|bool
      - INSTALL_TYPE == 'p'
@@ -3319,7 +3326,7 @@
    no_log: True
 
  - name: MAINPULSE - Add the subscription substitute to the list of suscription agents
-   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e "INSERT INTO agent_subscription (name) VALUES ('master_subs@pulse')"
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO agent_subscription (name) VALUES ('master_subs@pulse')"
    when:
      - INSTALL_TYPE == 'p'
 
@@ -3476,7 +3483,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/SHARE - Reset shares db on main pulse
-   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} pkgs -e "DELETE FROM {{ item }} WHERE 1"
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' pkgs -e "DELETE FROM {{ item }} WHERE 1"
    with_items:
      - pkgs_rules_local
      - pkgs_shares
@@ -3486,7 +3493,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/SHARE - Set up global and cluster shares and root user on main pulse
-   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} pkgs -e "{{ item }}"
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' pkgs -e "{{ item }}"
    with_items:
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (2, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', 1, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
@@ -3497,7 +3504,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/IMAGING - Associate imaging server with root entity
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} imaging -e 'UPDATE ImagingServer SET associated=1 WHERE id=1'"
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' imaging -e "UPDATE ImagingServer SET associated=1 WHERE id=1"
    when:
      - INSTALL_TYPE == 'p'
 
@@ -3593,7 +3600,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/EJABBERD - Register master account
-   command: "ejabberdctl register master {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}"
+   command: ejabberdctl register master {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}
    when:
      - INSTALL_TYPE != 'p'
 
@@ -3609,13 +3616,13 @@
    no_log: True
 
  - name: RELAY - Configure guacamole_baseurl parameter
-   command: 'crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"'
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"
    when:
      - INSTALL_TYPE == 'p'
    no_log: True
 
  - name: RELAY - Configure guacamole_baseurl parameter
-   command: 'crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"'
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -3629,13 +3636,13 @@
      - PUBLIC_IP != ''
 
  - name: RELAY - Configure guacamoleconf plugin
-   command: "crudini --set /etc/pulse-xmpp-agent/guacamoleconf.ini.local parameters guacamole_dbpasswd {{ ROOT_PASSWORD }}"
+   command: crudini --set /etc/pulse-xmpp-agent/guacamoleconf.ini.local parameters guacamole_dbpasswd '{{ ROOT_PASSWORD }}'
 
  - name: RELAY - Add guacamoleconf to list of plugins to be loaded
-   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamoleconf"
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamoleconf
 
  - name: RELAY - Configure plugins for alternate clients ssh port
-   command: "crudini --set /etc/pulse-xmpp-agent/{{ item }}.ini.local parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}"
+   command: crudini --set /etc/pulse-xmpp-agent/{{ item }}.ini.local parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}
    with_items:
      - applicationdeploymentjson
      - downloadfileexpert
@@ -3645,7 +3652,7 @@
      - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
 
  - name: RELAY - Add configured plugins to list of plugins to be loaded
-   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist {{ item }}"
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist {{ item }}
    with_items:
      - applicationdeploymentjson
      - downloadfileexpert
@@ -3655,22 +3662,22 @@
      - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
 
  - name: RELAY - Configure guacamole plugin for alternate clients vnc port
-   command: "crudini --set /etc/pulse-xmpp-agent/guacamole.ini.local parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}"
+   command: crudini --set /etc/pulse-xmpp-agent/guacamole.ini.local parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}
    when:
      - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
 
  - name: RELAY - Add guacamole to list of plugins to be loaded
-   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamole"
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamole
    when:
      - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
 
  - name: RELAY - Configure reverse_ssh_on plugin for alternate reversessh ssh port
-   command: "crudini --set /etc/pulse-xmpp-agent/reverse_ssh_on.ini.local parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}"
+   command: crudini --set /etc/pulse-xmpp-agent/reverse_ssh_on.ini.local parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}
    when:
      - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
 
  - name: RELAY - Add reverse_ssh_on to list of plugins to be loaded
-   command: "crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist reverse_ssh_on"
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist reverse_ssh_on
    when:
      - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
 
@@ -3732,12 +3739,12 @@
      name: pulse-xmpp-agent-relay
 
  - name: RELAY - Update cluster for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"UPDATE cluster_ars set name = '{{ CLUSTER_NAME }}', description = '{{ CLUSTER_NAME }}' where id = 1\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "UPDATE cluster_ars set name = '{{ CLUSTER_NAME }}', description = '{{ CLUSTER_NAME }}' where id = 1"
    when:
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Get cluster id for relay if it exists
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'"
    register: existingclusterid
    vars:
      ansible_ssh_user: root
@@ -3753,7 +3760,7 @@
      - existingclusterid.stdout != ''
 
  - name: RELAY - Get MAX_ID FROM cluster_ars when cluster does not exist
-   command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"'
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"
    register: maxid
    vars:
      ansible_ssh_user: root
@@ -3770,7 +3777,7 @@
      - existingclusterid.stdout == ''
 
  - name: RELAY - Create cluster for relay if it does not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3785,7 +3792,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Get MAX_ID FROM has_cluster_ars
-   command: 'mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"'
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"
    register: maxid
    vars:
      ansible_ssh_user: root
@@ -3800,7 +3807,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Get RELAYSERVER_ID FROM relayserver for pulsemain waiting up to 5 minutes
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE jid LIKE 'rspulse@pulse/%'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id FROM relayserver WHERE jid LIKE 'rspulse@pulse/%'"
    register: relayserverid
    until: relayserverid.stdout != ''
    retries: 10
@@ -3815,12 +3822,12 @@
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Insert relay in its cluster for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = 1 WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "UPDATE has_cluster_ars SET id_cluster = 1 WHERE id_ars = '{{ RELAYSERVER_ID }}'"
    when:
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay waiting up to 5 minutes
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'"
    register: relayserverid
    until: relayserverid.stdout != ''
    retries: 10
@@ -3838,7 +3845,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Relay check if id_ars is already inserted for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -Ns -e \"SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -Ns -e "SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3847,7 +3854,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Insert relay in its cluster for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ('{{ NEXT_ID }}', '{{ RELAYSERVER_ID }}', '{{ CLUSTER_ID }}')\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ('{{ NEXT_ID }}', '{{ RELAYSERVER_ID }}', '{{ CLUSTER_ID }}')"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3856,7 +3863,7 @@
      - relay_is_inserted.stdout == "0"
 
  - name: RELAY - Insert relay in its cluster for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3865,7 +3872,7 @@
      - relay_is_inserted.stdout != "0"
 
  - name: RELAY - Create substituteconf records for pulsemain
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')"
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
      - { type: 'subscription', jid: 'master_subs@pulse' }
@@ -3877,7 +3884,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: RELAY - Create substituteconf records for relay
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} xmppmaster -e \"INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')"
    with_items:
      - { type: 'assessor', jid: 'master_asse@pulse' }
      - { type: 'subscription', jid: 'master_subs@pulse' }
@@ -3935,13 +3942,13 @@
      - INSTALL_TYPE != "p"
 
  - name: RELAY/GLPI - Create entity in GLPI
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
  - name: RELAY/GLPI - Check if entity exists in glpi
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
    register: entityexists
    vars:
      ansible_ssh_user: root
@@ -3951,7 +3958,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/GLPI - Create entity in GLPI if it does not exist
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3961,7 +3968,7 @@
      - entityexists.stdout == ''
 
  - name: RELAY/SHARE - Create cluster share in database if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3970,7 +3977,7 @@
      - shareexists.stdout == ''
 
  - name: RELAY/SHARE - Get id from pkgs_shares for the previous insert if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'"
    register: shareid
    vars:
      ansible_ssh_user: root
@@ -3980,7 +3987,7 @@
      - shareexists.stdout == ''
 
  - name: RELAY/SHARE - Create rw permission for root on cluster share if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ shareid.stdout }})\""
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ shareid.stdout }})"
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
