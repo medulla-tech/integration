@@ -35,15 +35,17 @@
    when:
      - (SERVER_FQDN is undefined) or (SERVER_FQDN|length == 0)
 
- - name: VARS - Set IP_ADDRESS if INTERFACE defined
+ - name: VARS - Set IP_ADDRESS and NETWORK_ADDRESS if INTERFACE defined
    set_fact:
      IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+     NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
    when:
      - (INTERFACE is defined) and (INTERFACE|length > 0)
 
- - name: VARS - Set IP_ADDRESS if INTERFACE not defined
+ - name: VARS - Set IP_ADDRESS and NETWORK_ADDRESS if INTERFACE not defined
    set_fact:
      IP_ADDRESS: "{{ ansible_default_ipv4.address }}"
+     NETWORK_ADDRESS: "{{ ansible_default_ipv4.network }}"
    when:
      - (INTERFACE is undefined) or (INTERFACE|length == 0)
 
@@ -94,6 +96,7 @@
      XMPP_MASTER_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
      XMPP_MUCROOM_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
      AES_KEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+     GLPI_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
    when:
      - INSTALL_TYPE == 'p'
 
@@ -3072,13 +3075,17 @@
  - name: GLPI - Prepare glpi database for Pulse
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
    with_items:
-     - "DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'"
-     - "DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'"
-     - "UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'"
-     - "UPDATE glpi_users SET password = MD5('{{ ROOT_PASSWORD }}') where name = 'root'"
-     - "UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0"
-     - "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')"
-     - "INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)"
+     - DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'
+     - DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'
+     - UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'
+     - UPDATE glpi_users SET password = MD5('{{ ROOT_PASSWORD }}') where name = 'root'
+     - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
+     - UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0
+     - INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')
+     - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
    when:
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
@@ -3086,10 +3093,23 @@
    no_log: True
 
  - name: GLPI - Enable fusioninventory plugin
-   command: '{{ item }}'
+   command: php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Configure fusioninventory
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
    with_items:
-     - "php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root"
-     - "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' {{ GLPI_DBNAME }} -e \"UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'\""
+     - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'
+     - INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
+     - UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname'
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
    when:
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
@@ -3952,8 +3972,13 @@
    when:
      - INSTALL_TYPE != "p"
 
- - name: RELAY/GLPI - Create entity in GLPI
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}')"
+ - name: RELAY/GLPI - Create entity in GLPI and define it as default entity for fusioninventory
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - INSERT INTO glpi_entities (id, entities_id, level, name, completename) VALUES (1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}')
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ MAIN_ENTITY }}', 'AND')
+     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
+     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
@@ -3969,7 +3994,12 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/GLPI - Create entity in GLPI if it does not exist
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "INSERT INTO glpi_entities (id,entities_id,level,name,completename) SELECT MAX(id)+1,0,2,'{{ CLUSTER_NAME }}','{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities"
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+     - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
+     - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ MULTISITE_ENTITY }}', 'AND')
+     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
+     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ MULTISITE_ENTITY }}'))
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
