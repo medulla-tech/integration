@@ -63,33 +63,17 @@
      - INSTALL_TYPE != 'p'
      - (INTERFACE_TO_PULSE is undefined) or (INTERFACE_TO_PULSE|length == 0)
 
- - name: VARS - Set CLUSTER_NAME to MULTISITE_ENTITY for relay
+ - name: VARS - Set CLUSTER_NAME to ENTITY for relay
    set_fact:
-     CLUSTER_NAME: "{{ MULTISITE_ENTITY }}"
+     CLUSTER_NAME: "{{ ENTITY }}"
    when:
-     - (MULTISITE_ENTITY is defined) and (MULTISITE_ENTITY|length > 0)
-     - INSTALL_TYPE != 'p'
-
- - name: VARS - Set CLUSTER_NAME to MAIN_ENTITY for pulsemain
-   set_fact:
-     CLUSTER_NAME: "{{ MAIN_ENTITY }}"
-   when:
-     - (MAIN_ENTITY is defined) and (MAIN_ENTITY|length > 0)
-     - INSTALL_TYPE == 'p'
+     - (ENTITY is defined) and (ENTITY|length > 0)
 
  - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
      CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
-     - (MULTISITE_ENTITY is undefined) or (MULTISITE_ENTITY|length == 0)
-     - INSTALL_TYPE != 'p'
-
- - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
-   set_fact:
-     CLUSTER_NAME: "{{ ansible_hostname }}"
-   when:
-     - (MAIN_ENTITY is undefined) or (MAIN_ENTITY|length == 0)
-     - INSTALL_TYPE == 'p'
+     - (ENTITY is undefined) or (ENTITY|length == 0)
 
  - name: VARS - Generate needed passwords specific to pulsemain
    set_fact:
@@ -3976,7 +3960,7 @@
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
    with_items:
      - INSERT INTO glpi_entities (id, entities_id, level, name, completename) VALUES (1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}')
-     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ MAIN_ENTITY }}', 'AND')
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
      - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
      - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
    when:
@@ -3998,9 +3982,9 @@
    with_items:
      - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
      - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
-     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ MULTISITE_ENTITY }}', 'AND')
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
      - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
-     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ MULTISITE_ENTITY }}'))
+     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
