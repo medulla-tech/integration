@@ -3604,6 +3604,12 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
 
+ - name: RELAY - Get default plugins list from relayconf.ini
+   command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini plugin pluginlist
+   register: plugin_list
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: RELAY - Get current plugins list from pulsemain
    command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
    vars:
@@ -3642,6 +3648,7 @@
      - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"' }
      - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
      - { section: 'type', parameter: 'geolocalisation', value: 'False' }
+     - { section: 'plugin', parameter: 'pluginlist', value: '{{ plugin_list.stdout }}' }
    no_log: True
 
  - name: RELAY - Configure guacamole_baseurl parameter
