@@ -2029,11 +2029,18 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Disable use of relays
-   command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Define global announce server as localhost on pulsemain
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE == 'p'
 
- - name: SYNCTHING - Disable use of local announce
-   command: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH"', value: '0' }
 
  - name: SYNCTHING - Add root user
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
@@ -2665,11 +2672,18 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHINGDEPL - Disable use of relays
-   command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml
+ - name: SYNCTHINGDEPL - Define global announce server as pulsemain on relay syncthing-depl
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE == 'p'
 
- - name: SYNCTHINGDEPL - Disable use of local announce
-   command: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml
+ - name: SYNCTHINGDEPL - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH"', value: '0' }
 
  - name: SYNCTHINGDEPL - Add root user
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml
