@@ -328,7 +328,7 @@
      pkg:
        - openssl
        - ca-certificates
-       - python-openssl
+       - pyOpenSSL
    when:
      - ansible_distribution == 'CentOS'
 
