@@ -878,8 +878,38 @@
      - "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
      - "FLUSH PRIVILEGES"
 
+ - name: MARIADB - Define Mariadb variables for CentOS
+   set_fact:
+     MARIADB_CONF_PATH: "/etc/my.cnf.d"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: MARIADB - Define Mariadb variables for Debian
+   set_fact:
+     MARIADB_CONF_PATH: "/etc/mysql/mariadb.conf.d"
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: MARIADB - Enable event scheduler
-   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' mysql -e "SET GLOBAL event_scheduler = ON"
+   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb event_scheduler ON
+
+ - name: MARIADB - Define performance settings
+   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'table_open_cache', value: '2000' }
+     - { parameter: 'query_cache_limit', value: '0' }
+     - { parameter: 'query_cache_size', value: '0' }
+     - { parameter: 'tmp_table_size', value: '2G' }
+     - { parameter: 'innodb_buffer_pool_size', value: '2G' }
+     - { parameter: 'key_buffer_size', value: '2G' }
+     - { parameter: 'max_heap_table_size', value: '2G' }
+     - { parameter: 'open_files_limit', value: 102400 }
+
+ - name: MARIADB - Restart service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: mariadb
 
 ##########################################################
 #                    Install ejabberd                    #
