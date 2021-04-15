@@ -3640,12 +3640,24 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: RELAY - Get current plugins list from pulsemain
    command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: plugin_list
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -3670,7 +3682,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Configure relay server
-   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
    with_items:
      - { section: 'connection', parameter: 'password', value: '"{{ XMPP_MASTER_PASSWORD }}"' }
      - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
@@ -3678,7 +3690,7 @@
      - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"' }
      - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
      - { section: 'type', parameter: 'geolocalisation', value: 'False' }
-     - { section: 'plugin', parameter: 'pluginlist', value: '{{ plugin_list.stdout }}' }
+     - { section: 'plugin', parameter: 'pluginlist', value: '{{ PLUGINS_LIST }}' }
    no_log: True
 
  - name: RELAY - Configure guacamole_baseurl parameter
