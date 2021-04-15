@@ -4108,6 +4108,15 @@
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
    when:
      - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate ssh port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--ssh-port={{ CLIENTS_SSH_PORT }}"
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
  - name: PULSEAGENT - Add clients alternate vnc port to options if defined
@@ -4115,6 +4124,15 @@
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --vnc-port={{ CLIENTS_VNC_PORT }}"
    when:
      - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate vnc port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--vnc-port={{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
  - name: PULSEAGENT - Generate agent
