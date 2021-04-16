@@ -2078,7 +2078,7 @@
      - { field: 'relaysEnabled', value: 'false' }
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
-     - { field: 'autoUpgradeIntervalH"', value: '0' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
 
  - name: SYNCTHING - Add root user
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
@@ -2721,7 +2721,7 @@
      - { field: 'relaysEnabled', value: 'false' }
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
-     - { field: 'autoUpgradeIntervalH"', value: '0' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
 
  - name: SYNCTHINGDEPL - Add root user
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml
@@ -3648,12 +3648,24 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: RELAY - Get current plugins list from pulsemain
    command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    register: plugin_list
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
    when:
      - INSTALL_TYPE != 'p'
 
@@ -3678,7 +3690,7 @@
      - INSTALL_TYPE != 'p'
 
  - name: RELAY - Configure relay server
-   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
    with_items:
      - { section: 'connection', parameter: 'password', value: '"{{ XMPP_MASTER_PASSWORD }}"' }
      - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
@@ -3686,7 +3698,7 @@
      - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"' }
      - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
      - { section: 'type', parameter: 'geolocalisation', value: 'False' }
-     - { section: 'plugin', parameter: 'pluginlist', value: '{{ plugin_list.stdout }}' }
+     - { section: 'plugin', parameter: 'pluginlist', value: '{{ PLUGINS_LIST }}' }
    no_log: True
 
  - name: RELAY - Configure guacamole_baseurl parameter
@@ -4104,6 +4116,15 @@
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
    when:
      - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate ssh port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--ssh-port={{ CLIENTS_SSH_PORT }}"
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
  - name: PULSEAGENT - Add clients alternate vnc port to options if defined
@@ -4111,6 +4132,15 @@
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --vnc-port={{ CLIENTS_VNC_PORT }}"
    when:
      - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate vnc port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--vnc-port={{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
  - name: PULSEAGENT - Generate agent
