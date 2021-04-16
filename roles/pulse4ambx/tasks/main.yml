@@ -13,6 +13,14 @@
      msg:
      - "Playbook Version: {{ PLAYBOOK_VERSION }}"
 
+ - name: VERSION - If CentOS, verify his version
+   ansible.builtin.command: rpm --eval '%{centos_ver}'
+   register: result
+   failed_when:
+     - result.rc != 7
+   when:
+     - ansible_distribution == 'CentOS'
+
 ##########################################################
 #                    Compute variables                   #
 ##########################################################
