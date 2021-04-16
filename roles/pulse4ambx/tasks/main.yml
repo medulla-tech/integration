@@ -696,7 +696,7 @@
      state: absent
    when:
      - ansible_distribution == 'CentOS'
-     - phpfpm_exists.stat.exist == false
+     - phpfpm_exists.stat == false
 
  - name: PHP - Install php
    yum:
