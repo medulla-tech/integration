@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.2'
+     PLAYBOOK_VERSION: '3.1.3'
 
  - name: VERSION - Display version
    debug:
@@ -1024,12 +1024,13 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: SYNCTHING - Disable use of relays
-   command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
-   no_log: True
-
- - name: SYNCTHING - Disable use of local announce
-   command: xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing/.config/syncthing/config.xml
+ - name: SYNCTHING - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
    no_log: True
 
  - name: SYNCTHING - Add root user
@@ -1137,12 +1138,6 @@
  - name: SYNCTHING - Kill running processes
    command: "kill -9 {{ item }}"
    with_items: "{{ kill_pid.results | select('failed') | map(attribute='item') | list }}"
-   when:
-     - INSTALL_TYPE != 'p'
-   no_log: True
-
- - name: SYNCTHING - Auto-accept shares coming from pulsemain
-   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -1585,12 +1580,13 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: SYNCTHINGDEPL - Disable use of relays
-   command: 'xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
-   no_log: True
-
- - name: SYNCTHINGDEPL - Disable use of local announce
-   command: 'xmlstarlet ed --inplace -u "configuration/options/localAnnounceEnabled" -v "false" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+ - name: SYNCTHINGDEPL - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
    no_log: True
 
  - name: SYNCTHINGDEPL - Add root user
