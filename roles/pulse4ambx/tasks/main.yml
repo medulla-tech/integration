@@ -2803,11 +2803,6 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHINGDEPL - Auto-accept shares coming from pulsemain
-   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing-depl/.config/syncthing/config.xml
-   when:
-     - INSTALL_TYPE != 'p'
-
  - name: SYNCTHINGDEPL - Restart service after editing configuration
    systemd:
      name: syncthing@{{ item }}
