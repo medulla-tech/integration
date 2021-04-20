@@ -1051,6 +1051,12 @@
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
    no_log: True
 
+ - name: SYNCTHING - Do not auto-accept shares coming from pulsemain
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v false /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
  - name: SYNCTHING - Restart service after editing configuration
    systemd:
      name: syncthing@syncthing
@@ -1324,17 +1330,31 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: SHARE - Remove syncthing folders if present on relays
+ - name: Capture folders to delete in syncthing on relays
+   find:
+     paths: /var/lib/syncthing/
+     file_type: directory
+     excludes: 
+       - "Sync"
+       - "{{ ansible_hostname[:6] }}"
+   register: folderstodelete
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: Delete folders in syncthing on relays
    file:
-     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
+     path: "{{ item.path }}"
      state: absent
-   with_items:
-     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
-     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
-     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   with_items: "{{ folderstodelete['files'] }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Delete unused shares on ars
+   command: xmlstarlet ed --inplace -d "configuration/folder[@destination='{{ item.path | replace('/var/lib/syncthing', '~') }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items: "{{ folderstodelete['files'] }}"
+   ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -1445,7 +1465,13 @@
    no_log: True
 
  - name: SHARE - Share all folders with ars from pulsemain
-   command: xmlstarlet ed --inplace -s "configuration/folder[@type='sendonly']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
