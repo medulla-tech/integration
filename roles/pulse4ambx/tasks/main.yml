@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.3'
+     PLAYBOOK_VERSION: '3.1.6'
 
  - name: VERSION - Display version
    debug:
@@ -1050,10 +1050,11 @@
      - { regexp: '^#*\s*registration_timeout: .*$', line: 'registration_timeout: infinity' }
      - { regexp: '^\s*#*\s*mod_register:$', line: '  mod_register:' }
      - { regexp: '^\s*max_stanza_size: .*$', line: '    max_stanza_size: 8388608' }
-     - { regexp: '^max_fsm_queue: .*$', line: 'max_fsm_queue: 5000' }
+     - { regexp: '^max_fsm_queue: .*$', line: 'max_fsm_queue: 10000' }
      - { regexp: '^\s*normal: .*$', line: '  normal: 100000000' }
      - { regexp: '^\s*fast: .*$', line: '  fast: 1000000000' }
      - { regexp: '^\s*mod_ping:.*$', line: '  mod_ping:' }
+     - { regexp: '^\s*#*\s*mod_admin_extra:.*$', line: '  mod_admin_extra: {}' }
 
  - name: EJABBERD - Configure mod_register
    blockinfile:
@@ -1304,7 +1305,6 @@
             ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/{{ APACHE_DAEMON }}/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
    when:
      - INSTALL_TYPE == "p"
@@ -1344,7 +1344,6 @@
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/{{ APACHE_DAEMON }}/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
    vars:
      ansible_ssh_user: root
@@ -2062,6 +2061,19 @@
      - syncthing
      - syncthing-depl
 
+ - name: SYNCTHING - Stop service for editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
    command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
    when:
@@ -2094,16 +2106,6 @@
  - name: SYNCTHING - Set root password to ENCRYPTED_PASS
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
 
- - name: SYNCTHING - Restart service after editing configuration
-   systemd:
-     name: syncthing@syncthing
-     state: restarted
-
- - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
-   wait_for:
-     port: 22000
-     delay: 5
-
  - name: SYNCTHING - Get api key from syncthing
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
    register: apikey
@@ -2116,10 +2118,31 @@
    command: stman configure -k {{ SYNCTHING_API_KEY }}
 
  - name: SYNCTHING - Define XMPP_DOMAIN for device name
-   command: stman device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']/@name" -v "{{ XMPP_DOMAIN }}" /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Delete the default share
+   command: xmlstarlet ed --inplace -d "configuration/folder[@label='Default Folder']" /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Delete pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ PULSEMAIN_DEVICE_ID }}' name='pulse' introducer='true'" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Edit pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'autoAcceptFolders', value: 'false' }
+     - { field: 'address', value: 'tcp://{{ PULSEMAIN_IP }}:22000' }
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
-   command: stman device remove {{ XMPP_DOMAIN }}
+   command: xmlstarlet ed --inplace -d "configuration/device[@name='{{ XMPP_DOMAIN }}']" /var/lib/syncthing/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2128,30 +2151,30 @@
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Add relayserver device to pulsemain syncthing
-   command: stman device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:22000 {{ LOCAL_DEVICE_ID }}
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing
-   command: stman device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:22000 --introducer {{ PULSEMAIN_DEVICE_ID }}
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Stop service for editing configuration
-   systemd:
-     name: syncthing@{{ item }}
-     state: stopped
+ - name: SYNCTHING - Edit relayserver device on pulsemain syncthing
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
-     - syncthing
-     - syncthing-depl
+     - { field: 'address', value: 'tcp://{{ IP_ADDRESS }}:22000' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHING - Auto-accept shares coming from pulsemain
-   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
+  - name: SYNCTHING - Restart service after editing configuration on pulsemain
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2159,8 +2182,6 @@
    systemd:
      name: syncthing@syncthing
      state: restarted
-   when:
-     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
@@ -2168,9 +2189,6 @@
      delay: 5
    when:
      - INSTALL_TYPE != 'p'
-
- - name: SYNCTHING - Delete the default share
-   command: stman folder remove "Default Folder"
 
 ##########################################################
 #                   Install TFTP Server                  #
@@ -2598,7 +2616,13 @@
      - INSTALL_TYPE != 'p'
 
  - name: SHARE - Share all folders with ars from pulsemain
-   command: xmlstarlet ed --inplace -s "configuration/folder[@type='sendonly']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2697,6 +2721,38 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SYNCTHINGDEPL - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: resid
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Stop service for editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SYNCTHINGDEPL - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
@@ -2735,19 +2791,6 @@
  - name: SYNCTHINGDEPL - Define gui listen port to 8385
    command: xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml
 
- - name: SYNCTHINGDEPL - Restart service after editing configuration
-   systemd:
-     name: syncthing@{{ item }}
-     state: restarted
-   with_items:
-     - syncthing
-     - syncthing-depl
-
- - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
-   wait_for:
-     port: 23000
-     delay: 5
-
  - name: SYNCTHINGDEPL - Get api key from syncthing-depl
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
    register: apikey
@@ -2760,46 +2803,62 @@
    command: stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl
 
  - name: SYNCTHINGDEPL - Define XMPP_DOMAIN for device name
-   command: stman -d depl device edit -n {{ XMPP_DOMAIN }} {{ LOCAL_DEVICE_ID }}
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']/@name" -v "{{ XMPP_DOMAIN }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Delete relayserver device on pulsemain syncthing-depl
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Add relayserver device as introducer on pulsemain syncthing-depl
-   command: stman -d depl device add --name {{ XMPP_DOMAIN }} --address tcp://{{ IP_ADDRESS }}:23000 {{ LOCAL_DEVICE_ID }} --introducer
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='true'" /var/lib/syncthing-depl/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHINGDEPL - Find pulsemain device id
-   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+ - name: SYNCTHINGDEPL - Edit relayserver device on pulsemain syncthing-depl
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'address', value: 'tcp://{{ IP_ADDRESS }}:23000' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
-   register: resid
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHINGDEPL - Set PULSEMAIN_DEVICE_ID
-   set_fact:
-     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
+ - name: SYNCTHING - Delete pulsemain device on relay syncthing-depl
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Add pulsemain device as introducer on relay syncthing-depl
-   command: stman -d depl device add --name pulse --address tcp://{{ PULSEMAIN_IP }}:23000 --introducer {{ PULSEMAIN_DEVICE_ID }}
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ PULSEMAIN_DEVICE_ID }}' name='pulse' introducer='true'" /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SYNCTHINGDEPL - Stop service for editing configuration
+      - name: SYNCTHINGDEPL - Edit pulsemain device on relay syncthing-depl
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'autoAcceptFolders', value: 'true' }
+     - { field: 'address', value: 'tcp://{{ PULSEMAIN_IP }}:23000' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Restart service after editing configuration on pulsemain
    systemd:
      name: syncthing@{{ item }}
-     state: stopped
+     state: restarted
    with_items:
      - syncthing
      - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2810,41 +2869,11 @@
    with_items:
      - syncthing
      - syncthing-depl
-   when:
-     - INSTALL_TYPE != 'p'
 
  - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
    wait_for:
      port: 23000
      delay: 5
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHINGDEPL - Delete the default share
-   command: stman -d depl folder remove "Default Folder"
-
- - name: SYNCTHINGDEPL - Restart syncthing services
-   systemd:
-     name: syncthing@{{ item }}
-     state: restarted
-   with_items:
-     - syncthing
-     - syncthing-depl
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SYNCTHINGDEPL - Restart syncthing services on pulsemain
-   systemd:
-     name: syncthing@{{ item }}
-     state: restarted
-   with_items:
-     - syncthing
-     - syncthing-depl
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
 
 ##########################################################
 #                   SSH server setup                     #
