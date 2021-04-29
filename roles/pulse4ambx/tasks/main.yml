@@ -2168,7 +2168,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
-  - name: SYNCTHING - Restart service after editing configuration on pulsemain
+ - name: SYNCTHING - Restart service after editing configuration on pulsemain
    systemd:
      name: syncthing@syncthing
      state: restarted
