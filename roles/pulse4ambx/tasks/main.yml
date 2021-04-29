@@ -2841,7 +2841,7 @@
    when:
      - INSTALL_TYPE != 'p'
 
-      - name: SYNCTHINGDEPL - Edit pulsemain device on relay syncthing-depl
+ - name: SYNCTHINGDEPL - Edit pulsemain device on relay syncthing-depl
    command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
    with_items:
      - { field: 'autoAcceptFolders', value: 'true' }
