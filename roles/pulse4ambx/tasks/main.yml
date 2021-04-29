@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.5'
+     PLAYBOOK_VERSION: '3.1.6'
 
  - name: VERSION - Display version
    debug:
@@ -530,7 +530,7 @@
     sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 10000/' /etc/ejabberd/ejabberd.yml
     sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
     sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
@@ -543,6 +543,7 @@
     sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
     sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 60\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_admin_extra:/{s/## //}' /etc/ejabberd/ejabberd.yml
    no_log: True
 
  - name: EJABBERD - Restart service
@@ -735,7 +736,6 @@
             ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
    when:
      - INSTALL_TYPE == "p"
@@ -772,7 +772,6 @@
             ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
         </Location>
         SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
-        CustomLog  /var/log/httpd/guac.log common env=!dontlog
      dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
    vars:
      ansible_ssh_user: root
@@ -1963,6 +1962,15 @@
 
  - name: RELAY - Create cluster if it does not exist
    command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_DESCRIPTION }}')\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - existingclusterid.stdout == ''
+   no_log: True
+
+ - name: RELAY - Create pkgs rule on cluster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_global (pkgs_rules_algos_id, pkgs_cluster_ars_id, subject, permission) VALUES (3, {{ CLUSTER_ID }}, '^{{ ansible_hostname[:6] }}.*', 'rw')\""
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
