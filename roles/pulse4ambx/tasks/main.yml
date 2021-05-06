@@ -849,6 +849,14 @@
      - /var/lib/mysql
      - /root/.my.cnf
 
+ - name: MARIADB - Edit limit of max_open_file for mariadb
+   copy:
+     content : "{{ item }}"
+     dest: "/usr/lib/systemd/system/mariadb.service"
+   with_items:
+     - "LimitNOFILE=100000"
+     - "LimitMEMLOCK=100000"
+
  - name: MARIADB - Install initial database
    command: mysql_install_db
 
