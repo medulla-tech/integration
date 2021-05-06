@@ -14,7 +14,7 @@
      - "Playbook Version: {{ PLAYBOOK_VERSION }}"
 
  - name: VERSION - If CentOS, verify his version
-   ansible.builtin.command: rpm --eval '%{centos_ver}'
+   command: rpm --eval '%{centos_ver}'
    register: result
    failed_when:
      - result.rc != 7
