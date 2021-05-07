@@ -854,12 +854,6 @@
    when:
      - ansible_distribution == 'Debian'
 
- - name: MARIADB - Daemon reload mariadb
-   systemd:
-     state: restarted
-     daemon_reload: yes
-     name: mariadb
-
  - name: MARIADB - Apply permissions on /var/lib/mysql/
    file:
      path: /var/lib/mysql
@@ -875,6 +869,12 @@
      owner: mysql
      group: mysql
      recurse: yes
+
+ - name: MARIADB - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: mariadb
 
  - name: MARIADB - Define root password
    command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
@@ -906,9 +906,9 @@
      state: touch
 
  - name: MARIADB - Define limits of system
-   copy:
-     content: "{{ item }}"
-     dest: "/etc/security/limits.d/mysql.conf"
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/security/limits.d/mysql.conf"
    with_items:
      - "mysql soft  nofile  8192"
      - "mysql hard  nofile  8192"
@@ -924,9 +924,9 @@
      state: touch
 
  - name: MARIADB - Define open_files number by systemd
-   copy:
-     content: "{{ item }}"
-     dest: "/etc/systemd/system/mariadb.service.d/limits.conf"
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/systemd/system/mariadb.service.d/limits.conf"
    with_items:
      - "[Service]"
      - "LimitNOFILE=65535"
@@ -947,6 +947,12 @@
      - { parameter: 'max_heap_table_size', value: '2G' }
      - { parameter: 'open_files_limit', value: 65535 }
      - { parameter: 'max_connections', value: 512 }
+
+ - name: MARIADB - Daemon reload mariadb
+   systemd:
+     state: restarted
+     daemon_reload: yes
+     name: mariadb
 
  - name: MARIADB - Restart service
    systemd:
