@@ -948,16 +948,10 @@
      - { parameter: 'open_files_limit', value: 65535 }
      - { parameter: 'max_connections', value: 512 }
 
- - name: MARIADB - Daemon reload mariadb
+ - name: MARIADB - Daemon reload and restart mariadb
    systemd:
      state: restarted
      daemon_reload: yes
-     name: mariadb
-
- - name: MARIADB - Restart service
-   systemd:
-     enabled: yes
-     state: restarted
      name: mariadb
 
 ##########################################################
