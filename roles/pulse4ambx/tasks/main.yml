@@ -851,6 +851,14 @@
 
  - name: MARIADB - Install initial database
    command: mysql_install_db
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: MARIADB - Daemon reload mariadb
+   systemd:
+     state: restarted
+     daemon_reload: yes
+     name: mariadb
 
  - name: MARIADB - Apply permissions on /var/lib/mysql/
    file:
@@ -867,12 +875,6 @@
      owner: mysql
      group: mysql
      recurse: yes
-
- - name: MARIADB - Enable service
-   systemd:
-     enabled: yes
-     state: restarted
-     name: mariadb
 
  - name: MARIADB - Define root password
    command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
@@ -898,6 +900,38 @@
    when:
      - ansible_distribution == 'Debian'
 
+ - name: MARIADB - Create limits file of system
+   file: 
+     path: /etc/security/limits.d/mysql.conf
+     state: touch
+
+ - name: MARIADB - Define limits of system
+   copy:
+     content: "{{ item }}"
+     dest: "/etc/security/limits.d/mysql.conf"
+   with_items:
+     - "mysql soft  nofile  8192"
+     - "mysql hard  nofile  8192"
+
+ - name: MARIADB - Create directory mariadb.service.d
+   file:
+     path: /etc/systemd/system/mariadb.service.d
+     state: directory
+
+ - name: MARIADB - Create limits file for mariadb
+   file: 
+     path: /etc/systemd/system/mariadb.service.d/limits.conf
+     state: touch
+
+ - name: MARIADB - Define open_files number by systemd
+   copy:
+     content: "{{ item }}"
+     dest: "/etc/systemd/system/mariadb.service.d/limits.conf"
+   with_items:
+     - "[Service]"
+     - "LimitNOFILE=65535"
+     - "LimitMEMLOCK=infinity"
+
  - name: MARIADB - Enable event scheduler
    command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb event_scheduler ON
 
@@ -911,7 +945,8 @@
      - { parameter: 'innodb_buffer_pool_size', value: '2G' }
      - { parameter: 'key_buffer_size', value: '2G' }
      - { parameter: 'max_heap_table_size', value: '2G' }
-     - { parameter: 'open_files_limit', value: 102400 }
+     - { parameter: 'open_files_limit', value: 65535 }
+     - { parameter: 'max_connections', value: 512 }
 
  - name: MARIADB - Restart service
    systemd:
