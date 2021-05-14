@@ -1018,13 +1018,14 @@
      path: /etc/ejabberd/ejabberd.yml
      regexp: '^\s*#*\s*admin:$'
      line: '  admin:'
+     state: present
    when:
      - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
 
  - name: EJABBERD - Update user in ejabberd.yml for acl
    lineinfile:
      path: /etc/ejabberd/ejabberd.yml
-     regexp: '^  admin:$'
+     insertafter: '^  admin:$'
      line: '     user:'
    when:
      - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
@@ -1047,8 +1048,9 @@
  - name: EJABBERD - Disable starttls in ejabberd.yml for CentOS
    lineinfile:
      path: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*## starttls: .*$'
+     regexp: '^\s*#* starttls: .*$'
      line: '    starttls: false'
+     state: present
    when:
      - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
 
