@@ -1023,6 +1023,14 @@
      regexp: '^\s*starttls: .*$'
      line: '    starttls: false'
 
+ - name: EJABBERD - Disable starttls in ejabberd.yml for CentOS
+   lineinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '^\s*## starttls: .*$'
+     line: '    starttls: false'
+   when:
+     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
      src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
