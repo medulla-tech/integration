@@ -1008,6 +1008,22 @@
      block: |2
          - "{{ XMPP_DOMAIN }}"
 
+ - name: EJABBERD - Update ejabberd.yml for acl
+   lineinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '^\s*#*\s*admin:$'
+     line: '  admin:'
+   when:
+     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+
+ - name: EJABBERD - Update user in ejabberd.yml for acl
+   lineinfile:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '^  admin:$'
+     line: '     user:'
+   when:
+     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+
  - name: EJABBERD - Add root@ and master@ {{ XMPP_DOMAIN }} as admin user in ejabberd.yml
    blockinfile:
      path: /etc/ejabberd/ejabberd.yml
