@@ -841,6 +841,11 @@
    when:
      - ansible_distribution == 'Debian'
 
+ - name: MARIADB - Enable service
+   systemd:
+     state: stopped
+     name: mariadb
+
  - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
    file:
      path: '{{ item }}'
