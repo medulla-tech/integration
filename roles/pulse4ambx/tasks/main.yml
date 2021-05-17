@@ -2299,7 +2299,7 @@
      line: "{{ item.line }}"
    with_items:
      - { regex: '^TFTP_DIRECTORY=.*$', line: 'TFTP_DIRECTORY="/var/lib/pulse2/imaging"' }
-     - { regex: '^TFTP_OPTIONS=.*$', line: 'TFTP_OPTIONS="--secure --create"' }
+     - { regex: '^TFTP_OPTIONS=.*$', line: 'TFTP_OPTIONS="--secure --create --ipv4 -l"' }
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
