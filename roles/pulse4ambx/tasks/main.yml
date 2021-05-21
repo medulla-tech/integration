@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.6'
+     PLAYBOOK_VERSION: '3.1.7'
 
  - name: VERSION - Display version
    debug:
@@ -112,7 +112,7 @@
 
  - name: CNAM - Set CLUSTER_DESCRIPTION to AMBox entity and location
    set_fact:
-     CLUSTER_DESCRIPTION: "{{ ambxentity.stdout.split(' > ')[3:] | join(' > ') }} # {{ ambxlocation.stdout }}"
+     CLUSTER_DESCRIPTION: "{{ ambxentity.stdout.split(' > ')[3:] | join(' > ') | regex_replace (\"'\",\" \") }} # {{ ambxlocation.stdout | regex_replace (\"'\",\" \") }}"
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -1199,9 +1199,9 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: SHARE - Check if UCANSS share exists on pulsemain
+ - name: SHARE - Check if UCANSS share exists on pulsemain syncthing
    command: xmlstarlet sel -t -v "/configuration/folder[@id=\"pulsemaster_{{ ansible_hostname[:6] }}\"]/@id" -n /var/lib/syncthing/.config/syncthing/config.xml
-   register: shareexists
+   register: syncthingshareexists
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -1216,7 +1216,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
+     - syncthingshareexists.stdout == ''
    no_log: True
 
  - name: SHARE - Edit UCANSS share on pulsemain if it did not exist
@@ -1228,38 +1228,7 @@
      - { type: "-u", element: "configuration/folder[@id='pulsemaster_{{ ansible_hostname[:6] }}']/minDiskFree", operation: "-v '1'" }
    when:
      - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
-   no_log: True
-
- - name: SHARE - Create UCANSS share in database if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ ansible_hostname[:6] }}, '{{ ansible_hostname[:6] }}', 'local', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}')\""
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
-   no_log: True
-
- - name: SHARE - Get id from pkgs_shares for the previous insert if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND ars_id=1 AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
-   register: shareid
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
-   no_log: True
-
- - name: SHARE - Create permissions on UCANSS share in database
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, pkgs_shares_id) VALUES (1, 10, '^{{ ansible_hostname[:6] }}.*', {{ shareid.stdout }})\""
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
+     - syncthingshareexists.stdout == ''
    no_log: True
 
  - name: SHARE - Delete all shares on ars
@@ -2054,6 +2023,47 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Check if UCANSS share exists in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   register: shareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Create UCANSS share in database if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ ansible_hostname[:6] }}, '{{ ansible_hostname[:6] }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}')\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+   no_log: True
+
+ - name: RELAY - Get id from pkgs_shares for the previous insert if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   register: shareid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+   no_log: True
+
+ - name: RELAY - Create permissions on UCANSS share in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, pkgs_shares_id) VALUES (1, 10, '^{{ ansible_hostname[:6] }}.*', {{ shareid.stdout }})\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
    no_log: True
 
  - name: RELAY - Enable autoupdatebyrelay on pulsemain
