@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.6'
+     PLAYBOOK_VERSION: '3.1.7'
 
  - name: VERSION - Display version
    debug:
@@ -2398,9 +2398,9 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: SHARE - Check if cluster share exists on pulsemain
+ - name: SHARE - Check if cluster share exists on pulsemain syncthing
    command: xmlstarlet sel -t -v "/configuration/folder[@id=\"pulsemaster_{{ CLUSTER_NAME }}\"]/@id" -n /var/lib/syncthing/.config/syncthing/config.xml
-   register: shareexists
+   register: syncthingshareexists
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2414,7 +2414,7 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
+     - syncthingshareexists.stdout == ''
 
  - name: SHARE - Edit cluster share on pulsemain if it did not exist
    command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
@@ -2425,7 +2425,7 @@
      - { type: "-u", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']/minDiskFree", operation: "-v '1'" }
    when:
      - INSTALL_TYPE != 'p'
-     - shareexists.stdout == ''
+     - syncthingshareexists.stdout == ''
 
  - name: SHARE - Delete all shares on ars
    command: xmlstarlet ed --inplace -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
@@ -4153,6 +4153,16 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE != 'p'
      - entityexists.stdout == ''
+
+ - name: RELAY/SHARE - Check if cluster share exists in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
+   register: shareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
 
  - name: RELAY/SHARE - Create cluster share in database if it did not exist
    command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')"
