@@ -1524,18 +1524,6 @@
      - ansible_distribution == 'Debian'
 
  - name: IMAGING - Install pxe-linux
-   yum:
-     update_cache: yes
-     state: latest
-     pkg:
-       - syslinux-tftpboot
-       - syslinux hwdata
-       - hwdata
-       - syslinux-efi64
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: IMAGING - Install pxe-linux
    apt:
      update_cache: yes
      state: latest
@@ -1543,6 +1531,7 @@
        - pxelinux
        - syslinux-common
        - syslinux-efi
+       - hwdata
    when:
      - ansible_distribution == 'Debian'
 
@@ -1569,224 +1558,63 @@
      - /var/lib/pulse2/imaging/bootmenus
      - /home/partimag
 
- - name: IMAGING - Create symlink syslinux to imaging bootloader
-   file:
-     src: /usr/share/syslinux/{{ item }}
-     dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
-     state: link
-     force: yes
-   with_items:
-     - pxelinux.0
-     - libgpl.c32
-     - libutil.c32
-     - reboot.c32
-     - ldlinux.c32
-     - liblua.c32
-     - vesamenu.c32
-     - hdt.c32
-     - libcom32.c32
-     - libmenu.c32
-     - poweroff.c32
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: IMAGING - Create symlink syslinux module bios to imaging bootloader
-   file:
-     src: /usr/lib/syslinux/modules/bios/{{ item }}
-     dest: /var/lib/pulse2/imaging/bootloader/{{ item }}
-     state: link
-     force: yes
-   with_items:
-     - pxelinux.0
-     - inventory.c32
-     - libgpl.c32
-     - libutil.c32
-     - reboot.c32
-     - ldlinux.c32
-     - liblua.c32
-     - vesamenu.c32
-     - hdt.c32
-     - libcom32.c32
-     - libmenu.c32
-     - poweroff.c32
+ - name: IMAGING - Define imaging variables for Debian
+   set_fact:
+     PXELINUX_PATH: "/usr/lib/PXELINUX"
+     SYSLINUX_PATH: "/usr/lib/syslinux/modules"
+     SYSLINUX_EFI_PATH: "/usr/lib/SYSLINUX.EFI"
+     PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
+     PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
+     PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
    when:
      - ansible_distribution == 'Debian'
 
- - name: IMAGING - Verify if link exist pxelinux.0
-   stat:
-     path: '/var/lib/pulse2/imaging/bootloader/pxelinux.0'
-   register: symlinkverifier
-
- - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
+ - name: IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
    file:
-     src: '{{ item.src }}'
-     dest: '{{ item.dest }}'
+     src: {{ item.src }}
+     dest: {{ item.dest }}
      state: link
      force: yes
    with_items:
-     - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/pci.ids' }
-     - { src: '/usr/share/syslinux/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libgpl.c32' }
-     - { src: '/usr/share/syslinux/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libutil.c32' }
-     - { src: '/usr/share/syslinux/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/reboot.c32' }
-     - { src: '/usr/share/syslinux/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/liblua.c32' }
-     - { src: '/usr/share/syslinux/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/vesamenu.c32' }
-     - { src: '/usr/share/syslinux/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/hdt.c32' }
-     - { src: '/usr/share/syslinux/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libcom32.c32' }
-     - { src: '/usr/share/syslinux/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libmenu.c32' }
-     - { src: '/usr/share/syslinux/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/poweroff.c32' }
-     - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/pci.ids' }
-     - { src: '/usr/share/syslinux/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/syslinux.efi'}
-     - { src: '/usr/share/syslinux/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libgpl.c32' }
-     - { src: '/usr/share/syslinux/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libutil.c32' }
-     - { src: '/usr/share/syslinux/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/reboot.c32' }
-     - { src: '/usr/share/syslinux/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/ldlinux.e64' }
-     - { src: '/usr/share/syslinux/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/liblua.c32' }
-     - { src: '/usr/share/syslinux/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/vesamenu.c32' }
-     - { src: '/usr/share/syslinux/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/hdt.c32' }
-     - { src: '/usr/share/syslinux/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libcom32.c32' }
-     - { src: '/usr/share/syslinux/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libmenu.c32' }
-     - { src: '/usr/share/syslinux/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32'}
-     - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/pci.ids'}
-   when:
-     - ansible_distribution == 'CentOS'
-     - symlinkverifier.stat.islnk is defined
-
- - name: IMAGING - Make symbolic link to bootloader-uefi32-uefi64
-   file:
-     src: '{{ item.src }}'
-     dest: '{{ item.dest }}'
-     state: link
-     force: yes
-   with_items:
-     - { src: '/usr/lib/syslinux/modules/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader/libgpl.c32' }
-     - { src: '/usr/lib/syslinux/modules/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader/libutil.c32' }
-     - { src: '/usr/lib/syslinux/modules/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader/reboot.c32' }
-     - { src: '/usr/lib/syslinux/modules/ldlinux.c32', dest: '/var/lib/pulse2/imaging/bootloader/ldlinux.c32' }
-     - { src: '/usr/lib/syslinux/modules/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader/liblua.c32' }
-     - { src: '/usr/lib/syslinux/modules/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/vesamenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader/hdt.c32' }
-     - { src: '/usr/lib/syslinux/modules/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader/libcom32.c32' }
-     - { src: '/usr/lib/syslinux/modules/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/libmenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader/poweroff.c32' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/pci.ids'}
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/pci.ids'}
-     - { src: '/usr/lib/syslinux/modules/efi32/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/inventory.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libgpl.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libutil.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/reboot.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/ldlinux.e32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/ldlinux.e32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/liblua.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/vesamenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/hdt.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libcom32.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/libmenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi32/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/poweroff.c32' }
-     - { src: '/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/syslinux.efi' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/pci.ids' }
-     - { src: '/usr/lib/syslinux/modules/efi64/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/inventory.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libgpl.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libutil.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/reboot.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/ldlinux.e64' }
-     - { src: '/usr/lib/syslinux/modules/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/liblua.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/vesamenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/hdt.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libcom32.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/libmenu.c32' }
-     - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/poweroff.c32' }
-   when:
-     - ansible_distribution == 'Debian'
-     - symlinkverifier.stat.islnk is defined
-
- - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
-   copy:
-     src: '{{ item.src }}'
-     dest: '{{ item.dest }}'
-   with_items:
-     - { src: '/usr/share/syslinux/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/share/hwdata/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/ldlinux.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/share/syslinux/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-   when:
-     - ansible_distribution == 'CentOS'
-     - symlinkverifier.stat.islnk is not defined
-
- - name: IMAGING - Copy if symbolic link doesn't work to bootloader-uefi32-uefi64
-   copy:
-     src: '{{ item.src }}'
-     dest: '{{ item.dest }}'
-   with_items:
-     - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/ldlinux.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/lib/syslinux/modules/bios/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader/' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/ldlinux.e32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/syslinux/modules/efi32/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi32/' }
-     - { src: '/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/share/misc/pci.ids', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/inventory.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libgpl.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libutil.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/reboot.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/ldlinux.e64', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/liblua.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/vesamenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/hdt.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libcom32.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/libmenu.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-     - { src: '/usr/lib/syslinux/modules/efi64/poweroff.c32', dest: '/var/lib/pulse2/imaging/bootloader-uefi64/' }
-   when:
-     - ansible_distribution == 'Debian'
-     - symlinkverifier.stat.islnk is not defined
+     - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/inventory.c32', dest: '{{ PULSE_BIOS_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/reboot.c32', dest: '{{ PULSE_BIOS_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/ldlinux.c32', dest: '{{ PULSE_BIOS_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/liblua.c32', dest: '{{ PULSE_BIOS_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/vesamenu.c32', dest: '{{ PULSE_BIOS_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/hdt.c32', dest: '{{ PULSE_BIOS_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/libcom32.c32', dest: '{{ PULSE_BIOS_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/bios/poweroff.c32', dest: '{{ PULSE_BIOS_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_BIOS_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_EFI_PATH }}/efi32/syslinux.efi', dest: '{{ PULSE_UEFI32_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/libgpl.c32', dest: '{{ PULSE_UEFI32_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/inventory.c32', dest: '{{ PULSE_UEFI32_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/ldlinux.c32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/liblua.c32', dest: '{{ PULSE_UEFI32_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/vesamenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/hdt.c32', dest: '{{ PULSE_UEFI32_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/libcom32.c32', dest: '{{ PULSE_UEFI32_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/libmenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/poweroff.c32', dest: '{{ PULSE_UEFI32_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI32_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_EFI_PATH }}/efi64/syslinux.efi', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/inventory.c32', dest: '{{ PULSE_UEFI64_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/ldlinux.c32', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/liblua.c32', dest: '{{ PULSE_UEFI64_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/vesamenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libcom32.c32', dest: '{{ PULSE_UEFI64_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
 
  - name: IMAGING - Create symlink
    file:
