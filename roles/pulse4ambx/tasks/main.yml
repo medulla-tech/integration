@@ -1571,8 +1571,8 @@
 
  - name: IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
    file:
-     src: {{ item.src }}
-     dest: {{ item.dest }}
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
      state: link
      force: yes
    with_items:
