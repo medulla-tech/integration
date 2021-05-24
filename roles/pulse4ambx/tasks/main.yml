@@ -1573,7 +1573,7 @@
    file:
      src: '{{ item.src }}'
      dest: '{{ item.dest }}'
-     state: link
+     state: hard
      force: yes
    with_items:
      - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
