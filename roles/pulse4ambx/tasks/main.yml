@@ -1594,7 +1594,7 @@
      - { src: '{{ SYSLINUX_PATH }}/efi32/inventory.c32', dest: '{{ PULSE_UEFI32_PATH }}/inventory.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi32/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi32/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
-     - { src: '{{ SYSLINUX_PATH }}/efi32/ldlinux.c32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi32/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
      - { src: '{{ SYSLINUX_PATH }}/efi32/liblua.c32', dest: '{{ PULSE_UEFI32_PATH }}/liblua.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi32/vesamenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/vesamenu.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi32/hdt.c32', dest: '{{ PULSE_UEFI32_PATH }}/hdt.c32' }
@@ -1607,7 +1607,7 @@
      - { src: '{{ SYSLINUX_PATH }}/efi64/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
-     - { src: '{{ SYSLINUX_PATH }}/efi64/ldlinux.c32', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/ldlinux.e64', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.e64' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/liblua.c32', dest: '{{ PULSE_UEFI64_PATH }}/liblua.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/vesamenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/vesamenu.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
@@ -1620,7 +1620,7 @@
    file:
      src: /var/lib/pulse2/imaging/bootmenus/pxelinux.cfg
      dest: '{{ item }}'
-     state: link
+     state: hard
      force: yes
    with_items:
      - /var/lib/pulse2/imaging/bootloader/pxelinux.cfg
