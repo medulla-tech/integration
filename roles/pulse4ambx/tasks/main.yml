@@ -1020,7 +1020,7 @@
      line: '  admin:'
      state: present
    when:
-     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+     - ansible_distribution == 'CentOS'
 
  - name: EJABBERD - Update user in ejabberd.yml for acl
    lineinfile:
@@ -1028,7 +1028,7 @@
      insertafter: '^  admin:$'
      line: '     user:'
    when:
-     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+     - ansible_distribution == 'CentOS'
 
  - name: EJABBERD - Add root@ and master@ {{ XMPP_DOMAIN }} as admin user in ejabberd.yml
    blockinfile:
@@ -1052,7 +1052,7 @@
      line: '    starttls: false'
      state: present
    when:
-     - ansible_distribution == 'CentOS' and ansible_distribution_version >= '7.7'
+     - ansible_distribution == 'CentOS'
 
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
