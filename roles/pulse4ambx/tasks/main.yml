@@ -2216,8 +2216,38 @@
 #                   Specifique CNAM                      #
 ##########################################################
 
- - name: crudini quick_deploy max_size_stanza_xmpp 0
+ - name: CNAM - crudini quick_deploy max_size_stanza_xmpp 0
    shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
+   no_log: True
+
+ - name: CNAM - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: CNAM - Update syncthing parameters to minimize upload bandwidth
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'maxSendKbps', value: '1' }
+   no_log: True
+
+ - name: CNAM - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: CNAM - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
    no_log: True
 
 ##########################################################
@@ -2260,3 +2290,31 @@
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
+
+ - name: FINAL - Check if ssh, syncthing and ejabberd are properly setup
+   wait_for:
+     port: '{{ item }}'
+     delay: 5
+     timeout: 30
+   with_items:
+     - 2222
+     - 22000
+     - 5222
+   register: check_ports
+   ignore_errors: True
+   no_log: True
+
+ - name: FINAL - Stop syncthing if errors
+   systemd:
+     name: syncthing@syncthing
+     enabled: no
+     state: stopped
+   when:
+     - check_ports.failed is defined
+   no_log: True
+
+ - name: FINAL - Print error and exit
+   fail:
+     msg: The checks failed. Please restart the job.
+   when:
+     - check_ports.failed is defined
