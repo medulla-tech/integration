@@ -2120,13 +2120,28 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
+ - name: RELAY - Get remote key from relay
+   slurp:
+     src: '{{ sshkey.ssh_key_file }}'
+   register: remotekey
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Copy remote key to pulsemain
+   copy:
+     dest: /root/.ssh/id_rsa_{{ ansible_hostname }}
+     content: '{{ remotekey.content | b64decode }}'
+     mode: '0600'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
  - name: RELAY - Disable Quick deploy
-   blockinfile:
-     dest: /etc/pulse-xmpp-agent/relayconf.ini.local
-     block: |
-       [quick_deploy]
-       max_size_stanza_xmpp = 0
-     state: present
+   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
    no_log: True
 
 ##########################################################
@@ -2216,10 +2231,6 @@
 #                   Specifique CNAM                      #
 ##########################################################
 
- - name: CNAM - crudini quick_deploy max_size_stanza_xmpp 0
-   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
-   no_log: True
-
  - name: CNAM - Stop service for editing configuration
    systemd:
      name: syncthing@{{ item }}
@@ -2248,6 +2259,23 @@
    wait_for:
      port: 22000
      delay: 5
+   no_log: True
+
+ - name: CNAM - Manage IPU synch
+   copy:
+     dest: /etc/cron.d/pulse-ipu-synch
+     content: |
+        # DISABLE IPU SHARING
+        00 23 * * * root echo 'Win10_*' > /var/lib/pulse2/packages/sharing/global/.stignore
+        # ENABLE IPU SHARING
+        00 4 * * * root sed '/Win10_/d' -i /var/lib/pulse2/packages/sharing/global/.stignore
+     mode: '0644'
+   no_log: True
+
+ - name: CNAM - Reload crond
+   systemd:
+     name: crond
+     state: reloaded
    no_log: True
 
 ##########################################################
