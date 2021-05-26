@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.7'
+     PLAYBOOK_VERSION: '3.1.8'
 
  - name: VERSION - Display version
    debug:
