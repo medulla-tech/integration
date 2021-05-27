@@ -1619,9 +1619,9 @@
 
  - name: IMAGING - Create symlink
    file:
-     src: /var/lib/pulse2/imaging/bootmenus/pxelinux.cfg
+     src: ../bootmenus
      dest: '{{ item }}'
-     state: hard
+     state: link
      force: yes
    with_items:
      - /var/lib/pulse2/imaging/bootloader/pxelinux.cfg
