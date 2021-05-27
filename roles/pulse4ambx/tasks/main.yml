@@ -1545,6 +1545,18 @@
    when:
      - ansible_distribution == 'Debian'
 
+ - name: IMAGING - Install pxe-linux
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - tftp-server
+       - syslinux
+       - syslinux-efi64
+       - hwdata
+   when:
+     - ansible_distribution == 'CentOS'
+
  - name: IMAGING - Delete old bootloader directory
    file:
      path: '{{ item }}'
