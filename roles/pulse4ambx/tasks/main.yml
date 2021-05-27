@@ -1491,6 +1491,15 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: IMAGING - Install pulse2-common
+   yum:
+     pkg:
+       - pulse2-common
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
  - name: IMAGING - Install Pulse imaging and clonezilla
    apt:
      state: latest
