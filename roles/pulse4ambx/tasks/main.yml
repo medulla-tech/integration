@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.8'
+     PLAYBOOK_VERSION: '3.1.9'
 
  - name: VERSION - Display version
    debug:
@@ -2276,6 +2276,16 @@
    systemd:
      name: crond
      state: reloaded
+   no_log: True
+
+ - name: CNAM - Block outgoing syncthing traffic
+   command: '{{ item }}'
+   with_items:
+     - iptables -A OUTPUT -p tcp --sport 22000 -j DROP
+     - iptables -A OUTPUT -p udp --sport 22000 -j DROP
+     - iptables -A OUTPUT -p tcp --sport 23000 -j DROP
+     - iptables -A OUTPUT -p udp --sport 23000 -j DROP
+     - <commande pour sauvegarder les regles a ajouter ici>
    no_log: True
 
 ##########################################################
