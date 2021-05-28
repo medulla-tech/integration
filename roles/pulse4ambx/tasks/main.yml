@@ -1594,8 +1594,8 @@
  - name: IMAGING - Define imaging variables for CentOS
    set_fact:
      PXELINUX_PATH: "/usr/share/syslinux"
-     SYSLINUX_PATH: "/usr/lib/modules"
-     SYSLINUX_EFI_PATH: "/usr/share/syslinux/efi64/syslinux.efi"
+     SYSLINUX_PATH: "/usr/share/syslinux"
+     SYSLINUX_EFI_PATH: "/usr/share/syslinux"
      PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
      PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
      PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
