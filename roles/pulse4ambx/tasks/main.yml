@@ -1648,6 +1648,53 @@
      - { src: '{{ SYSLINUX_PATH }}/efi64/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
      - { src: '{{ SYSLINUX_PATH }}/efi64/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
      - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
+   file:
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
+     state: hard
+     force: yes
+   with_items:
+     - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
+     - { src: '{{ SYSLINUX_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/reboot.c32', dest: '{{ PULSE_BIOS_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/ldlinux.c32', dest: '{{ PULSE_BIOS_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/liblua.c32', dest: '{{ PULSE_BIOS_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/vesamenu.c32', dest: '{{ PULSE_BIOS_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/hdt.c32', dest: '{{ PULSE_BIOS_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libcom32.c32', dest: '{{ PULSE_BIOS_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/poweroff.c32', dest: '{{ PULSE_BIOS_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_BIOS_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/reboot.c32', dest: '{{ PULSE_BIOS_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/ldlinux.c32', dest: '{{ PULSE_BIOS_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/liblua.c32', dest: '{{ PULSE_BIOS_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/vesamenu.c32', dest: '{{ PULSE_BIOS_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/hdt.c32', dest: '{{ PULSE_BIOS_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libcom32.c32', dest: '{{ PULSE_BIOS_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/poweroff.c32', dest: '{{ PULSE_BIOS_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI32_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_EFI_PATH }}/efi64/syslinux.efi', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/ldlinux.e64', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.e64' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/liblua.c32', dest: '{{ PULSE_UEFI64_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/vesamenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libcom32.c32', dest: '{{ PULSE_UEFI64_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/efi64/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
+   when:
+     - ansible_distribution == 'CentOS'
 
  - name: IMAGING - Create symlink
    file:
