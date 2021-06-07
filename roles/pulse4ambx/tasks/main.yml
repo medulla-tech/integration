@@ -2226,6 +2226,7 @@
    copy:
      src: /usr/lib/systemd/system/{{ item.src }}
      dest: /etc/systemd/system/{{ item.dest }}
+     remote_src: yes
    with_items:
      - { src: 'tftp.service', dest: 'tftp-server.service' }
      - { src: 'tftp.socket', dest: 'tftp-server.socket' }
