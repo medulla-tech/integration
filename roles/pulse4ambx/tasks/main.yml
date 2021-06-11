@@ -844,7 +844,9 @@
  - name: SYNCTHING - Create log file
    file:
      path: /var/log/syncthing.log
-     mode: 0666
+     mode: 0644
+     owner: syncthing
+     group: syncthing
      state: touch
    no_log: True
 
@@ -869,7 +871,7 @@
            daily
            rotate 7
            notifempty
-           create 0644 root root
+           create 0644 syncthing syncthing
            compress
        }
      dest: '/etc/logrotate.d/syncthing'
