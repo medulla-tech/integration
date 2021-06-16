@@ -1589,7 +1589,8 @@
      SYSLINUX_BIOS_PATH: "/usr/lib/syslinux/modules/bios"
      SYSLINUX_UEFI32_PATH: "/usr/lib/syslinux/modules/efi32"
      SYSLINUX_UEFI64_PATH: "/usr/lib/syslinux/modules/efi64"
-     SYSLINUX_EFI_PATH: "/usr/lib/SYSLINUX.EFI"
+     SYSLINUX_EFI32: "/usr/lib/SYSLINUX.EFI/efi32/syslinux.efi"
+     SYSLINUX_EFI64: "/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi"
      PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
      PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
      PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
@@ -1602,7 +1603,8 @@
      SYSLINUX_BIOS_PATH: "/usr/share/syslinux"
      SYSLINUX_UEFI32_PATH: "/usr/share/syslinux"
      SYSLINUX_UEFI64_PATH: "/usr/share/syslinux/efi64"
-     SYSLINUX_EFI_PATH: "/usr/share/syslinux"
+     SYSLINUX_EFI32: "/usr/share/syslinux/syslinux.com"
+     SYSLINUX_EFI64: "/usr/share/syslinux/efi64/syslinux.efi"
      PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
      PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
      PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
@@ -1627,7 +1629,7 @@
      - { src: '{{ SYSLINUX_BIOS_PATH }}/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
      - { src: '{{ SYSLINUX_BIOS_PATH }}/poweroff.c32', dest: '{{ PULSE_BIOS_PATH }}/poweroff.c32' }
      - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_BIOS_PATH }}/pci.ids' }
-     - { src: '{{ SYSLINUX_EFI_PATH }}/efi32/syslinux.efi', dest: '{{ PULSE_UEFI32_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_EFI32 }}', dest: '{{ PULSE_UEFI32_PATH }}/syslinux.efi' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI32_PATH }}/libgpl.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
@@ -1639,7 +1641,7 @@
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/libmenu.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI32_PATH }}/poweroff.c32' }
      - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI32_PATH }}/pci.ids' }
-     - { src: '{{ SYSLINUX_EFI_PATH }}/efi64/syslinux.efi', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_EFI64 }}', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
