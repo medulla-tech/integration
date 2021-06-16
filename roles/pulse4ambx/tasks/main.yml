@@ -3059,19 +3059,11 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
- - name: GLPI - Create view for pulse for CentOS
-   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/mmc/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
-   when:
-     - GLPI_DBHOST == 'localhost'
-     - INSTALL_TYPE == 'p'
-     - ansible_distribution == 'CentOS'
-
- - name: GLPI - Create view for pulse for Debian
+ - name: GLPI - Create view for pulse
    shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
-     - ansible_distribution == 'Debian'
 
  - name: GLPI - Get glpi superadmin id
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
