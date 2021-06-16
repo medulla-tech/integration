@@ -1617,6 +1617,7 @@
      dest: '{{ item.dest }}'
      state: hard
      force: yes
+   with_items:
      - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
      - { src: '{{ SYSLINUX_BIOS_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
      - { src: '{{ SYSLINUX_BIOS_PATH }}/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
