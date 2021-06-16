@@ -938,8 +938,11 @@
      - "LimitNOFILE=65535"
      - "LimitMEMLOCK=infinity"
 
- - name: MARIADB - Enable event scheduler
-   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb event_scheduler ON
+ - name: MARIADB - Define engine settings
+   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'event_scheduler', value: 'ON' }
+     - { parameter: 'sql_mode', value: 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION ' }
 
  - name: MARIADB - Define performance settings
    command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse mariadb {{ item.parameter }} {{ item.value }}
