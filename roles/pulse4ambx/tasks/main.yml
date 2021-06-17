@@ -818,6 +818,12 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
+ - name: LDAP - Start service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: slapd
+
 ##########################################################
 #                     Install mariadb                    #
 ##########################################################
