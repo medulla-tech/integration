@@ -1043,11 +1043,13 @@
               - root@{{ XMPP_DOMAIN }}
               - master@{{ XMPP_DOMAIN }}
 
- - name: EJABBERD - Disable starttls in ejabberd.yml
+ - name: EJABBERD - Disable starttls in ejabberd.yml for Debian
    lineinfile:
      path: /etc/ejabberd/ejabberd.yml
      regexp: '^\s*starttls: .*$'
      line: '    starttls: false'
+   when:
+     - ansible_distribution == 'Debian'
 
  - name: EJABBERD - Disable starttls in ejabberd.yml for CentOS
    lineinfile:
