@@ -1049,22 +1049,11 @@
               - root@{{ XMPP_DOMAIN }}
               - master@{{ XMPP_DOMAIN }}
 
- - name: EJABBERD - Disable starttls in ejabberd.yml for Debian
+ - name: EJABBERD - Disable starttls in ejabberd.yml
    lineinfile:
      path: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*starttls: .*$'
+     regexp: '^\s*#*\s*starttls: .*$'
      line: '    starttls: false'
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: EJABBERD - Disable starttls in ejabberd.yml for CentOS
-   lineinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*#* starttls: .*$'
-     line: '    starttls: false'
-     state: present
-   when:
-     - ansible_distribution == 'CentOS'
 
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
