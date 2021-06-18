@@ -4194,7 +4194,7 @@
        X-API-Key: '{{ apikey.stdout }}'
      method: POST
    with_items:
-     - pulsemaster_packages
+     - pulsemaster_global
      - pulsemaster_baseremoteagent
      - pulsemaster_bootmenus
      - pulsemaster_downloads
