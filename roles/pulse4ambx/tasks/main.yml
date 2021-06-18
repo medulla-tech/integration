@@ -256,7 +256,7 @@
    yum:
      state: latest
      pkg:
-       - pulse-xmpp-agent-relay-2.1.5
+       - pulse-xmpp-agent-relay-2.1.6
    when:
      - ansible_distribution == 'CentOS'
    no_log: True
@@ -2280,16 +2280,6 @@
      state: reloaded
    no_log: True
 
- - name: CNAM - Block outgoing syncthing traffic
-   command: '{{ item }}'
-   with_items:
-     - iptables -A OUTPUT -p tcp --sport 22000 -j DROP
-     - iptables -A OUTPUT -p udp --sport 22000 -j DROP
-     - iptables -A OUTPUT -p tcp --sport 23000 -j DROP
-     - iptables -A OUTPUT -p udp --sport 23000 -j DROP
-     - <commande pour sauvegarder les regles a ajouter ici>
-   no_log: True
-
 ##########################################################
 #                     Final steps                        #
 ##########################################################
@@ -2307,7 +2297,7 @@
  - name: FINAL - Force synch of syncthing folders from pulsemain
    command: 'curl -X POST -H "X-API-Key: {{ apikey.stdout }}" http://localhost:8384/rest/db/override?folder={{ item }}'
    with_items:
-     - pulsemaster_packages
+     - pulsemaster_global
      - pulsemaster_baseremoteagent
      - pulsemaster_bootmenus
      - pulsemaster_downloads
