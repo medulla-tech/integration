@@ -1048,6 +1048,7 @@
      block: |2
               - root@{{ XMPP_DOMAIN }}
               - master@{{ XMPP_DOMAIN }}
+              - rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
    lineinfile:
