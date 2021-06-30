@@ -2028,7 +2028,7 @@
    no_log: True
 
  - name: RELAY - Check if UCANSS share exists in database
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
    register: shareexists
    vars:
      ansible_ssh_user: root
@@ -2048,7 +2048,7 @@
    no_log: True
 
  - name: RELAY - Get id from pkgs_shares for the previous insert if it did not exist
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
    register: shareid
    vars:
      ansible_ssh_user: root
