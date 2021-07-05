@@ -2242,10 +2242,11 @@
      - syncthing-depl
    no_log: True
 
- - name: CNAM - Update syncthing parameters to minimize upload bandwidth
+ - name: CNAM - Update syncthing parameters to minimize upload bandwidth and allow on LAN
    command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { field: 'maxSendKbps', value: '1' }
+     - { field: 'limitBandwidthInLan', value: 'true' }
    no_log: True
 
  - name: CNAM - Restart service after editing configuration
