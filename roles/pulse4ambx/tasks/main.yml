@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.7'
+     PLAYBOOK_VERSION: '3.1.8'
 
  - name: VERSION - Display version
    debug:
@@ -3068,6 +3068,14 @@
    when:
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
+
+ - name: GLPI - Create view for pulse
+   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'Debian'
 
  - name: GLPI - Get glpi superadmin id
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
