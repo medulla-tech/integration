@@ -1843,28 +1843,16 @@
      owner: syncthing
      group: syncthing
 
- - name: SYNCTHING - Make variable for syncthing service path
-   set_fact:
-     SYNCTHING_SERVICE_PATH: '/etc/systemd/system/syncthing@.service.d'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: SYNCTHING - Make variable for syncthing service path
-   set_fact:
-     SYNCTHING_SERVICE_PATH: '/etc/systemd/user/syncthing.service.d'
-   when:
-     - ansible_distribution == 'Debian'
-
- - name: SYNCTHING - Ensure {{ SYNCTHING_SERVICE_PATH }} exists
+ - name: SYNCTHING - Ensure /etc/systemd/system/syncthing@.service.d exists
    file:
-     path: '{{ SYNCTHING_SERVICE_PATH }}'
+     path: /etc/systemd/system/syncthing@.service.d
      state: directory
      mode: '0755'
 
  - name: SYNCTHING - Separate syncthing logs
    copy:
      content: "[Service]\nExecStart=\nExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log\nStandardOutput=null\nStandardError=null "
-     dest: '{{ SYNCTHING_SERVICE_PATH }}/log.conf'
+     dest: /etc/systemd/system/syncthing@.service.d/log.conf
      mode: '0644'
 
  - name: SYNCTHING - Setup rotation of syncthing logs
