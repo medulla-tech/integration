@@ -1838,31 +1838,34 @@
  - name: SYNCTHING - Create log file
    file:
      path: /var/log/syncthing.log
-     mode: 0666
+     mode: 0644
      state: touch
+     owner: syncthing
+     group: syncthing
 
  - name: SYNCTHING - Make variable for syncthing service path
    set_fact:
-     SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/system/syncthing@.service'
+     SYNCTHING_SERVICE_PATH: '/etc/systemd/system/syncthing@.service.d'
    when:
      - ansible_distribution == 'CentOS'
 
  - name: SYNCTHING - Make variable for syncthing service path
    set_fact:
-     SYNCTHING_SERVICE_PATH: '/usr/lib/systemd/user/syncthing.service'
+     SYNCTHING_SERVICE_PATH: '/etc/systemd/user/syncthing.service.d'
    when:
      - ansible_distribution == 'Debian'
 
+ - name: SYNCTHING - Ensure {{ SYNCTHING_SERVICE_PATH }} exists
+   file:
+     path: '{{ SYNCTHING_SERVICE_PATH }}'
+     state: directory
+     mode: '0755'
+
  - name: SYNCTHING - Separate syncthing logs
-   lineinfile:
-     dest: "{{ SYNCTHING_SERVICE_PATH }}"
-     regexp: "{{ item.regex }}"
-     line: "{{ item.line }}"
-     insertafter: "{{ item.insertafter }}"
-   with_items:
-     - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
-     - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
-     - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
+   copy:
+     content: "[Service]\nExecStart=\nExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log\nStandardOutput=null\nStandardError=null "
+     dest: '{{ SYNCTHING_SERVICE_PATH }}/log.conf'
+     mode: '0644'
 
  - name: SYNCTHING - Setup rotation of syncthing logs
    copy:
