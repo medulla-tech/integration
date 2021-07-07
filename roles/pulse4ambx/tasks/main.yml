@@ -957,7 +957,7 @@
      - { parameter: 'query_cache_limit', value: '0' }
      - { parameter: 'query_cache_size', value: '0' }
      - { parameter: 'tmp_table_size', value: '2G' }
-     - { parameter: 'innodb_buffer_pool_size', value: '2G' }
+     - { parameter: 'innodb_buffer_pool_size', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}G' }
      - { parameter: 'key_buffer_size', value: '2G' }
      - { parameter: 'max_heap_table_size', value: '2G' }
      - { parameter: 'open_files_limit', value: 65535 }
