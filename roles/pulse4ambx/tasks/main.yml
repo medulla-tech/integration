@@ -823,6 +823,9 @@
      enabled: yes
      state: restarted
      name: slapd
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                     Install mariadb                    #
