@@ -819,6 +819,47 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
+ - name: LDAP - Cleanup data
+   file:
+     state: absent
+     path: '{{ item }}'
+   with_items:
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={1}cosine.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={2}nis.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: LDAP - Configure ldap olcDatabase
+   lineinfile:
+     path: '/etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif'
+     regexp: '{{ item.regexp }}'
+     line: '{{ item.line }}'
+     state: 'present'
+   with_items:
+    - { regexp: '^olcSuffix: .*$' , line: 'olcSuffix: {{ LDAP_BASEDN }}' }
+    - { regexp: '^olcRootDN: .*$', line: 'olcRootDN: cn=admin,{{ LDAP_BASEDN }}' }
+    - { regexp: '', line: 'olcRootPW: {{ ROOT_PASSWORD }}' }
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: LDAP - Copy ldap dbconfig
+   copy:
+     src: /usr/share/openldap-servers/DB_CONFIG.example
+     dest: /var/lib/ldap/
+     remote_src: yes 
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: LDAP - Change owner and group for ldap directory
+   file:
+     path: /var/lib/ldap/
+     owner: ldap
+     group: ldap   
+   when:
+     - ansible_distribution == 'CentOS'
+
  - name: LDAP - Start service
    systemd:
      enabled: yes
@@ -827,6 +868,45 @@
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Add entry basedn
+   ldap_entry:
+     dn: '{{ LDAP_BASEDN }}'
+     server-uri: ldap://localhost/
+     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+     bind_pw: '{{ ROOT_PASSWORD }}'
+     objectClass:
+       - top
+       - dcObject
+       - organization
+     attributes:
+       dc: '{{ ansible_domain.split(".", 1)[0] }}'
+       o: '{{ ansible_domain }}'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: LDAP - Add entry admin
+   ldap_entry:
+     dn: cn=admin,{{ LDAP_BASEDN }}
+     server-uri: ldap://localhost/
+     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+     bind_pw: '{{ ROOT_PASSWORD }}'
+     objectClass:
+       - organizationalRole
+     attributes:
+       cn: admin
+       description: LDAP administrator
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: LDAP - Add entry schema
+   command: '{{ item }}'
+   with_items:
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+   when:
+     - ansible_distribution == 'CentOS'
 
 ##########################################################
 #                     Install mariadb                    #
