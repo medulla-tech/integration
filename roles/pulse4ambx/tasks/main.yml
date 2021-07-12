@@ -3666,7 +3666,7 @@
        type: mysql
        host: '{{ DBHOST }}:{{ DBPORT }}'
        user: mmc
-       password: '{{ mmcuser_dbpass.stdout }}'
+       password: '{{ MMCUSER_DBPASS }}'
        database: xmppmaster
        access: direct
    register: admin_key
