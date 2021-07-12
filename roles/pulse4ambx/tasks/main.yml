@@ -800,6 +800,7 @@
      pkg:
        - openldap-servers
        - openldap-clients
+       - python-ldap
    when:
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE == 'p'
