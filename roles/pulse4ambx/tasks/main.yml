@@ -830,6 +830,7 @@
     - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Configure ldap olcDatabase
    lineinfile:
@@ -843,6 +844,7 @@
     - { regexp: '', line: 'olcRootPW: {{ ROOT_PASSWORD }}' }
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Copy ldap dbconfig
    copy:
@@ -851,6 +853,7 @@
      remote_src: yes 
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Change owner and group for ldap directory
    file:
@@ -859,6 +862,7 @@
      group: ldap   
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Start service
    systemd:
@@ -884,6 +888,7 @@
        o: '{{ ansible_domain }}'
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Add entry admin
    ldap_entry:
@@ -898,6 +903,7 @@
        description: LDAP administrator
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
  - name: LDAP - Add entry schema
    command: '{{ item }}'
@@ -907,6 +913,7 @@
     - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
    when:
      - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                     Install mariadb                    #
