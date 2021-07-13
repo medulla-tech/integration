@@ -870,7 +870,6 @@
      state: restarted
      name: slapd
    when:
-     - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
 
  - name: LDAP - Add entry basedn
@@ -4234,22 +4233,34 @@
      - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
- - name: PULSEAGENT - Generate agent
+ - name: PULSEAGENT - Generate full agent
    command: '{{ item }}'
    with_items:
      - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} {{ CLIENTS_OPTIONS }}
-     - /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads {{ CLIENTS_OPTIONS }}
      - /var/lib/pulse2/clients/generate-agent-package
    when:
      - CLIENTS_OPTIONS is defined
      - INSTALL_TYPE == 'p'
 
- - name: PULSEAGENT - Generate agent
+ - name: PULSEAGENT - Generate minimal agent
+   command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads {{ CLIENTS_OPTIONS }}
+   ignore_errors: true
+   when:
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate full agent
    command: '{{ item }}'
    with_items:
      - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }}
-     - /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads
      - /var/lib/pulse2/clients/generate-agent-package
+   when:
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate minimal agent
+   command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads
+   ignore_errors: true
    when:
      - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
