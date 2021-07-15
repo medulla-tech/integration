@@ -488,8 +488,11 @@
    command: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
    no_log: True
 
- - name: EJABBERD - Add root@{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
-   command: 'sed -i "/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - "root@{{ XMPP_DOMAIN }}" \n \ \ \ \ \ - "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"" /etc/ejabberd/ejabberd.yml'
+ - name: EJABBERD - Add root@{{ XMPP_DOMAIN }} and rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
+   command: sed -i "{{ item }}" /etc/ejabberd/ejabberd.yml
+   with items:
+     - '/^acl:$/,/^\s*##$/{//!d}'
+     - '/^acl:/a\ \ admin: \n \ \ \ user : \n \ \ \ \ \ - "root@{{ XMPP_DOMAIN }}" \n \ \ \ \ \ - "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"'
    no_log: True
 
  - name: EJABBERD - Disable starttls in ejabberd.yml
@@ -1027,6 +1030,7 @@
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
    no_log: True
 
  - name: SYNCTHING - Add root user
