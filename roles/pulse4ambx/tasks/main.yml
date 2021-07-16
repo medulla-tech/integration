@@ -301,6 +301,12 @@
    when:
      - ansible_distribution == 'Debian'
 
+ - name: PREPARATION - Set SELinux disabled
+   lineinfile:
+     regexp: '^SELINUX=.*$'
+     line: 'SELINUX=disabled'
+     path: /etc/selinux/config
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
