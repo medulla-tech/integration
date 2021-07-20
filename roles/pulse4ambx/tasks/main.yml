@@ -313,7 +313,7 @@
      line: 'SELINUX=disabled'
      path: /etc/selinux/config
    when:
-    - localdeviceid.stdout != "disabled"
+    - selinuxstatus.stdout != "disabled"
     - ansible_distribution == 'CentOS'
 
 ##########################################################
