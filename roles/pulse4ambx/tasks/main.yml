@@ -1945,7 +1945,11 @@
    no_log: True
 
  - name: RELAY - Create pkgs rule on cluster
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_global (pkgs_rules_algos_id, pkgs_cluster_ars_id, subject, permission) VALUES (3, {{ CLUSTER_ID }}, '^{{ ansible_hostname[:6] }}.*', 'rw')\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_global (pkgs_rules_algos_id, pkgs_cluster_ars_id, subject, permission) VALUES (3, {{ CLUSTER_ID }}, '{{ item.user }}', '{{ item.perms }}')\""
+   with_items:
+     - { user: '^{{ ansible_hostname[:6] }}.*', perms: 'rw' }
+     - { user: 'censept', perms: 'rw' }
+     - { user: 'dsup', perms: 'rw' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -2063,7 +2067,11 @@
    no_log: True
 
  - name: RELAY - Create permissions on UCANSS share in database
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, pkgs_shares_id) VALUES (1, 10, '^{{ ansible_hostname[:6] }}.*', {{ shareid.stdout }})\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, pkgs_shares_id) VALUES (1, 10, '{{ item }}', {{ shareid.stdout }})\""
+   with_items:
+     - ^{{ ansible_hostname[:6] }}.*
+     - censept
+     - dsup
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
