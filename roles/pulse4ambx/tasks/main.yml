@@ -304,8 +304,6 @@
  - name: PREPARATION - Check if SELinux is enabled
    shell: sestatus |grep 'SELinux status' | awk -F ':' '{print $2}' | tr -d ' '
    register: selinuxstatus
-   when:
-     - ansible_distribution == 'CentOS'
 
  - name: PREPARATION - Disable SELinux
    lineinfile:
@@ -313,8 +311,7 @@
      line: 'SELINUX=disabled'
      path: /etc/selinux/config
    when:
-    - selinuxstatus.stdout != "disabled"
-    - ansible_distribution == 'CentOS'
+     - (selinuxstatus.stdout != 'disabled') and (selinuxstatus.stdout != '')
 
 ##########################################################
 #                    Install base tools                  #
