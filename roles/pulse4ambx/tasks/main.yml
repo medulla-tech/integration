@@ -4158,7 +4158,7 @@
      - entityexists.stdout == ''
 
  - name: RELAY/SHARE - Check if cluster share exists in database
-   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND ars_id={{ RELAYSERVER_ID }} AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
    register: shareexists
    vars:
      ansible_ssh_user: root
