@@ -3262,6 +3262,7 @@
        - pulse-agent-installers
        - pulse-xmpp-master-substitute
        - pulse2-uuid-resolver
+       - pulse-debug-tools
    when:
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE == 'p'
@@ -3292,6 +3293,7 @@
        - pulse-xmpp-master-substitute
        - pulse-update-manager
        - pulse2-uuid-resolver
+       - pulse-debug-tools
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
