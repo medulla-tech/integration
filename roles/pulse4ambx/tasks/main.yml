@@ -1915,6 +1915,14 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
+ - name: SYNCTHING - Stop service for deleting any previous configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
  - name: SYNCTHING - Reset syncthing
    file:
      path: '{{ item }}'
