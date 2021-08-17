@@ -2086,6 +2086,36 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SYNCTHING - Stop discovery server
+   systemd:
+     name: stdiscosrv
+     state: stopped
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Configure discovery server
+   copy:
+     src: /var/lib/syncthing/.config/syncthing/{{ item.file }}
+     dest: /var/lib/syncthing-discosrv/{{ item.file }}
+     owner: syncthing-discosrv
+     group: syncthing
+     mode: '{{ item.mode }}'
+     remote_src: yes
+   with_items:
+     - { file: 'cert.pem', mode: '0644' }
+     - { file: 'key.pem', mode: '0600' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Start discovery server
+   systemd:
+     enabled: yes
+     daemon_reload: yes
+     state: restarted
+     name: stdiscosrv
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to PULSEMAIN_DEVICE_ID on relay
    set_fact:
      DISCOSRV_DEVICE_ID: '{{ PULSEMAIN_DEVICE_ID }}'
