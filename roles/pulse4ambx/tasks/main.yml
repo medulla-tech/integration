@@ -2305,6 +2305,34 @@
 #                     Final steps                        #
 ##########################################################
 
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: FINAL - Delete pending or ignored folders and devices
+   command: xmlstarlet ed --inplace -d "{{ item }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - configuration/device/ignoredFolder
+     - configuration/device/pendingFolder
+     - configuration/remoteIgnoredDevice
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: true
+
+ - name: SYNCTHING - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
  - name: FINAL - Get api key from syncthing on pulsemain
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
    register: apikey
