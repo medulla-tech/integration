@@ -4206,7 +4206,6 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-   no_log: True
 
  - name: RELAY/SHARE - Create cluster share in database if it did not exist
    command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')"
@@ -4330,7 +4329,6 @@
    with_items:
      - syncthing
      - syncthing-depl
-   no_log: True
 
  - name: FINAL - Delete pending or ignored folders and devices
    command: xmlstarlet ed --inplace -d "{{ item }}" /var/lib/syncthing/.config/syncthing/config.xml
@@ -4340,7 +4338,6 @@
      - configuration/remoteIgnoredDevice
    when:
      - INSTALL_TYPE != 'p'
-   no_log: true
 
  - name: SYNCTHING - Restart service after editing configuration
    systemd:
@@ -4349,7 +4346,6 @@
    with_items:
      - syncthing
      - syncthing-depl
-   no_log: True
 
  - name: FINAL - Get api key from syncthing on pulsemain
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
