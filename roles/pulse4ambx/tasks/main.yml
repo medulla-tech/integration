@@ -1607,6 +1607,7 @@
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
    no_log: True
 
  - name: SYNCTHINGDEPL - Add root user
