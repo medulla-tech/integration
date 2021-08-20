@@ -244,6 +244,7 @@
        - crudini
        - pwgen
        - xmlstarlet
+       - python3-yq
    when:
      - ansible_distribution == 'CentOS'
    no_log: True
