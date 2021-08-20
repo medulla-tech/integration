@@ -2855,6 +2855,7 @@
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
 
  - name: SYNCTHINGDEPL - Add root user
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml
