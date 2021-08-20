@@ -1099,6 +1099,32 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
+ - name: CNAM/SYNCTHING - Find relayvpn device id
+   command: xmlstarlet sel -t -v "configuration/device[contains(@name, '150001lw')]/@id" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: vpnid
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Set RELAYVPN_DEVICE_ID
+   set_fact:
+     RELAYVPN_DEVICE_ID: '{{ vpnid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Add relayvpn device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ RELAYVPN_DEVICE_ID }}' name='relayvpn' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
  - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
    command: xmlstarlet ed --inplace -d "configuration/device[@name='{{ XMPP_DOMAIN }}']" /var/lib/syncthing/.config/syncthing/config.xml
    vars:
