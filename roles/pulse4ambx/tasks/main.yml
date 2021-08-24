@@ -1040,6 +1040,7 @@
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
      - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
    no_log: True
 
  - name: SYNCTHING - Add root user
@@ -1609,6 +1610,7 @@
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
      - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
    no_log: True
 
  - name: SYNCTHINGDEPL - Add root user
@@ -1648,7 +1650,7 @@
    command: xmlstarlet ed --inplace -d "configuration/folder[@label='Default Folder']" /var/lib/syncthing-depl/.config/syncthing/config.xml
    no_log: True
 
- - name: SYNCTHING - Delete relayserver device on pulsemain syncthing-depl
+ - name: SYNCTHINGDEPL - Delete relayserver device on pulsemain syncthing-depl
    command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
@@ -1677,7 +1679,7 @@
      - INSTALL_TYPE != 'p'
    no_log: True
 
- - name: SYNCTHING - Delete pulsemain device on relay syncthing-depl
+ - name: SYNCTHINGDEPL - Delete pulsemain device on relay syncthing-depl
    command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
    when:
      - INSTALL_TYPE != 'p'
