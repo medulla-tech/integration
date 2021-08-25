@@ -1061,6 +1061,14 @@
    command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
    no_log: True
 
+ - name: SYNCTHINGDEPL - Define listen port to 22000
+   command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:22000" /var/lib/syncthing/.config/syncthing/config.xml'
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Define gui listen port to 8384
+   command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8384" /var/lib/syncthing/.config/syncthing/config.xml'
+   no_log: True
+
  - name: SYNCTHING - Get api key from syncthing
    command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
    register: apikey
