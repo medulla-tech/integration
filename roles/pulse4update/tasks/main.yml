@@ -286,6 +286,13 @@
 #                    Install syncthing                   #
 ##########################################################
 
+ - name: SYNCTHING - Backup syncthing config file to be used in case of rollback
+   copy:
+     src: '/var/lib/syncthing/.config/syncthing/config.xml'
+     dest: '/tmp/config.xml'
+     remote_src: yes
+   no_log: True
+
  - name: SYNCTHING - Install syncthing
    yum:
      pkg:
