@@ -1,0 +1,1277 @@
+---
+
+##########################################################
+#                         Version                        #
+##########################################################
+
+ - name: VERSION - Set version for this playbook
+   set_fact:
+     PLAYBOOK_VERSION: '3.2.0'
+
+ - name: VERSION - Display version
+   debug:
+     msg:
+     - "Pulse4Update Playbook Version: {{ PLAYBOOK_VERSION }}"
+     
+     
+##########################################################
+#                         Checks                         #
+##########################################################
+
+ - name: PRE-CHECKS - Check platform requierement
+   fail:
+     msg: The OS platform is outdated ( {{ ansible_distribution }} , {{ ansible_distribution_version }} )
+   when: 
+     - ansible_distribution == 'CentOS'
+     - ansible_distribution_version < 7.6
+   
+
+##########################################################
+#                    Compute variables                   #
+##########################################################
+
+ - name: VARS - Set XMPP_DOMAIN to ansible_hostname if not on pulsemain
+   set_fact:
+     XMPP_DOMAIN: "{{ ansible_hostname }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: VARS - Set SERVER_FQDN to ansible_fqdn
+   set_fact:
+     SERVER_FQDN: "{{ ansible_fqdn }}"
+   when:
+     - SERVER_FQDN == ''
+   no_log: True
+
+ - name: VARS - Set IP_ADDRESS if INTERFACE defined
+   set_fact:
+     IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+   when:
+     - INTERFACE != ''
+   no_log: True
+
+ - name: VARS - Set IP_ADDRESS if INTERFACE not defined
+   set_fact:
+     IP_ADDRESS: "{{ ansible_default_ipv4.address }}"
+   when:
+     - INTERFACE == ''
+   no_log: True
+
+ - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE defined
+   set_fact:
+     IP_REMOTE_SERVER: "{{ vars['ansible_'~INTERFACE_TO_PULSE].ipv4.address }}"
+   when:
+     - INTERFACE_TO_PULSE != ''
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE not defined
+   set_fact:
+     IP_REMOTE_SERVER: "{{ ansible_default_ipv4.address }}"
+   when:
+     - INTERFACE_TO_PULSE == ''
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: VARS - Set CLUSTER_NAME to MULTISITE_ENTITY for relay
+   set_fact:
+     CLUSTER_NAME: "{{ MULTISITE_ENTITY }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - MULTISITE_ENTITY != ''
+   no_log: True
+
+ - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname }}"
+   when:
+     - MULTISITE_ENTITY == ''
+     - MAIN_ENTITY == ''
+   no_log: True
+
+ - name: CNAM - Get location of AMBox
+   command: "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} -s glpi -e \"SELECT glpi_locations.completename FROM glpi_locations LEFT JOIN glpi_computers ON glpi_computers.locations_id=glpi_locations.id WHERE glpi_computers.name = '{{ ansible_hostname }}'\""
+   register: ambxlocation
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM - Get entity of AMBox
+   command: "mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p{{ GLPI_DBPASSWD }} -s glpi -e \"SELECT glpi_entities.completename FROM glpi_entities LEFT JOIN glpi_computers ON glpi_computers.entities_id=glpi_entities.id WHERE glpi_computers.name = '{{ ansible_hostname }}'\""
+   register: ambxentity
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM - Set CLUSTER_DESCRIPTION to AMBox entity and location
+   set_fact:
+     CLUSTER_DESCRIPTION: "{{ ambxentity.stdout.split(' > ')[3:] | join(' > ') | regex_replace (\"'\",\" \") }} # {{ ambxlocation.stdout | regex_replace (\"'\",\" \") }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM - Set CLUSTER_NAME to MD5 hash of AMBox description prefixed with UCANSS number
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname[:6] }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+##########################################################
+#                  Preparation checks                    #
+##########################################################
+
+ - name: PREPARATION - Make sure ssh key exists
+   user:
+     name: root
+     generate_ssh_key: yes
+     ssh_key_bits: 2048
+   register: sshkey
+   no_log: True
+
+##########################################################
+#                    Install base tools                  #
+##########################################################
+
+ - name: BASE - Install tools needed for the setup
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+       - pwgen
+       - xmlstarlet
+       - yq
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+##########################################################
+#                   Install pulse relay                  #
+##########################################################
+
+ - name: PULSE - Install pulse-xmpp-agent-relay
+   yum:
+     state: latest
+     pkg:
+       - pulse-xmpp-agent-relay
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+##########################################################
+#                     Install apache                     #
+##########################################################
+
+ - name: APACHE - Define APACHE_CONF_PATH for CentOS
+   set_fact:
+     APACHE_CONF_PATH: "/etc/httpd/conf.d"
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+##########################################################
+#                    Install ejabberd                    #
+##########################################################
+
+ - name: EJABBERD - Add root, master and rs{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
+   command: yq eval '{{ item }}' --inplace /etc/ejabberd/ejabberd.yml
+   with_items:
+     - del(.acl.admin)
+     - .acl.admin.user = ["root@{{ XMPP_DOMAIN }}", "master@{{ XMPP_DOMAIN }}", "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"]
+   no_log: True
+
+ - name: EJABBERD - Restart service
+   systemd:
+     name: ejabberd
+     state: restarted
+   no_log: True
+
+ - name: EJABBERD - Pause for 5 seconds to build ejabberd domain
+   pause:
+     seconds: 5
+   no_log: True
+
+ - name: EJABBERD - Update ejabberd.yml
+   shell: |
+    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 10000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*subject.*/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i  '/^[[:space:]]*body.*/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/body: ""/ {n;N; s/^/    ##/gm }' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
+    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 60\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_admin_extra:/{s/## //}' /etc/ejabberd/ejabberd.yml
+   no_log: True
+
+ - name: EJABBERD - Restart service
+   systemd:
+     name: ejabberd
+     state: restarted
+   no_log: True
+
+ - name: EJABBERD - Pause for 2 to 300 seconds to enable ejabberd start
+   wait_for:
+     port: 5222
+     delay: 2
+   no_log: True
+
+##########################################################
+#                    Install guacamole                   #
+##########################################################
+
+ - name: GUACAMOLE - Configure apache for pulsemain guacamole
+   copy:
+     content: |
+        <Location /guacamole-{{ XMPP_DOMAIN }}/>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ XMPP_DOMAIN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ XMPP_DOMAIN }}:8081/guacamole/
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
+        </Location>
+        <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ XMPP_DOMAIN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
+        </Location>
+        SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
+     dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != "p"
+   no_log: True
+
+ - name: GUACAMOLE - Reload apache on pulsemain
+   systemd:
+     name: httpd
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != "p"
+   no_log: True
+
+##########################################################
+#                    Install syncthing                   #
+##########################################################
+
+ - name: SYNCTHING - Install syncthing
+   yum:
+     pkg:
+       - syncthing
+       - syncthingmanager
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+ - name: SYNCTHING - Stop service for deleting any previous configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Reset syncthing
+   file:
+     path: '{{ item }}'
+     state: absent
+   with_items:
+     - '/var/lib/syncthing/.config'
+     - '/var/lib/syncthing/Sync'
+     - '/var/lib/syncthing-depl/.config'
+     - '/var/lib/syncthing-depl/Sync'
+   no_log: True
+
+ - name: SYNCTHING - Create user accounts
+   user:
+     name: '{{ item.name }}'
+     state: present
+     createhome: yes
+     home: '{{ item.home }}'
+     shell: /sbin/nologin
+     system: yes
+   with_items:
+     - { name: 'syncthing', home: '/var/lib/syncthing' }
+     - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
+   no_log: True
+
+ - name: SYNCTHING - Create log file
+   file:
+     path: /var/log/syncthing.log
+     mode: 0644
+     owner: syncthing
+     group: syncthing
+     state: touch
+   no_log: True
+
+ - name: SYNCTHING - Separate syncthing logs
+   lineinfile:
+     dest: "/usr/lib/systemd/system/syncthing@.service"
+     regexp: "{{ item.regex }}"
+     line: "{{ item.line }}"
+     insertafter: "{{ item.insertafter }}"
+   with_items:
+     - { regex: '^ExecStart=/usr/bin/syncthing .*$', line: 'ExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log', insertafter: '' }
+     - { regex: '^StandardOutput=.*$', line: 'StandardOutput=null', insertafter: '^Restart=.*$' }
+     - { regex: '^StandardError=.*$', line: 'StandardError=null', insertafter: 'StandardOutput=null' }
+   no_log: True
+
+ - name: SYNCTHING - Setup rotation of syncthing logs
+   copy:
+     content: |
+       /var/log/syncthing.log
+       {
+           missingok
+           daily
+           rotate 7
+           notifempty
+           create 0644 syncthing syncthing
+           compress
+       }
+     dest: '/etc/logrotate.d/syncthing'
+   no_log: True
+
+ - name: SYNCTHING - Enable services
+   systemd:
+     enabled: yes
+     daemon_reload: yes
+     state: restarted
+     name: 'syncthing@{{ item }}.service'
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
+   wait_for:
+     path: /var/lib/syncthing/.config/syncthing/config.xml
+   no_log: True
+
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing-depl start
+   wait_for:
+     path: /var/lib/syncthing-depl/.config/syncthing/config.xml
+   no_log: True
+
+ - name: SYNCTHING - Create backups of syncthing configure
+   copy:
+     src: '/var/lib/{{ item }}/.config/syncthing/config.xml'
+     dest: '/var/lib/{{ item }}/.config/syncthing/config.xml.orig'
+     remote_src: yes
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SYNCTHING - Get local device id for syncthing
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   register: localdeviceid
+   no_log: True
+
+ - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
+   no_log: True
+
+ - name: SYNCTHING - Setup local apache for syncthing
+   copy:
+     content: |
+       ProxyPass /syncthing/ http://localhost:8384/
+       <Location /syncthing/>
+           ProxyPassReverse http://localhost:8384/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing.conf'
+   no_log: True
+
+ - name: SYNCTHING - Reload apache
+   systemd:
+     name: httpd
+     state: reloaded
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+ - name: SYNCTHING - Setup pulsemain apache for relay syncthing
+   copy:
+     content: |
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Reload apache on pulsemain
+   systemd:
+     name: httpd
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+ - name: SYNCTHING - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: resid
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to PULSEMAIN_DEVICE_ID on relay
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ PULSEMAIN_DEVICE_ID }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SYNCTHING - Stop service for editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
+   command: 'xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
+   no_log: True
+
+ - name: SYNCTHING - Add root user
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
+   no_log: True
+
+ - name: SYNCTHING - Generate Syncthing root user hash
+   shell: "htpasswd -bnBC 10 '' {{ ROOT_PASSWORD }} | tr -d ':\n' | sed 's/$2y/$2a/'"
+   register: syncthing_pass
+   no_log: True
+
+ - name: SYNCTHING - Define ENCRYPTED_PASS
+   set_fact:
+     ENCRYPTED_PASS: "{{ syncthing_pass.stdout }}"
+   no_log: True
+
+ - name: SYNCTHING - Set root password to ENCRYPTED_PASS
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
+   no_log: True
+
+ - name: SYNCTHING - Define listen port to 22000
+   command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:22000" /var/lib/syncthing/.config/syncthing/config.xml'
+   no_log: True
+
+ - name: SYNCTHING - Define gui listen port to 8384
+   command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8384" /var/lib/syncthing/.config/syncthing/config.xml'
+   no_log: True
+
+ - name: SYNCTHING - Get api key from syncthing
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
+
+ - name: SYNCTHING - Set API_KEY
+   set_fact:
+     API_KEY: "{{ apikey.stdout }}"
+
+ - name: SYNCTHING - Configure API_KEY in stman
+   command: 'stman configure -k {{ API_KEY }}'
+
+ - name: SYNCTHING - Define XMPP_DOMAIN for device name
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']/@name" -v "{{ XMPP_DOMAIN }}" /var/lib/syncthing/.config/syncthing/config.xml
+   no_log: True
+
+ - name: SYNCTHING - Delete the default share
+   command: xmlstarlet ed --inplace -d "configuration/folder[@label='Default Folder']" /var/lib/syncthing/.config/syncthing/config.xml
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Delete all devices except local device on relay syncthing
+   command: xmlstarlet ed --inplace -d "configuration/device[@id!='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Add pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ PULSEMAIN_DEVICE_ID }}' name='pulse' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Edit pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'autoAcceptFolders', value: 'false' }
+     - { field: 'address', value: 'tcp://{{ PULSEMAIN_IP }}:22000' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Find relayvpn device id
+   command: xmlstarlet sel -t -v "configuration/device[contains(@name, '150001lw')]/@id" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: vpnid
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Set RELAYVPN_DEVICE_ID
+   set_fact:
+     RELAYVPN_DEVICE_ID: '{{ vpnid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: CNAM/SYNCTHING - Add relayvpn device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ RELAYVPN_DEVICE_ID }}' name='relayvpn' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
+   command: xmlstarlet ed --inplace -d "configuration/device[@name='{{ XMPP_DOMAIN }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Add relayserver device to pulsemain syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Edit relayserver device on pulsemain syncthing
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'address', value: 'tcp://{{ IP_ADDRESS }}:22000' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Restart service after editing configuration on pulsemain
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Restart service after editing configuration
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+   no_log: True
+
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+   no_log: True
+
+
+##########################################################
+#               Syncthing share packages                 #
+##########################################################
+
+ - name: SHARE - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SHARE - Stop service on pulsemain for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Get information about packages folder
+   stat:
+     path: /var/lib/pulse2/packages
+   register: packagesfolder
+
+ - name: SHARE - Delete packages folder if it is not a link
+   file:
+     state: absent
+     path: /var/lib/pulse2/packages
+   when: packagesfolder.stat is defined and packagesfolder.stat.islnk is not defined
+   no_log: True
+
+ - name: SHARE - Create symbolic link in /var/lib/pulse2/packages
+   file:
+     src: /telediffusion/4
+     dest: /var/lib/pulse2/packages
+     owner: syncthing
+     group: syncthing
+     state: link
+     force: yes
+   no_log: True
+
+ - name: SHARE - Create folder named after the UCANSS number on pulsemain
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/'
+     state: directory
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Check if UCANSS share exists on pulsemain syncthing
+   command: xmlstarlet sel -t -v "/configuration/folder[@id=\"pulsemaster_{{ ansible_hostname[:6] }}\"]/@id" -n /var/lib/syncthing/.config/syncthing/config.xml
+   register: syncthingshareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Create UCANSS share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="pulsemaster_{{ ansible_hostname[:6] }}" label="{{ ansible_hostname[:6] }}" path="/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - syncthingshareexists.stdout == ''
+   no_log: True
+
+ - name: SHARE - Edit UCANSS share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ ansible_hostname[:6] }}']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ ansible_hostname[:6] }}']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ ansible_hostname[:6] }}']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@id='pulsemaster_{{ ansible_hostname[:6] }}']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE != 'p'
+     - syncthingshareexists.stdout == ''
+   no_log: True
+
+ - name: SHARE - Delete all shares on ars
+   command: xmlstarlet ed --inplace -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Unshare all folders from main pulse if already shared
+   command: xmlstarlet ed --inplace -d "configuration/folder[@type='sendonly']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Remove destination folders if present
+   file:
+     path: '{{ item.destination }}'
+     state: absent
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: Capture folders to delete in syncthing on relays
+   find:
+     paths: /var/lib/syncthing/
+     file_type: directory
+     patterns: '/var/lib/syncthing/\d{6}$'
+     use_regex: yes
+   register: folderstodelete
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: Delete folders in syncthing on relays
+   file:
+     path: "{{ item.path }}"
+     state: absent
+   with_items: "{{ folderstodelete['files'] }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Delete unused shares on ars
+   command: xmlstarlet ed --inplace -d "configuration/folder[@destination='{{ item.path | replace('/var/lib/syncthing', '~') }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items: "{{ folderstodelete['files'] }}"
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Create destination folders
+   file:
+     path: '{{ item.destination }}'
+     state: directory
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/telediffusion/4/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Create syncthing special folder
+   file:
+     path: '{{ item.destination }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Create stignore file for downloads on relay
+   copy:
+     content: "reversessh"
+     dest: /var/lib/pulse2/clients/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Define ACLs on the folders with inheritance
+   acl:
+     path: '{{ item.destination }}'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Define ACLs on the folders
+   acl:
+     path: '{{ item.destination }}'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: no
+     state: present
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Create shares on relay
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Edit shares on relay
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ LOCAL_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@type='sendreceive']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Share all folders with ars from pulsemain
+   command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Restart service on pulsemain after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SHARE - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+##########################################################
+#                 Syncthing deployment                   #
+##########################################################
+
+ - name: SYNCTHINGDEPL - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Define listen port to 23000
+   command: 'xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Define gui listen port to 8385
+   command: 'xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml'
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 23000
+     delay: 5
+   no_log: True
+
+##########################################################
+#                  Relay server setup                    #
+##########################################################
+
+ - name: RELAY - Get cluster id for relay if it exists
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s xmppmaster -e \"SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'\""
+   register: existingclusterid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Set CLUSTER_ID if cluster already exists
+   set_fact:
+     CLUSTER_ID: "{{ existingclusterid.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout != ''
+   no_log: True
+
+ - name: RELAY - Create pkgs rule on cluster
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_global (pkgs_rules_algos_id, pkgs_cluster_ars_id, subject, permission) VALUES (3, {{ CLUSTER_ID }}, '{{ item.user }}', '{{ item.perms }}')\""
+   with_items:
+     - { user: '^{{ ansible_hostname[:6] }}.*', perms: 'rw' }
+     - { user: 'censept', perms: 'rw' }
+     - { user: 'dsup', perms: 'rw' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - existingclusterid.stdout == ''
+   no_log: True
+
+ - name: RELAY - Check if UCANSS share exists in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   register: shareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Create UCANSS share in database if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ ansible_hostname[:6] }}, '{{ ansible_hostname[:6] }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}')\""
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+   no_log: True
+
+ - name: RELAY - Get id from pkgs_shares for the previous insert if it did not exist
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs_shares WHERE name='{{ ansible_hostname[:6] }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}'\""
+   register: shareid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+   no_log: True
+
+ - name: RELAY - Create permissions on UCANSS share in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, pkgs_shares_id) VALUES (1, 10, '{{ item }}', {{ shareid.stdout }})\""
+   with_items:
+     - ^{{ ansible_hostname[:6] }}.*
+     - censept
+     - dsup
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+   no_log: True
+
+ - name: RELAY - Get remote key from relay
+   slurp:
+     src: '{{ sshkey.ssh_key_file }}'
+   register: remotekey
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Copy remote key to pulsemain
+   copy:
+     dest: /root/.ssh/id_rsa_{{ ansible_hostname }}
+     content: '{{ remotekey.content | b64decode }}'
+     mode: '0600'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Disable Quick deploy
+   shell: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
+   no_log: True
+
+##########################################################
+#                   Specifique CNAM                      #
+##########################################################
+
+ - name: CNAM - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: CNAM - Update syncthing parameters to minimize upload bandwidth and allow on LAN
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'maxSendKbps', value: '1' }
+     - { field: 'limitBandwidthInLan', value: 'true' }
+   no_log: True
+
+ - name: CNAM - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: CNAM - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+   no_log: True
+
+ - name: CNAM - Manage IPU synch
+   copy:
+     dest: /etc/cron.d/pulse-ipu-synch
+     content: |
+        # DISABLE IPU SHARING
+        00 4 * * 1-5 root echo 'Win10_*' > /var/lib/pulse2/packages/sharing/global/.stignore
+        # ENABLE IPU SHARING
+        00 23 * * * root sed '/Win10_/d' -i /var/lib/pulse2/packages/sharing/global/.stignore
+     mode: '0644'
+   no_log: True
+
+ - name: CNAM - Reload crond
+   systemd:
+     name: crond
+     state: reloaded
+   no_log: True
+
+##########################################################
+#                     Final steps                        #
+##########################################################
+
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: FINAL - Delete pending or ignored folders and devices
+   command: xmlstarlet ed --inplace -d "{{ item }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - configuration/device/ignoredFolder
+     - configuration/device/pendingFolder
+     - configuration/remoteIgnoredDevice
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: true
+
+ - name: SYNCTHING - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: FINAL - Get api key from syncthing on pulsemain
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: FINAL - Force synch of syncthing folders from pulsemain
+   command: 'curl -X POST -H "X-API-Key: {{ apikey.stdout }}" http://localhost:8384/rest/db/override?folder={{ item }}'
+   with_items:
+     - pulsemaster_global
+     - pulsemaster_baseremoteagent
+     - pulsemaster_bootmenus
+     - pulsemaster_downloads
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: FINAL - Pause for 30 seconds to finalize configs
+   pause:
+     seconds: 30
+   no_log: True
+
+ - name: FINAL - Restart pulse relay service
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: FINAL - Check if ssh, syncthing and ejabberd are properly setup
+   wait_for:
+     port: '{{ item }}'
+     delay: 5
+     timeout: 30
+   with_items:
+     - 2222
+     - 22000
+     - 5222
+   register: check_ports
+   ignore_errors: True
+   no_log: True
+
+ - name: FINAL - Stop syncthing if errors
+   systemd:
+     name: syncthing@syncthing
+     enabled: no
+     state: stopped
+   when:
+     - check_ports.failed is defined
+   no_log: True
+
+ - name: FINAL - Print error and exit
+   fail:
+     msg: The checks failed. Please restart the job.
+   when:
+     - check_ports.failed is defined

@@ -1,0 +1,71 @@
+---
+
+##########################################################
+#                         Version                        #
+##########################################################
+
+ - name: VERSION - Set version for this playbook
+   set_fact:
+     PLAYBOOK_VERSION: '1.0'
+
+ - name: VERSION - Display version
+   debug:
+     msg:
+     - "Pulse4Rollback Playbook Version: {{ PLAYBOOK_VERSION }}"
+         
+##########################################################
+#                         Checks                         #
+##########################################################
+
+ - name: PRE-CHECKS - Check platform requierement
+   fail:
+     msg: The OS platform is outdated ( {{ ansible_distribution }} , {{ ansible_distribution_version }} )
+   when: 
+     - ansible_distribution == 'CentOS'
+     - ansible_distribution_version < 7.6
+
+##########################################################
+#                        Rollback                        #
+##########################################################
+
+ - name: ROLLBACK - Stop service for putting back configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: ROLLBACK - Put backup of syncthing config file back in place
+   copy:
+     src: '/tmp/config.xml'
+     dest: '/var/lib/syncthing/.config/syncthing/config.xml'
+     remote_src: yes
+   no_log: True
+
+ - name: ROLLBACK - Downgrade syncthing
+   yum:
+     update_cache: yes
+     allow_downgrade: yes
+     state: present
+     pkg: syncthing-1.1.4
+   when:
+     - ansible_distribution == 'CentOS'
+   no_log: True
+
+ - name: ROLLBACK - Start service
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   no_log: True
+
+ - name: ROLLBACK - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+   no_log: True
+
