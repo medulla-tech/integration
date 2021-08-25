@@ -491,7 +491,7 @@
 
  - name: EJABBERD - Add root, master and rs{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
    command: yq eval '{{ item }}' --inplace /etc/ejabberd/ejabberd.yml
-   with items:
+   with_items:
      - del(.acl.admin)
      - .acl.admin.user = ["root@{{ XMPP_DOMAIN }}", "master@{{ XMPP_DOMAIN }}", "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"]
    no_log: True
