@@ -37,11 +37,15 @@
      - syncthing-depl
    no_log: True
 
- - name: ROLLBACK - Put backup of syncthing config file back in place
-   copy:
-     src: '/tmp/config.xml'
-     dest: '/var/lib/syncthing/.config/syncthing/config.xml'
-     remote_src: yes
+ - name: ROLLBACK - Reset syncthing
+   file:
+     path: '{{ item }}'
+     state: absent
+   with_items:
+     - '/var/lib/syncthing/.config'
+     - '/var/lib/syncthing/Sync'
+     - '/var/lib/syncthing-depl/.config'
+     - '/var/lib/syncthing-depl/Sync'
    no_log: True
 
  - name: ROLLBACK - Downgrade syncthing

@@ -1,7 +1,7 @@
 ---
-- name: Pulse4
+- name: Pulse4Update
   hosts: all
   remote_user: root
   serial: 1
   roles:
-    - pulse4ambx
+    - pulse4update
