@@ -1138,37 +1138,6 @@
 #                   Specifique CNAM                      #
 ##########################################################
 
- - name: CNAM - Stop service for editing configuration
-   systemd:
-     name: syncthing@{{ item }}
-     state: stopped
-   with_items:
-     - syncthing
-     - syncthing-depl
-   no_log: True
-
- - name: CNAM - Update syncthing parameters to minimize upload bandwidth and allow on LAN
-   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
-   with_items:
-     - { field: 'maxSendKbps', value: '1' }
-     - { field: 'limitBandwidthInLan', value: 'true' }
-   no_log: True
-
- - name: CNAM - Restart service after editing configuration
-   systemd:
-     name: syncthing@{{ item }}
-     state: restarted
-   with_items:
-     - syncthing
-     - syncthing-depl
-   no_log: True
-
- - name: CNAM - Pause for 5 to 300 seconds to enable syncthing start
-   wait_for:
-     port: 22000
-     delay: 5
-   no_log: True
-
  - name: CNAM - Manage IPU synch
    copy:
      dest: /etc/cron.d/pulse-ipu-synch
