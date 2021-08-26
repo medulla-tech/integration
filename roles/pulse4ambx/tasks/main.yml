@@ -1110,7 +1110,7 @@
    no_log: True
 
  - name: CNAM/SYNCTHING - Find relayvpn device id
-   command: xmlstarlet sel -t -v "configuration/device[contains(@name, '150001lw')]/@id" /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet sel -t -v "configuration/device[contains(@name, '{{ RELAYVPN_HOSTNAME }}')]/@id" /var/lib/syncthing/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
