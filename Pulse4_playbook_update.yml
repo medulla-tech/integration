@@ -19,7 +19,7 @@
     - name: Log start
       lineinfile:
         path: /tmp/pulse4update.log
-        line: {{ item }}
+        line: "{{ item }}"
       loop:
         - "{{ lookup('pipe', 'date +%H:%M') }} {{ ansible_hostname }}: End"
         - ""
