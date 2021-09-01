@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.2.1'
+     PLAYBOOK_VERSION: '3.3.0'
 
  - name: VERSION - Display version
    debug:
@@ -257,7 +257,7 @@
    yum:
      state: latest
      pkg:
-       - pulse-xmpp-agent-relay-2.1.6
+       - pulse-xmpp-agent-relay-2.1.7
    when:
      - ansible_distribution == 'CentOS'
    no_log: True
