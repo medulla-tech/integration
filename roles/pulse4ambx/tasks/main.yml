@@ -1736,7 +1736,6 @@
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI32_PATH }}/libgpl.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
-     - { src: '{{ SYSLINUX_UEFI32_PATH }}/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/liblua.c32', dest: '{{ PULSE_UEFI32_PATH }}/liblua.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/vesamenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/vesamenu.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI32_PATH }}/hdt.c32' }
@@ -1754,7 +1753,6 @@
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/libcom32.c32', dest: '{{ PULSE_UEFI64_PATH }}/libcom32.c32' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
-     - { src: '{{ SYSLINUX_UEFI64_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
      - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
 
  - name: IMAGING - Create syslinux specific setup for Debian
@@ -1767,6 +1765,8 @@
      - { src: '{{ SYSLINUX_BIOS_PATH }}/inventory.c32', dest: '{{ PULSE_BIOS_PATH }}/inventory.c32' }
      - { src: '{{ SYSLINUX_UEFI32_PATH }}/inventory.c32', dest: '{{ PULSE_UEFI32_PATH }}/inventory.c32' }
      - { src: '{{ SYSLINUX_UEFI64_PATH }}/inventory.c32', dest: '{{ PULSE_UEFI64_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
    when:
      - ansible_distribution == 'Debian'
 
