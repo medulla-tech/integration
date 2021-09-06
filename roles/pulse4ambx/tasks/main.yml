@@ -863,7 +863,7 @@
  - name: LDAP - Copy ldap dbconfig
    copy:
      src: /usr/share/openldap-servers/DB_CONFIG.example
-     dest: /var/lib/ldap/
+     dest: /var/lib/ldap/DB_CONFIG
      remote_src: yes 
    when:
      - ansible_distribution == 'CentOS'
