@@ -889,7 +889,7 @@
  - name: LDAP - Add entry basedn
    ldap_entry:
      dn: '{{ LDAP_BASEDN }}'
-     server-uri: ldap://localhost/
+     server_uri: ldap://localhost/
      bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
      bind_pw: '{{ ROOT_PASSWORD }}'
      objectClass:
@@ -906,7 +906,7 @@
  - name: LDAP - Add entry admin
    ldap_entry:
      dn: cn=admin,{{ LDAP_BASEDN }}
-     server-uri: ldap://localhost/
+     server_uri: ldap://localhost/
      bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
      bind_pw: '{{ ROOT_PASSWORD }}'
      objectClass:
