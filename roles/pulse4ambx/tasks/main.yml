@@ -4116,6 +4116,7 @@
      - { type: 'inventory', jid: 'master_inv@pulse' }
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
+     - { type: 'deployment', jid: 'master_depl@pulse' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4128,6 +4129,7 @@
      - { type: 'inventory', jid: 'master_inv@pulse' }
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
+     - { type: 'deployment', jid: 'master_depl@pulse' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
