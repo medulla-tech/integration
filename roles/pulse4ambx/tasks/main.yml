@@ -1917,6 +1917,18 @@
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
 
+ - name: SYNCTHING - Set variable for name server of discosrv CentOS
+   set_fact:
+     DISCOSRV_NAME: 'syncthing-discosrv'
+   when:
+    - ansible_distribution == 'CentOS'
+
+ - name: SYNCTHING - Set variable for name server of discosrv Debian
+   set_fact:
+     DISCOSRV_NAME: 'stdiscosrv'
+   when:
+    - ansible_distribution == 'Debian'
+
  - name: SYNCTHING - Stop service for deleting any previous configuration
    systemd:
      name: syncthing@{{ item }}
@@ -2090,7 +2102,7 @@
 
  - name: SYNCTHING - Stop discovery server
    systemd:
-     name: stdiscosrv
+     name: '{{ DISCOSRV_NAME }}'
      state: stopped
    when:
      - INSTALL_TYPE == 'p'
@@ -2114,7 +2126,7 @@
      enabled: yes
      daemon_reload: yes
      state: restarted
-     name: stdiscosrv
+     name: '{{ DISCOSRV_NAME }}'
    when:
      - INSTALL_TYPE == 'p'
 
