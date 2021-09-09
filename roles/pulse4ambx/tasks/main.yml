@@ -485,19 +485,28 @@
      - ansible_distribution == 'CentOS'
    no_log: True
 
- - name: EJABBERD - Set XMPP domain in ejabberd.yml
-   command: 'sed -i "/^hosts:$/{n;s/.*/\ \ - \"{{ XMPP_DOMAIN }}\"/}" /etc/ejabberd/ejabberd.yml'
-   no_log: True
-
- - name: EJABBERD - Add root, master and rs{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
+ - name: EJABBERD - Configure ejabberd.yml
    command: yq eval '{{ item }}' --inplace /etc/ejabberd/ejabberd.yml
    with_items:
+     - del(.hosts)
+     - .hosts = ["localhost", "{{ XMPP_DOMAIN }}"] | .hosts[] style="double"
      - del(.acl.admin)
      - .acl.admin.user = ["root@{{ XMPP_DOMAIN }}", "master@{{ XMPP_DOMAIN }}", "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"]
-   no_log: True
-
- - name: EJABBERD - Disable starttls in ejabberd.yml
-   shell: 'sed -i "s/starttls: true/starttls: false/" /etc/ejabberd/ejabberd.yml'
+     - .registration_timeout = "infinity"
+     - .max_fsm_queue = 10000
+     - .shaper.normal = 100000000
+     - .shaper.fast = 1000000000
+     - .access_rules.muc_create[].allow = "admin"
+     - .access_rules.trusted_network[].allow = "all"
+     - .modules.mod_muc.access[].allow = "local"
+     - .modules.mod_register.welcome_message.subject = ""
+     - .modules.mod_register.ip_access = "trusted_network"
+     - .modules.mod_ping.send_pings = true
+     - .modules.mod_ping.ping_interval = 60
+     - .modules.mod_ping.timeout_action = "kill"
+     - .modules.mod_admin_extra = {}
+     - .listen[] |= select(.port == "5222").max_stanza_size = 8388608
+     - .listen[] |= select(.port == "5222").starttls = false
    no_log: True
 
  - name: EJABBERD - Restart service
@@ -523,31 +532,6 @@
 
  - name: EJABBERD - register root account
    command: "ejabberdctl register root {{ XMPP_DOMAIN }} {{ ROOT_PASSWORD }}"
-   no_log: True
-
- - name: EJABBERD - Update ejabberd.yml
-   shell: |
-    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 10000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*normal:.*$/ normal: 100000000/' /etc/ejabberd/ejabberd.yml
-    sed -i 's/^[[:space:]]*fast:.*$/ fast: 1000000000/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*subject.*/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i  '/^[[:space:]]*body.*/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
-    sed -i '/body: ""/ {n;N; s/^/    ##/gm }' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*certfile:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*##[[:space:]]*starttls:/{s/## //;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#certfile:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*#starttls:/{s/#//;s///}' /etc/ejabberd/ejabberd.yml
-    sed -i 's/mod_ping: {}/mod_ping:\n\ \ \ \ send_pings: true\n\ \ \ \ ping_interval: 60\n\ \ \ \ timeout_action: kill/' /etc/ejabberd/ejabberd.yml
-    sed -i '/^[[:space:]]*## mod_admin_extra:/{s/## //}' /etc/ejabberd/ejabberd.yml
    no_log: True
 
  - name: EJABBERD - Restart service
@@ -2268,15 +2252,6 @@
    copy:
      src: "/tmp/{{ ansible_hostname }}-temp.pem"
      dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
-   when:
-     - INSTALL_TYPE != 'p'
-   no_log: True
-
- - name: CERTS - Replace ejabberd.pem by the certificate
-   lineinfile:
-     dest: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*certfile: .*$'
-     line: '    certfile: "/etc/ejabberd/ejabberd.pem"'
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
