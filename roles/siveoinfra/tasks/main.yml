@@ -1,0 +1,109 @@
+---
+
+##########################################################
+#                    Compute variables                   #
+##########################################################
+
+- name: VARS - Set CIDR if INTERFACE defined
+  set_fact:
+    CIDR : "{{ vars['ansible_'~INTERFACE].ipv4.address }}/{{ vars['ansible_'~INTERFACE].ipv4.netmask }}"
+  when:
+    - (INTERFACE is defined) and (INTERFACE|length > 0)
+
+- name: VARS - Set CIDR if INTERFACE not defined
+  set_fact:
+    CIDR : "{{ ansible_default_ipv4.address }}/{{ ansible_default_ipv4.netmask }} | ansible.netcommon.ipaddr('network/prefix') }}"
+  when:
+    - (INTERFACE is undefined) or (INTERFACE|length == 0)
+
+- name: VARS - Set NETWORK_ADDRESS
+  set_fact:
+    NETWORK_ADDRESS : "{{ CIDR | ansible.netcommon.ipaddr('network/prefix') }}"
+
+##########################################################
+#                       SIVEO Infra                      #
+##########################################################
+
+- name: SIVEOINFRA - Create clusters and rules
+  command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "{{ item }}"
+  loop:
+    - UPDATE cluster_ars SET name='ars_private', description='Private cluster' WHERE id=2
+    - DELETE FROM cluster_ars WHERE id=3
+    - UPDATE has_cluster_ars SET id_cluster=2 WHERE id=3
+    - UPDATE rules SET level=1 WHERE id=9
+    - UPDATE rules SET level=2 WHERE id=5
+    - UPDATE rules SET level=9 WHERE id=7
+    - UPDATE rules SET level=7 WHERE id=8
+    - INSERT INTO has_relayserverrules (`rules_id`, `order`, `subject`, `relayserver_id`) VALUES (9, 0, '{{ NETWORK_ADDRESS }}', 2)
+    - INSERT INTO has_relayserverrules (`rules_id`, `order`, `subject`, `relayserver_id`) VALUES (9, 1, '{{ NETWORK_ADDRESS }}', 3)
+    - UPDATE relayserver SET mandatory=0 WHERE id>1;
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Imaging setup
+  command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' imaging -e "{{ item }}"
+  loop:
+    - DELETE FROM ImagingServer WHERE id>1
+    - DELETE FROM Entity WHERE id>1
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Set permissions for Workbench
+  command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
+  loop:
+    - GRANT ALL PRIVILEGES ON *.* TO '{{ DBADMINUSER }}'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}'
+    - FLUSH PRIVILEGES
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Install python modules needed for deploy_pulse_files_from_git.py
+  apt:
+    state: latest
+    pkg:
+      - python3-pip
+      - python3-git
+  when:
+    - INSTALL_TYPE == 'p'
+    - ansible_distribution == 'Debian'
+
+- name: SIVEOINFRA - Create substitutes
+  command: python3 -m pulse_debug_tools server --action=create_substitute --options=dryrun=no,type={{ item }}
+  loop:
+    - asse
+    - reg
+    - subs
+    - inv
+    - mon
+    - log
+    - depl
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Create Teams 
+  command: python3 -m pulse_debug_tools server --action=create_team --options=dryrun=no,team_name={{ item }},user_regex=^{{ team }}.*
+  loop:
+    - TeamA
+    - TeamB
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Provision users 
+  command: crudini --set /etc/mmc/plugins/{{ item.file }} {{ item.section }} {{ item.field }} '{{ item.value }}'
+  loop:
+    - { file: base.ini.local, section: authentication_baseldap, field: authonly, value: 'root TeamA-spo TeamA-jfk TeamA-kno' }
+    - { file: base.ini.local, section: authentication_externalldap, field: exclude, value: 'root TeamA-spo TeamA-jfk TeamA-kno' }
+    - { file: base.ini.local, section: provisioning, field: method, value: glpi }
+    - { file: glpi.ini.local, section: provisioning_glpi, field: profiles_order, value: Technician }
+    - { file: glpi.ini.local, section: provisioning_glpi, field: profile_acl_Technician, value: {{ TECHNICIAN_ACL }} }
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Restart mmc-agent
+  systemd:
+    enabled: yes
+    name: mmc-agent
+    state: restarted
+  when:
+    - INSTALL_TYPE == 'p'
+
+...
