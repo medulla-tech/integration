@@ -2120,6 +2120,8 @@
      name: syncthing-discosrv
      group: syncthing
      state: present
+   when:
+    - INSTALL_TYPE == 'p'
 
  - name: SYNCTHING - Configure discovery server
    copy:
