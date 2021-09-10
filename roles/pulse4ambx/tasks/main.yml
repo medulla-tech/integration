@@ -1119,46 +1119,29 @@
  - name: EJABBERD - Set home folder to /var/lib/ejabberd for ejabberd user
    shell: "usermod ejabberd -d /var/lib/ejabberd"
 
- - name: EJABBERD - Set XMPP domain in ejabberd.yml
-   blockinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^hosts:$'
-     marker: '# {mark} ANSIBLE MANAGED BLOCK hosts'
-     block: |2
-         - "{{ XMPP_DOMAIN }}"
-
- - name: EJABBERD - Update ejabberd.yml for acl
-   lineinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*#*\s*admin:$'
-     line: '  admin:'
-     state: present
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: EJABBERD - Update user in ejabberd.yml for acl
-   lineinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^  admin:$'
-     line: '     user:'
-   when:
-     - ansible_distribution == 'CentOS'
-
- - name: EJABBERD - Add root, master and rs{{ XMPP_DOMAIN }} as admin user in ejabberd.yml
-   blockinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^     user:$'
-     marker: '# {mark} ANSIBLE MANAGED BLOCK acl'
-     block: |2
-              - root@{{ XMPP_DOMAIN }}
-              - master@{{ XMPP_DOMAIN }}
-              - rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}
-
- - name: EJABBERD - Disable starttls in ejabberd.yml
-   lineinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     regexp: '^\s*#*\s*starttls: .*$'
-     line: '    starttls: false'
+ - name: EJABBERD - Configure ejabberd
+   command: yq eval '{{ item }}' --inplace /etc/ejabberd/ejabberd.yml
+   with_items:
+     - del(.hosts)
+     - .hosts = ["localhost", "{{ XMPP_DOMAIN }}"] | .hosts[] style="double"
+     - del(.acl.admin)
+     - .acl.admin.user = ["root@{{ XMPP_DOMAIN }}", "master@{{ XMPP_DOMAIN }}", "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"]
+     - .registration_timeout = "infinity"
+     - .max_fsm_queue = 10000
+     - .shaper.normal = 100000000
+     - .shaper.fast = 1000000000
+     - .access_rules.muc_create[].allow = "admin"
+     - .access_rules.trusted_network[].allow = "all"
+     - .modules.mod_muc.access[].allow = "local"
+     - .modules.mod_register.welcome_message.subject = ""
+     - .modules.mod_register.ip_access = "trusted_network"
+     - .modules.mod_ping.send_pings = true
+     - .modules.mod_ping.ping_interval = 60
+     - .modules.mod_ping.timeout_action = "kill"
+     - .modules.mod_admin_extra = {}
+     - .listen[] |= select(.port == "5222").max_stanza_size = 8388608
+     - .listen[] |= select(.port == "5222").starttls = false
+     - .listen[] |= select(.port == "5222").certfile = ""
 
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
@@ -1212,49 +1195,6 @@
 
  - name: EJABBERD - register root account
    command: ejabberdctl register root {{ XMPP_DOMAIN }} '{{ ROOT_PASSWORD }}'
-
- - name: EJABBERD - Update ejabberd.yml
-   lineinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     regexp: '{{ item.regexp }}'
-     line: '{{ item.line }}'
-   with_items:
-     - { regexp: '^#*\s*registration_timeout: .*$', line: 'registration_timeout: infinity' }
-     - { regexp: '^\s*#*\s*mod_register:$', line: '  mod_register:' }
-     - { regexp: '^\s*max_stanza_size: .*$', line: '    max_stanza_size: 8388608' }
-     - { regexp: '^max_fsm_queue: .*$', line: 'max_fsm_queue: 10000' }
-     - { regexp: '^\s*normal: .*$', line: '  normal: 100000000' }
-     - { regexp: '^\s*fast: .*$', line: '  fast: 1000000000' }
-     - { regexp: '^\s*mod_ping:.*$', line: '  mod_ping:' }
-     - { regexp: '^\s*#*\s*mod_admin_extra:.*$', line: '  mod_admin_extra: {}' }
-
- - name: EJABBERD - Configure mod_register
-   blockinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^  mod_register:$'
-     marker: '# {mark} ANSIBLE MANAGED BLOCK mod_register'
-     block: |2
-           welcome_message:
-             subject: ""
-           ip_access: trusted_network
-
- - name: EJABBERD - Configure trusted_network
-   blockinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^  trusted_network:'
-     marker: '# {mark} ANSIBLE MANAGED BLOCK trusted_network'
-     block: |2
-           - allow: all
-
- - name: EJABBERD - Configure mod_ping
-   blockinfile:
-     path: /etc/ejabberd/ejabberd.yml
-     insertafter: '^  mod_ping:$'
-     marker: '# {mark} ANSIBLE MANAGED BLOCK mod_ping'
-     block: |2
-           send_pings: true
-           ping_interval: 60
-           timeout_action: kill
 
  - name: EJABBERD - Restart service
    systemd:
