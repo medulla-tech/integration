@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.2.1'
+     PLAYBOOK_VERSION: '3.2.2'
 
  - name: VERSION - Display version
    debug:
@@ -592,7 +592,7 @@
    no_log: True
 
  - name: CNAM/SYNCTHING - Find relayvpn device id
-   command: xmlstarlet sel -t -v "configuration/device[contains(@name, '{{ RELAYVPN_HOSTNAME }}')]/@id" /var/lib/syncthing/.config/syncthing/config.xml
+   command: xmlstarlet sel -t -v "configuration/device[@name='{{ RELAYVPN_HOSTNAME }}']/@id" /var/lib/syncthing/.config/syncthing/config.xml
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
