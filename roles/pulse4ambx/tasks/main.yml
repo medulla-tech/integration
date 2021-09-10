@@ -325,7 +325,7 @@
        - crudini
        - xmlstarlet
        - acl
-       - python3-yq
+       - yq
    when:
      - ansible_distribution == 'CentOS'
 
@@ -337,7 +337,7 @@
        - crudini
        - xmlstarlet
        - acl
-       - python3-yq
+       - yq
    when:
      - ansible_distribution == 'Debian'
 
