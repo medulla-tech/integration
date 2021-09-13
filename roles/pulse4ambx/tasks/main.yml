@@ -1175,6 +1175,11 @@
      regexp: '^\s*certfile: .*$'
      replace: '    certfile: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"'
 
+ - name: EJABBERD - Change ower of ejabberd config file
+   file:
+     path: /etc/ejabberd/ejabberd.yml
+     owner: ejabberd
+
  - name: EJABBERD - Restart service
    systemd:
      name: ejabberd
