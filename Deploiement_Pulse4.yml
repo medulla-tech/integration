@@ -3,5 +3,26 @@
   hosts: all
   remote_user: root
   serial: 1
+
+  pre_tasks:
+    - name: Log start
+      lineinfile: 
+        path: /tmp/pulse4ambx.log
+        create: yes
+        mode: 0644
+        line: "{{ lookup('pipe', 'date +%H:%M') }} {{ ansible_hostname }}: Start"
+      delegate_to: localhost
+
   roles:
     - pulse4ambx
+
+  tasks:
+    - name: Log start
+      lineinfile:
+        path: /tmp/pulse4ambx.log
+        line: "{{ item }}"
+      loop:
+        - "{{ lookup('pipe', 'date +%H:%M') }} {{ ansible_hostname }}: End"
+        - ""
+      delegate_to: localhost
+...
