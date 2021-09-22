@@ -24,6 +24,14 @@
 #                       SIVEO Infra                      #
 ##########################################################
 
+- name: SIVEOINFRA - Install a few interesting tools
+  apt:
+    state: latest
+    pkg:
+      - vim
+      - htop
+      - ntop
+
 - name: SIVEOINFRA - Create clusters and rules
   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "{{ item }}"
   loop:
