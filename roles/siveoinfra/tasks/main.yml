@@ -31,6 +31,51 @@
       - vim
       - htop
       - ntop
+      - less
+      - open-vm-tools
+      - curl
+      - wget
+    state: latest
+    update_cache: yes
+      
+- name: SIVEOINFRA - Add all users ssh keys to root account
+  lineinfile:
+    path: /root/.ssh/authorized_keys
+    owner: root
+    group: root
+    mode: '0600'
+    create: yes
+    line: {{ item }}
+  loop:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChcb9EXJ9idGBGHmuPQ/masVeWFussGbtmo2aqbieWTCp8EsmsUUmLgRVtjoUMyKfWQnMhCV9ixZmNynBrgMrJamfZpE+xFpnkTVJeTOfpDEDClUQYzwXTEtMvL9IlLRLPX1KGYzfY/FG3wmhytp8dfagi/rE9Runj6gG+bzSzW8PD8/eBvLWz6hcAxLulMn4XnWhATAgsVxVmdCpOJyAfz01ZrYzVLTNZuf7+la2MRWh77u6sCNciijpZnqewbzDWk8QM32r2unRc1JwjUmIfidvNx4sO3H2yvBmRevx3JHD/jJjMRpyyf9iXiRMRy85RhxDhunCkKgcYtNboV8YT support@argo
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8rlHjo5RxBMRID1svBBVHj+XYrZ45e9ZjnWsR1h/IVBKHQpU6EOBIYPycpsHtGbREipB47hIUZssovncFabutW8YcNoW6SGTKFrbadONi0rh2KmQVJjUOGgI/UtkMoydUn0D4+ibUbYYzeqHFo3QloPACl833ZNPn73IHa/UdrwEDZ3I/eb0lvfALqFWGUaADSl7heZ7hPam2MxWfHn9Jt+JHw1ncY9BYiHrRRVgMytHZvOPiPy87sfx8DsUwZ0OTAiopjI8efw5nI7W2gR3R84KU0k7vVzUk3cX14VNTNmx3M4KAalLtV2WOlPY63abnsKJJl0+ItMGjSquhEZZr jfk@jfk-ThinkPad-T530
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD2cg/e1ACe6t/hyoymaQZ13bw+nKbbB/lvy/2C5tAxfZIFztKKva4TKDKol3v/hsKP3X94cynPTrbK/MwWFW3xrzee/iPQuHnVWjWcGoyhOz5EBmOlo/gHO/ZO9z+s5zO9Fu2PU095FsUo5+3AXp38hebln2vIgJt6A3ciyM3frRXmWqRAq+G1eM/rkL3axIOpObI7d1i2JsnPOv/Nx8G2wZSNYsryQjvUbh92kkK+tksMYYQv7jD6R1jbAALIKteRn87LrIScyHe9LkpsaznoxOGTxAWEJ2e0Zkb79QGaNkF/+VP5UEfW/k+ihGBrYKsWqPrd/YZ3L4+2mc7oI5k7 noel@MacBook-Air
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOHoichLXKojzZHpJPyh+LP3VIRBANdu1zBNaw7J58u9cN87XdVAG0uE+OpJnmJowzusKYXEMMYBw8TDvh3HNKPINMBHgygpVeNE6ZSSJM7acupcgQjAe0w9BcQXDiYkci3F0ZYT09oVKVaSiyNoAS/0IDSy8MmauYEBiwn/qpubAiwUqz3qSKpPs+3zOl3pj2fu9Zju0fd9CGP58Ym98nFGL9w1Y+kFc1DFJAoRa3GQ+pJH+5+v0cbwMr620XVHFN7xGNwZT/FB/uar3xKvYwOSR7MSRwgUqb/rU46v1KlSM3p4UVrqvGiIMuGOg/KotE2BFSfSVgTHqFD2sdS+ll noel@orchestra
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGyI8oIP8SgahPbMZ04Msr/vnI2gf4yx//QhEnZv8b++WIH0oibfK8g5Lz4HXReJRHzNXN1EhKQXoClgAKwv7zqkTLxV44tVcz8cwvfldkKNB+QxfL74JgsxCyNW8mpJdrJ71kbkT4Jt6AxeEd10ltQyqT7QDQMM7fxH8dbOCMcc7jtgOqwPXLy7hEumqkYxNuMxjrAbiDk2Nx0ddP2Ta4NJjSsGzUzSPsGhLVCO3+Wv6Ymss9Vacbe684ERwqz6odi5ZX0utfXXNphqqAckKCxurrI+LoWzt9MgWtR9iJC1joVDqRbggNm6bNNPZIdhmi5/yJrk3x7qwXb7uQNiE7 neoclust@localhost
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDRRyiSDBptNMse/nYY61hxMRHq95R5TohPlstr8kxCm2+Hzekd2V85znKMHhJqyBebo6FpVRYeZVyOjQB4EL06DPWget4jn/OJVJ7iavU7Rpi9eU1jkmE+M2Myt9WFJtGxeq7nxlDxn+LxEy2A3hGvs70pji3D+M4X3G/+dZVmsCn7Mz9lwOdzd+IUNsn6YIuUBbr380fKVxAmZpYIDJc9CvPj/fDvgYQBwPAa2k0grBiPR5YTmH+R7GhINWAh2aDFx5lUCiXjpGvdadHHZK6ahPOhAYxfAX1iuR+9qWSk1rNQy6P69rmIJOz5oTzfZVgpPITGpI5MQ7cYPyIvicb9 spointu@macbook
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsVltQ8g/4uxgmdn4kyFydYKy6AK09eYTJQ8C8T1k1w8Ok5uphZDg9ybaPHobCvzhQpSGlfQC8dDANSMWovqceAGApxkd3WQU6sFh+CE9iPK3rOrvSGJV3yysGuHBbfi2VRMgrvRyA9L+BCU7Su/Ozz/1lhiKwLtN6R2aoG/JNE5oAI5bXPM6MNx3mKlv4D7aSsGhsD4B1N/RpOUzr7yFzYfWFUHfO+tvU1mFLcxYNnFRdjE7vwXPLYkvdw4GWP+93EWl/3pViwjB1ae7xypkfx1G2Bd+DvOvnAqIHVblcvrUINXWDvZrhkyt6gk1k8h//A9aikxeC2CNO6i3BlmRN yvan@sparkle
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCssmEwSomtp8Oc3JBQm6zQZE0b+ZMH19CKeM+6iG5E2kHZNKoRQEknhhV66oAP3UMYGak+Bm3iQgaoZC4wGkwjpraUsIX4lzezYBWAVQsvBKzTA7JlVLDnoppoXVXVmAHUdYi/0kGlLNrlGZ4wujcZ9R9vdHYWVuKS/uNzCzz90D8aHxuwEyoAFlv9oOGhaDs2y7P8IuMKtRj1N5NHyoV7ZytxWob7ELdvSPx3NeYeYPQdKHpBjCgR461qILkwaXKCSiCT790jc6KTJpHCg2A8dxg4dPBC9NOUKnNOlri6n0nD6HPBN2LlYJLNeAkF50acgj1iRxXY1qGCt/u0oA9H yvan@falaou
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDxuTbvxmFMIObNne3nNrOjfH+G/zXsbHvXmgf/RDtrqQoykzFwvL0MzY6nyEroGtGKB2rCHXbQbtWa2j5E9ItJksVv6vnbt1VQxEvYQaj+SGUudr/rBOALjw5SziHrqDAW8jeQTZhfm99FQ5nCkHmngLfoyJAb5jkPppHHs2+jfM04sI/v9pro8I/LQGsvTGCt+2MUv5iDwsM7caPW9NoE/3Uxe6buvnLI8qikKVDLSy2g6XBtuQxvcDBqAS7qk9Q6sx1oblYE7nF/GSH6T9VyLpg8EIsZvfAtKwmR7TjAT3f339/UXwS1I7nyYycTUczfpKTKLju1orkKb6ISdhn6nNVPc7KTcgnRwDFvZsI3Ytc9bHQq5ASm1RSD5FxUmlS7ulyPlENDpUURvvGxeMaF/400VH4VwkP973QCERTyk9K1qdKFjI0bOseoSNbsJfq0c63/s/bzVxfiNZk/3R2qTDYRFgqtQRG8pcqiUhIkBps2rAmgmm1clxPXW1cG3js= yvan@rider
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8y9uLS6+Sdan2Ej19g7OP1MjSsF9RlZiGZafwLkfqtlAjG/MV8Yi2txTP2db5zND7x07Jb6yIskNRzUTvSK6CExi4Vl3+JEbHawNCeXRpaZ3rpi0sSSImWuguWf9Y2SkGgnP/IdSrYoZNzPhvLW4W/+jZgkC9FQVfbMqwUT1fS9gLPZsbFWFRkWILKWDWpJ4OUrwb+pIRrv2jKimS0r3nuZA/17O4AWcvTuv17f4PFxkLAqvJHhxO5Dbh1jX5RIkQaNDFRBuRefS/x3DtBxyRVXs04sSOsM+37H46FrDj7kk1i8D+453PoTnzDbxPq2+u+RwFp9UbV4eDXA8znqtWb/qlCFZpYyL9bj9+F2s3kCq1yJGoy7X+4opgadDax/VN+WzVEtlgDmF+tPlLWi9ICVIkJxI5SV4sfOe4E7pcnZqHTx+vcTUVadPnQoelgHSLliur8gg6T4S3dVsOPGmabWbZzD0gX5bhmvZdcEVafDyzQ+gWQkXRo30bGXtxI0YVSEKjHO7qdMyECf2JWdr/h8MKAt9yiLW+ldJLfZxqnW/DOcLsAAzkBgNkdab3/ER2obWsvssrlPxuYn1f9zgCFFe/A4bfU4pkBlvDjMjUF9EedFCNg0hGaeaVJkeuKkducFSPaeBTtj1eOyy8NmZcEw+CTCppXEaD6X0QVZ8bTw== William@LAPTOP-76SPQQ11
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDe+Fidc9A5f1myXEz1MpWDIH860rXDC8kEMAUbCS0VXR/mcABUuBTn4wVvw5Oj2hvrgxQOxfIhAd5b5VizsFDGFaKkqqQ8tx1+az4TOmLFAYt+P4QtyqsnIYXBnRT7rNHE/LCBhjuzg1Oe00ay7Y8AO2znYGvs5QE4jpjEYVotLF71wtLt4C+J0DAH2SRGiZDK7KYtL3lthF0jcy18MQ/+qhCqehlBUT+lc2vwBPkBJlCsGz0q7yYIc62htvESpPlN/ItCYJDJaEKxASpjCwqfrRGrhl2aCYP/W0FJovR8FKKzObiH8TGwg68OAOr6Rcsg0/XZ1oBdqB3F6uUNFwH31k77i/i+QDYA3sD/JEvaa7i8YwDqd0ZWCSgkEZc+w2Tz/ejNvo0WUn/lU5p1w7o2p5ucho2job5em6qPt02p8IUZSfPz+hNGQa8VmYMyuLi5UPc9d2YE/dn/DTFG0TkSca5vuWsvvrTLq+HH9KnHvpCgW+7pFwH07E9f/SjAFkM= root@WILLIAMSIVEO
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQClLAhpxnSYXlRvwCRZK39bPHOtguBu34z7EE2l/2IjDhM5YAnwIto+z44doRK47KlSfDC/iRqLNllT4mNFCEKFrrCNBxZyXCs8KwuY7spkekT9KxdCno7IpPFq0tGgKaW3Sjghru6gZ4WP/XGRbEBmSVoh8dZa2CBTXOBb6+6YriQuo/2M0zDEXSCPfNWkfT4lvdRfTRrHi7VcKYsY4IyKCu3N0cs42TZQL1M4RuQT+HcC6VkT8X289JFWdOEs1dPPZ9LRvj2+kCDUy52pPjz8mVQuNTbdSn34qFKsn5DbsWXdVG8iiC4s4mkH+gCv2XWW0cmM+NyLHJ9mI+mfAPkz Tom
+
+  - name: SIVEOINFRA - Disable password-based logins in SSH
+    lineinfile:
+      dest: "{{ sshdconfig }}"
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    with_items:
+      - { regexp: '^#?AuthenticationMethods', line: 'AuthenticationMethods publickey' }
+      - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+      - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+      - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+      - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin without-password' }
+
+  - name: SIVEOINFRA - Restart sshd
+    service:
+      name: sshd
+      state: restarted
 
 - name: SIVEOINFRA - Create clusters and rules
   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "{{ item }}"
