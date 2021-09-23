@@ -1201,10 +1201,43 @@
  - name: EJABBERD - register root account
    command: ejabberdctl register root {{ XMPP_DOMAIN }} '{{ ROOT_PASSWORD }}'
 
- - name: EJABBERD - Restart service
+ - name: EJABBERD - Create limits file of system
+   file: 
+     path: /etc/security/limits.d/ejabberd.conf
+     state: touch
+
+ - name: EJABBERD - Define limits of system
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/security/limits.d/ejabberd.conf"
+   with_items:
+     - "ejabberd soft  nofile  8192"
+     - "ejabberd hard  nofile  8192"
+
+ - name: EJABBERD - Create directory ejabberd.service.d
+   file:
+     path: /etc/systemd/system/ejabberd.service.d
+     state: directory
+
+ - name: EJABBERD - Create limits file for mariadb
+   file: 
+     path: /etc/systemd/system/ejabberd.service.d/limits.conf
+     state: touch
+
+ - name: EJABBERD - Define open_files number by systemd
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/systemd/system/ejabberd.service.d/limits.conf"
+   with_items:
+     - "[Service]"
+     - "LimitNOFILE=65535"
+     - "LimitMEMLOCK=infinity"
+
+ - name: EJABBERD - Daemon reload and restart service
    systemd:
-     name: ejabberd
      state: restarted
+     daemon_reload: yes
+     name: ejabberd
 
  - name: EJABBERD - Pause for 2 to 300 seconds to enable ejabberd start
    wait_for:
