@@ -14,10 +14,10 @@
      - "Playbook Version: {{ PLAYBOOK_VERSION }}"
 
  - name: VERSION - If CentOS, verify his version
-   command: rpm --eval '%{centos_ver}'
+   shell: rpm --eval '%{centos_ver}'
    register: result
    failed_when:
-     - result.rc != 7
+     - result.stdout != '7'
    when:
      - ansible_distribution == 'CentOS'
 
