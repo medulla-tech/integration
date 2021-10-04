@@ -209,6 +209,15 @@
    when:
      - ansible_distribution == 'CentOS'
 
+ - name: PREPARATION - Remove old SIVEO public key
+   ansible.builtin.apt_key:
+     id: '{{ item }}'
+     state: absent
+   with_items:
+     - CB9B37635473A6F7A8A1488A5D953FC16CF5F04C
+   when:
+     - ansible_distribution == 'Debian'
+
  - name: PREPARATION - Import SIVEO public key
    apt_key:
      state: present
