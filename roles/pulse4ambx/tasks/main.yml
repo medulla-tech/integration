@@ -1276,7 +1276,7 @@
      name: guacamole-tomcat
      question: guacamole-tomcat/restart-server
      vtype: boolean
-     value: true
+     value: 'True'
    when:
      - ansible_distribution == 'Debian'
 
