@@ -60,22 +60,22 @@
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDe+Fidc9A5f1myXEz1MpWDIH860rXDC8kEMAUbCS0VXR/mcABUuBTn4wVvw5Oj2hvrgxQOxfIhAd5b5VizsFDGFaKkqqQ8tx1+az4TOmLFAYt+P4QtyqsnIYXBnRT7rNHE/LCBhjuzg1Oe00ay7Y8AO2znYGvs5QE4jpjEYVotLF71wtLt4C+J0DAH2SRGiZDK7KYtL3lthF0jcy18MQ/+qhCqehlBUT+lc2vwBPkBJlCsGz0q7yYIc62htvESpPlN/ItCYJDJaEKxASpjCwqfrRGrhl2aCYP/W0FJovR8FKKzObiH8TGwg68OAOr6Rcsg0/XZ1oBdqB3F6uUNFwH31k77i/i+QDYA3sD/JEvaa7i8YwDqd0ZWCSgkEZc+w2Tz/ejNvo0WUn/lU5p1w7o2p5ucho2job5em6qPt02p8IUZSfPz+hNGQa8VmYMyuLi5UPc9d2YE/dn/DTFG0TkSca5vuWsvvrTLq+HH9KnHvpCgW+7pFwH07E9f/SjAFkM= root@WILLIAMSIVEO
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQClLAhpxnSYXlRvwCRZK39bPHOtguBu34z7EE2l/2IjDhM5YAnwIto+z44doRK47KlSfDC/iRqLNllT4mNFCEKFrrCNBxZyXCs8KwuY7spkekT9KxdCno7IpPFq0tGgKaW3Sjghru6gZ4WP/XGRbEBmSVoh8dZa2CBTXOBb6+6YriQuo/2M0zDEXSCPfNWkfT4lvdRfTRrHi7VcKYsY4IyKCu3N0cs42TZQL1M4RuQT+HcC6VkT8X289JFWdOEs1dPPZ9LRvj2+kCDUy52pPjz8mVQuNTbdSn34qFKsn5DbsWXdVG8iiC4s4mkH+gCv2XWW0cmM+NyLHJ9mI+mfAPkz Tom
 
-  - name: SIVEOINFRA - Disable password-based logins in SSH
-    lineinfile:
-      dest: "{{ sshdconfig }}"
-      regexp: "{{ item.regexp }}"
-      line: "{{ item.line }}"
-    with_items:
-      - { regexp: '^#?AuthenticationMethods', line: 'AuthenticationMethods publickey' }
-      - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
-      - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
-      - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
-      - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin without-password' }
+- name: SIVEOINFRA - Disable password-based logins in SSH
+  lineinfile:
+    dest: "{{ sshdconfig }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^#?AuthenticationMethods', line: 'AuthenticationMethods publickey' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+    - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin without-password' }
 
-  - name: SIVEOINFRA - Restart sshd
-    service:
-      name: sshd
-      state: restarted
+- name: SIVEOINFRA - Restart sshd
+  service:
+    name: sshd
+    state: restarted
 
 - name: SIVEOINFRA - Create clusters and rules
   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "{{ item }}"
