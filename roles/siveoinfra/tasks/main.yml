@@ -62,7 +62,7 @@
 
 - name: SIVEOINFRA - Disable password-based logins in SSH
   lineinfile:
-    dest: "{{ sshdconfig }}"
+    dest: /etc/ssh/sshd_config
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   with_items:
