@@ -30,7 +30,7 @@
     pkg:
       - vim
       - htop
-      - ntop
+      - ntopng
       - less
       - open-vm-tools
       - curl
