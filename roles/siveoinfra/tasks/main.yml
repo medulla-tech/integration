@@ -147,7 +147,7 @@
     - { file: base.ini.local, section: authentication_externalldap, field: exclude, value: 'root TeamA-spo TeamA-jfk TeamA-kno' }
     - { file: base.ini.local, section: provisioning, field: method, value: glpi }
     - { file: glpi.ini.local, section: provisioning_glpi, field: profiles_order, value: Technician }
-    - { file: glpi.ini.local, section: provisioning_glpi, field: profile_acl_Technician, value: {{ TECHNICIAN_ACL }} }
+    - { file: glpi.ini.local, section: provisioning_glpi, field: profile_acl_Technician, value: "{{ TECHNICIAN_ACL }}" }
   when:
     - INSTALL_TYPE == 'p'
 
