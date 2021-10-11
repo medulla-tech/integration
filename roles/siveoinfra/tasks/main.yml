@@ -133,7 +133,7 @@
     - INSTALL_TYPE == 'p'
 
 - name: SIVEOINFRA - Create Teams 
-  command: python3 -m pulse_debug_tools server --action=create_team --options=dryrun=no,team_name={{ item }},user_regex=^{{ team }}.*
+  command: python3 -m pulse_debug_tools server --action=create_team --options=dryrun=no,team_name={{ item }},user_regex=^{{ item }}.*
   loop:
     - TeamA
     - TeamB
