@@ -3875,7 +3875,7 @@
      - { parameter: 'request_type', value: 'public'}
      - { parameter: 'public_ip', value: '{{ PUBLIC_IP }}'}
    when:
-     - PUBLIC_IP != ''
+     - PUBLIC_IP is defined
 
  - name: RELAY - Configure guacamoleconf plugin
    command: crudini --set /etc/pulse-xmpp-agent/guacamoleconf.ini.local parameters guacamole_dbpasswd '{{ ROOT_PASSWORD }}'
