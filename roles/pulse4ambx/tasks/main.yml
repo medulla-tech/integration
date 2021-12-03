@@ -797,17 +797,28 @@
  - name: LDAP - Define parameters for debian
    debconf:
      name: slapd
-     question: '{{ item }}'
-     vtype: password
-     value: '{{ ROOT_PASSWORD }}'
+     question: '{{ item.question }}'
+     vtype: '{{ item.vtype }}'
+     value: '{{ item.value }}'
    with_items:
-     - slapd/password1
-     - slapd/password2
+     - { question: slapd/password1, vtype: password, value: '{{ ROOT_PASSWORD }}' }
+     - { question: slapd/password2, vtype: password, value: '{{ ROOT_PASSWORD }}' }
+     - { question: slapd/purge_database, vtype: boolean, value: 'True' }
+     - { question: slapd/move_old_database, vtype: boolean, value: 'True' }
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == 'p'
    no_log: True
 
+ - name: LDAP - Remove ldap server
+   apt:
+     state: absent
+     pkg:
+       - ldap-server
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+  
  - name: LDAP - Install ldap server
    apt:
      state: latest
@@ -3945,6 +3956,7 @@
      line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
    when:
      - INSTALL_TYPE == 'p'
+     - ansible_hostname != 'pulse'
 
  - name: RELAY - Update /etc/hosts
    lineinfile:
