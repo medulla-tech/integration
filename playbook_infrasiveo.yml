@@ -1,0 +1,7 @@
+---
+- name: Pulse setup for Siveo infrastructure
+  hosts: all
+  remote_user: root
+  serial: 1
+  roles:
+    - siveoinfra
