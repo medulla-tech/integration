@@ -3902,7 +3902,7 @@
      - downloadfile
      - guacamole
    when:
-     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
 
  - name: RELAY - Add configured plugins to list of plugins to be loaded
    command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist {{ item }}
@@ -3912,27 +3912,27 @@
      - downloadfile
      - guacamole
    when:
-     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
 
  - name: RELAY - Configure guacamole plugin for alternate clients vnc port
    command: crudini --set /etc/pulse-xmpp-agent/guacamole.ini.local parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}
    when:
-     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
 
  - name: RELAY - Add guacamole to list of plugins to be loaded
    command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamole
    when:
-     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
 
  - name: RELAY - Configure reverse_ssh_on plugin for alternate reversessh ssh port
    command: crudini --set /etc/pulse-xmpp-agent/reverse_ssh_on.ini.local parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}
    when:
-     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|int > 0)
 
  - name: RELAY - Add reverse_ssh_on to list of plugins to be loaded
    command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist reverse_ssh_on
    when:
-     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|length > 0)
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|int > 0)
 
  - name: RELAY/SYNCTHING - Update relay config with syncthing apikey and device id
    command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local syncthing-deploy {{ item.parameter }} {{ item.value }}
@@ -4294,7 +4294,7 @@
    set_fact:
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
    when:
-     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
      - CLIENTS_OPTIONS is defined
      - INSTALL_TYPE == 'p'
 
@@ -4302,7 +4302,7 @@
    set_fact:
      CLIENTS_OPTIONS: "--ssh-port={{ CLIENTS_SSH_PORT }}"
    when:
-     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|length > 0)
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
      - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
@@ -4310,7 +4310,7 @@
    set_fact:
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --vnc-port={{ CLIENTS_VNC_PORT }}"
    when:
-     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
      - CLIENTS_OPTIONS is defined
      - INSTALL_TYPE == 'p'
 
@@ -4318,7 +4318,7 @@
    set_fact:
      CLIENTS_OPTIONS: "--vnc-port={{ CLIENTS_VNC_PORT }}"
    when:
-     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|length > 0)
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
      - CLIENTS_OPTIONS is undefined
      - INSTALL_TYPE == 'p'
 
