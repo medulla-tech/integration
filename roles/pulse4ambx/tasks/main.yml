@@ -75,13 +75,13 @@
    set_fact:
      CLUSTER_NAME: "{{ ENTITY }}"
    when:
-     - (ENTITY is defined) and (ENTITY|length > 0)
+     - (ENTITY is defined) and (ENTITY|string|length > 0)
 
  - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
      CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
-     - (ENTITY is undefined) or (ENTITY|length == 0)
+     - (ENTITY is undefined) or (ENTITY|string|length == 0)
 
  - name: VARS - Generate needed passwords specific to pulsemain
    set_fact:
