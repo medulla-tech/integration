@@ -1077,15 +1077,21 @@
  - name: MARIADB - Define performance settings
    command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse.cnf mariadb {{ item.parameter }} {{ item.value }}
    with_items:
-     - { parameter: 'table_open_cache', value: '2000' }
      - { parameter: 'query_cache_limit', value: '0' }
      - { parameter: 'query_cache_size', value: '0' }
+     - { parameter: 'query_cache_type', value: '0' }
      - { parameter: 'tmp_table_size', value: '2G' }
-     - { parameter: 'innodb_buffer_pool_size', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}G' }
-     - { parameter: 'key_buffer_size', value: '2G' }
      - { parameter: 'max_heap_table_size', value: '2G' }
-     - { parameter: 'open_files_limit', value: 65535 }
+     - { parameter: 'key_buffer_size', value: '2G' }
+     - { parameter: 'innodb_buffer_pool_size', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}G' }
+     - { parameter: 'innodb_buffer_pool_instances', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}' }
+     - { parameter: 'innodb_file_per_table', value: '1' }
+     - { parameter: 'innodb_flush_log_at_trx_commit', value: '0' }
+     - { parameter: 'innodb_flush_method', value: 'o_direct' }
+     - { parameter: 'innodb_stats_on_metadata', value: '0' }
      - { parameter: 'max_connections', value: 512 }
+     - { parameter: 'table_open_cache', value: '2000' }
+     - { parameter: 'open_files_limit', value: 65535 }
 
  - name: MARIADB - Daemon reload and restart mariadb
    systemd:
