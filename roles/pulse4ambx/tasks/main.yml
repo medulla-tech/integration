@@ -48,21 +48,21 @@
    set_fact:
      IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
    when:
-     - INTERFACE != ''
+     - INTERFACE is defined
    no_log: True
 
  - name: VARS - Set IP_ADDRESS if INTERFACE not defined
    set_fact:
      IP_ADDRESS: "{{ ansible_default_ipv4.address }}"
    when:
-     - INTERFACE == ''
+     - INTERFACE is undefined
    no_log: True
 
  - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE defined
    set_fact:
      IP_REMOTE_SERVER: "{{ vars['ansible_'~INTERFACE_TO_PULSE].ipv4.address }}"
    when:
-     - INTERFACE_TO_PULSE != ''
+     - INTERFACE_TO_PULSE is defined
      - INSTALL_TYPE != 'p'
    no_log: True
 
@@ -70,7 +70,7 @@
    set_fact:
      IP_REMOTE_SERVER: "{{ ansible_default_ipv4.address }}"
    when:
-     - INTERFACE_TO_PULSE == ''
+     - INTERFACE_TO_PULSE is undefined
      - INSTALL_TYPE != 'p'
    no_log: True
 
@@ -79,15 +79,15 @@
      CLUSTER_NAME: "{{ MULTISITE_ENTITY }}"
    when:
      - INSTALL_TYPE != 'p'
-     - MULTISITE_ENTITY != ''
+     - MULTISITE_ENTITY is defined
    no_log: True
 
  - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
    set_fact:
      CLUSTER_NAME: "{{ ansible_hostname }}"
    when:
-     - MULTISITE_ENTITY == ''
-     - MAIN_ENTITY == ''
+     - MULTISITE_ENTITY is undefined
+     - MAIN_ENTITY is undefined
    no_log: True
 
  - name: CNAM - Get location of AMBox
