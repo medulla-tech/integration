@@ -1444,7 +1444,7 @@
    no_log: True
 
  - name: GUACAMOLE - Change tomcat port from 8080 to 8081
-   lineinfile:
+   replace:
      path: /etc/{{ TOMCAT_VERSION }}/server.xml
      regexp: 'Connector port="8080"'
      line: 'Connector port="8081"'
