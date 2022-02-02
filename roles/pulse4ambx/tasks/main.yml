@@ -1447,7 +1447,7 @@
    replace:
      path: /etc/{{ TOMCAT_VERSION }}/server.xml
      regexp: 'Connector port="8080"'
-     line: 'Connector port="8081"'
+     replace: 'Connector port="8081"'
 
  - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
    command: xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n 'Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"' /etc/{{ TOMCAT_VERSION }}/server.xml
