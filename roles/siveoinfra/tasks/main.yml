@@ -194,6 +194,32 @@
   when:
     - INSTALL_TYPE == 'p'
 
+- name: SIVEOINFRA - Make drop input and forward for safe pulse siveo infra
+  iptables:
+    chain: '{{ item }}'
+    policy: DROP
+  with_items:
+    - INPUT
+    - FORWARD
+  when:
+    - INSTALL_TYPE == 'p'
+    
+- name: SIVEOINFRA - Setup firewall rules on IPTABLE for safe pulse siveo infra
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+  with_items:
+    - 22
+    - 5222
+    - 8443
+    - 22000
+    - 443
+    - 9999
+  when:
+    - INSTALL_TYPE == 'p'
+
 - name: SIVEOINFRA - Restart mmc-agent
   systemd:
     enabled: yes
