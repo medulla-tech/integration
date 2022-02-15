@@ -1245,7 +1245,7 @@
      path: /etc/systemd/system/ejabberd.service.d
      state: directory
 
- - name: EJABBERD - Create limits file for mariadb
+ - name: EJABBERD - Create limits file for ejabberd
    file: 
      path: /etc/systemd/system/ejabberd.service.d/limits.conf
      state: touch
