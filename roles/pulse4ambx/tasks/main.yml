@@ -3873,7 +3873,7 @@
      - { section: 'connection', parameter: 'password', value: '"{{ XMPP_MASTER_PASSWORD }}"' }
      - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
      - { section: 'chat', parameter: 'domain', value: '{{ XMPP_DOMAIN }}' }
-     - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/pulse01a"' }
+     - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"' }
      - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
      - { section: 'type', parameter: 'geolocalisation', value: 'False' }
      - { section: 'plugin', parameter: 'pluginlist', value: '{{ PLUGINS_LIST }}' }
