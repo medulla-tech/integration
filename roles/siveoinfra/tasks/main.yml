@@ -35,7 +35,6 @@
       - open-vm-tools
       - curl
       - wget
-    state: latest
     update_cache: yes
 
 - name: SIVEOINFRA - Configure ntopng on port 3003
