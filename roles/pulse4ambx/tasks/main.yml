@@ -1847,7 +1847,7 @@
    when:
      - ansible_distribution == 'Debian'
 
-  - name: BACKUP - Install backup-server
+ - name: BACKUP - Install backup-server
    yum:
      update_cache: yes
      state: latest
