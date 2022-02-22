@@ -1829,7 +1829,7 @@
 #                  Install Pulse Backup                  #
 ##########################################################
 
- - name: 
+ - name: BACKUP - Configure storage path
    debconf:
      name: urbackup-server
      question: urbackup/backuppath
@@ -1847,6 +1847,62 @@
    when:
      - ansible_distribution == 'Debian'
 
+  - name: BACKUP - Install backup-server
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - urbackup-server
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: BACKUP/APACHE - Configure apache for pulse backup
+   copy:
+     content: |
+          Alias /urbackup /usr/share/urbackup/www 
+          <VirtualHost *:80> 
+            ServerAdmin webmaster@localhost
+            ServerName {{ SERVER_FQDN }}
+            DocumentRoot /usr/share/urbackup/www/ 
+            Redirect permanent / "^https?://{{ SERVER_FQDN }}/" 
+            ErrorLog ${APACHE_LOG_DIR}/error.log 
+            CustomLog ${APACHE_LOG_DIR}/access.log combined 
+          </VirtualHost> 
+          <IfModule mod_ssl.c> 
+            <VirtualHost _default_:443> 
+              ServerAdmin webmaster@localhost 
+              ServerName {{ SERVER_FQDN }}
+              DocumentRoot /usr/share/urbackup/www/ 
+              ServerSignature Off 
+              SSLProxyEngine On 
+              ProxyPreserveHost On 
+              ProxyPass "/urbackup/x" "fcgi://localhost:55413" 
+              ErrorLog ${APACHE_LOG_DIR}/error.log 
+              CustomLog ${APACHE_LOG_DIR}/access.log combined 
+                <FilesMatch "\.(cgi|shtml|phtml|php)$"> 
+                  SSLOptions +StdEnvVars 
+                </FilesMatch> 
+                <Directory /usr/lib/cgi-bin> 
+                  SSLOptions +StdEnvVars 
+                </Directory> 
+            </VirtualHost> 
+          </IfModule> 
+     dest: '{{ APACHE_CONF_PATH }}/backup.conf'
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP/APACHE - Enable pulse backup configuration
+   command: a2ensite backup.conf
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
 
 ##########################################################
 #                      Install Samba                     #
