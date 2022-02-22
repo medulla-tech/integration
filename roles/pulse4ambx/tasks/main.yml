@@ -1860,39 +1860,13 @@
    copy:
      content: |
           Alias /urbackup /usr/share/urbackup/www 
-          <VirtualHost *:80> 
-            ServerAdmin webmaster@localhost
-            ServerName {{ SERVER_FQDN }}
-            DocumentRoot /usr/share/urbackup/www/ 
-            Redirect permanent / "^https?://{{ SERVER_FQDN }}/" 
-            ErrorLog ${APACHE_LOG_DIR}/error.log 
-            CustomLog ${APACHE_LOG_DIR}/access.log combined 
-          </VirtualHost> 
-          <IfModule mod_ssl.c> 
-            <VirtualHost _default_:443> 
-              ServerAdmin webmaster@localhost 
-              ServerName {{ SERVER_FQDN }}
-              DocumentRoot /usr/share/urbackup/www/ 
-              ServerSignature Off 
-              SSLProxyEngine On 
-              ProxyPreserveHost On 
-              ProxyPass "/urbackup/x" "fcgi://localhost:55413" 
-              ErrorLog ${APACHE_LOG_DIR}/error.log 
-              CustomLog ${APACHE_LOG_DIR}/access.log combined 
-                <FilesMatch "\.(cgi|shtml|phtml|php)$"> 
-                  SSLOptions +StdEnvVars 
-                </FilesMatch> 
-                <Directory /usr/lib/cgi-bin> 
-                  SSLOptions +StdEnvVars 
-                </Directory> 
-            </VirtualHost> 
-          </IfModule> 
-     dest: '{{ APACHE_CONF_PATH }}/backup.conf'
+          ProxyPass "/urbackup/x" "fcgi://localhost:55413"
+     dest: '{{ APACHE_CONF_PATH }}/urbackup.conf'
    when:
      - INSTALL_TYPE == "p"
 
  - name: BACKUP/APACHE - Enable pulse backup configuration
-   command: a2ensite backup.conf
+   command: a2enconf urbackup
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE == "p"
