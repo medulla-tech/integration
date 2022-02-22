@@ -1833,6 +1833,7 @@
    debconf:
      name: urbackup-server
      question: urbackup/backuppath
+     vtype: string
      value: '/media/BACKUP/urbackup'
    when:
      - ansible_distribution == 'Debian'
