@@ -1826,6 +1826,28 @@
    command: sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
 
 ##########################################################
+#                  Install Pulse Backup                  #
+##########################################################
+
+ - name: 
+   debconf:
+     name: urbackup-server
+     question: urbackup/backuppath
+     value: '/media/BACKUP/urbackup'
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: BACKUP - Install backup-server
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - urbackup-server
+   when:
+     - ansible_distribution == 'Debian'
+
+
+##########################################################
 #                      Install Samba                     #
 ##########################################################
 
