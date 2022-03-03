@@ -1307,6 +1307,7 @@
      - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
    when:
      - INSTALL_TYPE != 'p'
+     - DELETE_PACKAGES is defined and DELETE_PACKAGES|bool == true
    no_log: True
 
  - name: Capture folders to delete in syncthing on relays
