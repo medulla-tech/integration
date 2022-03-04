@@ -2564,6 +2564,7 @@
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
    when:
      - INSTALL_TYPE != 'p'
+     - DELETE_PACKAGES is defined and DELETE_PACKAGES|bool == true
 
  - name: SHARE - Remove syncthing folders if present on relays
    file:
