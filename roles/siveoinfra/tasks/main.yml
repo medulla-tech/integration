@@ -20,6 +20,28 @@
   set_fact:
     NETWORK_ADDRESS : "{{ CIDR | ansible.netcommon.ipaddr('network/prefix') }}"
 
+- name: VARS - Set IPTABLE_SAVE_PATH
+  set_fact:
+    IPTABLE_SAVE_PATH : "/etc/sysconfig/iptables"
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: VARS - Set IPTABLE_SAVE_PATH
+  set_fact:
+    IPTABLE_SAVE_PATH : "/etc/iptables/rules.v4"
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: parse interfaces
+  set_fact:
+    PUBLIC_INTREFACE_NAME : "{{ item }}"
+  when:
+    - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
+    - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
+    - INSTALL_TYPE == 'p'
+  with_items:
+    - "{{ ansible_interfaces }}"
+
 ##########################################################
 #                       SIVEO Infra                      #
 ##########################################################
@@ -193,12 +215,40 @@
   when:
     - INSTALL_TYPE == 'p'
 
+- name: SIVEOINFRA - Install packages for iptable persistance
+  yum:
+    state: latest
+    pkg:
+      - iptables-services
+  when:
+    - ansible_distribution == 'CentOS'
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Install packages for iptable persistance
+  apt:
+    state: latest
+    pkg:
+      - iptables-persistent
+  when:
+    - ansible_distribution == 'Debian'
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Iptables flush filter
+  iptables:
+    chain: "{{ item }}"
+    flush: yes
+  with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
+  when:
+    - INSTALL_TYPE == 'p'
+
 - name: SIVEOINFRA - Setup firewall rules on IPTABLE for safe pulse siveo infra
   iptables:
     chain: INPUT
     protocol: tcp
     destination_port: '{{ item }}'
     jump: ACCEPT
+    ctstate: ESTABLISHED,RELATED
+    in_interface: '{{ PUBLIC_INTREFACE_NAME }}'
   with_items:
     - 22
     - 5222
@@ -207,19 +257,27 @@
     - 443
     - 9999
     - 80
+    - 3306
+    - 23000
   when:
     - INSTALL_TYPE == 'p'
 
 - name: SIVEOINFRA - Make drop input and forward for safe pulse siveo infra
   iptables:
     chain: '{{ item }}'
-    policy: DROP
+    jump: DROP
+    in_interface: '{{ PUBLIC_INTREFACE_NAME }}'
   with_items:
     - INPUT
     - FORWARD
   when:
     - INSTALL_TYPE == 'p'
-    
+
+- name: SIVEOINFRA - Save iptable rules
+  shell: "iptables-save > {{ IPTABLE_SAVE_PATH }}"
+  when:
+    - INSTALL_TYPE == 'p'
+
 - name: SIVEOINFRA - Restart mmc-agent
   systemd:
     enabled: yes
