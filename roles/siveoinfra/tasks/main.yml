@@ -278,6 +278,23 @@
   when:
     - INSTALL_TYPE == 'p'
 
+- name: SIVEOINFRA - Set if-pre-up iptables
+  blockinfile:
+    path: /etc/network/if-pre-up.d/iptables
+    create: yes
+    block: |
+      #!/bin/sh
+      /sbin/iptables-restore < /etc/iptables.up.rules
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA - Make executable to if-pre-up iptables
+  file:
+    path: /etc/network/if-pre-up.d/iptables
+    mode: a+x
+  when:
+    - INSTALL_TYPE == 'p'
+    
 - name: SIVEOINFRA - Restart mmc-agent
   systemd:
     enabled: yes
