@@ -32,7 +32,7 @@
   when:
     - ansible_distribution == 'Debian'
 
-- name: parse interfaces
+- name: VARS - Set PUBLIC_INTERFACE_NAME
   set_fact:
     PUBLIC_INTREFACE_NAME : "{{ item }}"
   when:
