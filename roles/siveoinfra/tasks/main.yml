@@ -36,9 +36,9 @@
   set_fact:
     PUBLIC_INTERFACE_NAME : "{{ item }}"
   when:
+    - INSTALL_TYPE == 'p'
     - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
     - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
-    - INSTALL_TYPE == 'p'
   with_items:
     - "{{ ansible_interfaces }}"
 
