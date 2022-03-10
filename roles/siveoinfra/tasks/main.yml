@@ -34,7 +34,7 @@
 
 - name: VARS - Set PUBLIC_INTERFACE_NAME
   set_fact:
-    PUBLIC_INTREFACE_NAME : "{{ item }}"
+    PUBLIC_INTERFACE_NAME : "{{ item }}"
   when:
     - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
     - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
@@ -248,7 +248,7 @@
     destination_port: '{{ item }}'
     jump: ACCEPT
     ctstate: ESTABLISHED,RELATED
-    in_interface: '{{ PUBLIC_INTREFACE_NAME }}'
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   with_items:
     - 22
     - 5222
@@ -266,7 +266,7 @@
   iptables:
     chain: '{{ item }}'
     jump: DROP
-    in_interface: '{{ PUBLIC_INTREFACE_NAME }}'
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   with_items:
     - INPUT
     - FORWARD
