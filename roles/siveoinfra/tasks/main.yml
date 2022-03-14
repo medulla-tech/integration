@@ -203,6 +203,7 @@
     - TeamB
   when:
     - INSTALL_TYPE == 'p'
+  ignore_errors: yes
 
 - name: SIVEOINFRA - Provision users 
   command: crudini --set /etc/mmc/plugins/{{ item.file }} {{ item.section }} {{ item.field }} '{{ item.value }}'
