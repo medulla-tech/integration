@@ -216,6 +216,57 @@
   when:
     - INSTALL_TYPE == 'p'
 
+ - name: SIVEOINFRA/SYNCTHING - Stop service for setting up discovery and relay server urls
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SIVEOINFRA/SYNCTHING - Define global announce server url
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "{{ SYNCTHING_DISCOVERY_URL }}" /var/lib/{{ item }}/.config/syncthing/config.xml
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SIVEOINFRA/SYNCTHING - Define syncthing relay server url
+   command: xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "{{ SYNCTHING_RELAY_URL }}" /var/lib/{{ item }}/.config/syncthing/config.xml
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SIVEOINFRA/SYNCTHING - Disable NAT
+   command: xmlstarlet ed --inplace -u "configuration/options/natEnabled" -v "False" /var/lib/{{ item }}/.config/syncthing/config.xml
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SIVEOINFRA/SYNCTHING - Restart service
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SIVEOINFRA/SYNCTHING - Configure announce servers on master and assessor plugins
+   command: crudini --set {{ item.file }} {{ item.section }} {{ item.parameter }} SYNCTHING_DISCOVERY_URL
+   with_items:
+     - { file: '/etc/mmc/plugins/xmppmaster.ini.local', section: 'syncthing', parameter: 'announce_server' }
+     - { file: '/etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local', section: 'parameters', parameter: 'announce_server' }
+     - { file: '/etc/mmc/plugins/assessor_agent.ini.local', section: 'parameters', parameter: 'announce_server' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SIVEOINFRA/SYNCTHING - Restart mmc-agent and assessor services
+   systemd:
+     name: {{ item }}
+     state: restarted
+   with_items:
+     - mmc-agent
+     - pulse-xmpp-master-substitute-assessor
+
 - name: SIVEOINFRA - Install packages for iptable persistance
   yum:
     state: latest
