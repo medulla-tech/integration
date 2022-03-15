@@ -266,6 +266,8 @@
   with_items:
     - mmc-agent
     - pulse-xmpp-master-substitute-assessor
+  when:
+    - INSTALL_TYPE == 'p'
 
 - name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
   yum:
