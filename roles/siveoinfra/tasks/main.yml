@@ -261,7 +261,7 @@
 
 - name: SIVEOINFRA/SYNCTHING - Restart mmc-agent and assessor services
   systemd:
-    name: {{ item }}
+    name: "{{ item }}"
     state: restarted
   with_items:
     - mmc-agent
