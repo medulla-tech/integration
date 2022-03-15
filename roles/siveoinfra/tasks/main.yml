@@ -20,15 +20,15 @@
   set_fact:
     NETWORK_ADDRESS : "{{ CIDR | ansible.netcommon.ipaddr('network/prefix') }}"
 
-- name: VARS - Set IPTABLE_SAVE_PATH
+- name: VARS - Set IPTABLES_SAVE_PATH
   set_fact:
-    IPTABLE_SAVE_PATH : "/etc/sysconfig/iptables"
+    IPTABLES_SAVE_PATH : "/etc/sysconfig/iptables"
   when:
     - ansible_distribution == 'CentOS'
 
-- name: VARS - Set IPTABLE_SAVE_PATH
+- name: VARS - Set IPTABLES_SAVE_PATH
   set_fact:
-    IPTABLE_SAVE_PATH : "/etc/iptables/rules.v4"
+    IPTABLES_SAVE_PATH : "/etc/iptables/rules.v4"
   when:
     - ansible_distribution == 'Debian'
 
@@ -267,7 +267,7 @@
      - mmc-agent
      - pulse-xmpp-master-substitute-assessor
 
-- name: SIVEOINFRA - Install packages for iptable persistance
+- name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
   yum:
     state: latest
     pkg:
@@ -276,7 +276,7 @@
     - ansible_distribution == 'CentOS'
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA - Install packages for iptable persistance
+- name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
   apt:
     state: latest
     pkg:
@@ -285,7 +285,7 @@
     - ansible_distribution == 'Debian'
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA - Iptables flush filter
+- name: SIVEOINFRA/IPTABLES - Iptables flush filter
   iptables:
     chain: "{{ item }}"
     flush: yes
@@ -293,13 +293,22 @@
   when:
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA - Setup firewall rules on IPTABLE for safe pulse siveo infra
+- name: SIVEOINFRA/IPTABLES - Allow inbound established,related traffic on public interface
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    jump: ACCEPT
+    ctstate: ESTABLISHED,RELATED
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/IPTABLES - Allow specific ports in on public interface
   iptables:
     chain: INPUT
     protocol: tcp
     destination_port: '{{ item }}'
     jump: ACCEPT
-    ctstate: ESTABLISHED,RELATED
     in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   with_items:
     - 22
@@ -314,7 +323,7 @@
   when:
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA - Make drop input and forward for safe pulse siveo infra
+- name: SIVEOINFRA/IPTABLES - Drop other inbound traffic on public interface
   iptables:
     chain: '{{ item }}'
     jump: DROP
@@ -325,25 +334,8 @@
   when:
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA - Save iptable rules
-  shell: "iptables-save > {{ IPTABLE_SAVE_PATH }}"
-  when:
-    - INSTALL_TYPE == 'p'
-
-- name: SIVEOINFRA - Set if-pre-up iptables
-  blockinfile:
-    path: /etc/network/if-pre-up.d/iptables
-    create: yes
-    block: |
-      #!/bin/sh
-      /sbin/iptables-restore < '{{ IPTABLE_SAVE_PATH }}'
-  when:
-    - INSTALL_TYPE == 'p'
-
-- name: SIVEOINFRA - Make executable to if-pre-up iptables
-  file:
-    path: /etc/network/if-pre-up.d/iptables
-    mode: a+x
+- name: SIVEOINFRA/IPTABLES - Save iptables rules
+  shell: "iptables-save > {{ IPTABLES_SAVE_PATH }}"
   when:
     - INSTALL_TYPE == 'p'
     
