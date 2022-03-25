@@ -305,6 +305,16 @@
   when:
     - INSTALL_TYPE == 'p'
 
+- name: SIVEOINFRA/IPTABLES - Allow outbound established,related traffic on public interface
+  iptables:
+    chain: OUTPUT
+    protocol: tcp
+    jump: ACCEPT
+    ctstate: ESTABLISHED,RELATED
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  when:
+    - INSTALL_TYPE == 'p'
+
 - name: SIVEOINFRA/IPTABLES - Allow specific ports in on public interface
   iptables:
     chain: INPUT
@@ -315,13 +325,26 @@
   with_items:
     - 22
     - 5222
-    - 8443
-    - 22000
     - 443
     - 9999
     - 80
     - 3306
-    - 23000
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/IPTABLES - Allow specific ports out on public interface
+  iptables:
+    chain: OUTPUT
+    protocol: tcp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items:
+    - 8443
+    - 22067
+    - 80
+    - 443
+    - 22
   when:
     - INSTALL_TYPE == 'p'
 
@@ -333,6 +356,14 @@
   with_items:
     - INPUT
     - FORWARD
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/IPTABLES - Drop other outbound traffic on public interface
+  iptables:
+    chain: OUTPUT
+    jump: DROP
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   when:
     - INSTALL_TYPE == 'p'
 
