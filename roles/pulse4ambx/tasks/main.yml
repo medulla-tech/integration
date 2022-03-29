@@ -2316,6 +2316,7 @@
    command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
      - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'natEnabled', value: 'false' }
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
@@ -3007,6 +3008,7 @@
    command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
    with_items:
      - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'natEnabled', value: 'false' }
      - { field: 'localAnnounceEnabled', value: 'false' }
      - { field: 'urAccepted', value: '-1' }
      - { field: 'autoUpgradeIntervalH', value: '0' }
