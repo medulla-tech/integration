@@ -183,6 +183,12 @@
     - INSTALL_TYPE == 'p'
     - ansible_distribution == 'Debian'
 
+- name: SIVEOINFRA - Find number of substitutes
+  shell: "python3 -m pulse_debug_tools server --action=list_substitutes --options=type=asse | grep master_asse |wc -l"
+  register: nb_substitutes
+  when:
+    - INSTALL_TYPE == 'p'
+
 - name: SIVEOINFRA - Create substitutes
   command: python3 -m pulse_debug_tools server --action=create_substitute --options=dryrun=no,type={{ item }}
   loop:
@@ -195,6 +201,7 @@
     - depl
   when:
     - INSTALL_TYPE == 'p'
+    - nb_substitutes.stdout == '1'
 
 - name: SIVEOINFRA - Create Teams 
   command: python3 -m pulse_debug_tools server --action=create_team --options=dryrun=no,team_name={{ item }},user_regex=^{{ item }}.*
