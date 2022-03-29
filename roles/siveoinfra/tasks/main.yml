@@ -236,6 +236,12 @@
     - syncthing
     - syncthing-depl
 
+- name: SIVEOINFRA/SYNCTHING - Enable relaying
+  command: xmlstarlet ed --inplace -u "configuration/options/relaysEnabled" -v "True" /var/lib/{{ item }}/.config/syncthing/config.xml
+  with_items:
+    - syncthing
+    - syncthing-depl
+
 - name: SIVEOINFRA/SYNCTHING - Disable NAT
   command: xmlstarlet ed --inplace -u "configuration/options/natEnabled" -v "False" /var/lib/{{ item }}/.config/syncthing/config.xml
   with_items:
@@ -342,6 +348,7 @@
   with_items:
     - 8443
     - 22067
+    - 22070
     - 80
     - 443
     - 22
