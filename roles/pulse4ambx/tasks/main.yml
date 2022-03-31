@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.3.0'
+     PLAYBOOK_VERSION: '3.3.3'
 
  - name: VERSION - Display version
    debug:
@@ -496,7 +496,9 @@
      - .max_fsm_queue = 10000
      - .shaper.normal = 100000000
      - .shaper.fast = 1000000000
+     - del(.access_rules.muc_create)
      - .access_rules.muc_create.allow = "admin"
+     - del(.access_rules.trusted_network)
      - .access_rules.trusted_network.allow = "all"
      - .modules.mod_muc.access[].allow = "local"
      - .modules.mod_register.welcome_message.subject = ""
