@@ -264,7 +264,7 @@
     - syncthing-depl
 
 - name: SIVEOINFRA/SYNCTHING - Configure announce servers on master and assessor plugins
-  command: crudini --set {{ item.file }} {{ item.section }} {{ item.parameter }} SYNCTHING_DISCOVERY_URL
+  command: crudini --set {{ item.file }} {{ item.section }} {{ item.parameter }} {{ SYNCTHING_DISCOVERY_URL }}
   with_items:
     - { file: '/etc/mmc/plugins/xmppmaster.ini.local', section: 'syncthing', parameter: 'announce_server' }
     - { file: '/etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local', section: 'parameters', parameter: 'announce_server' }
