@@ -3904,6 +3904,7 @@
      state: latest
      pkg:
        - pulse-xmpp-agent-relay
+       - pulse-debug-tools
    when:
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE != 'p'
@@ -3913,6 +3914,7 @@
      state: latest
      pkg:
        - pulse-xmpp-agent-relay
+       - pulse-debug-tools
    when:
      - ansible_distribution == 'Debian'
      - INSTALL_TYPE != 'p'
