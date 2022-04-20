@@ -341,6 +341,40 @@
    when:
      - (selinuxstatus.stdout != 'disabled') and (selinuxstatus.stdout != '')
 
+ - name: PREPARATION - Configure posix queues limits
+   command: sysctl -w {{ item.parameter }}={{ item.value}}
+   loop:
+     - { parameter: fs.mqueue.msg_max, value: 100 }
+     - { parameter: fs.mqueue.msgsize_max, value: 8388608 }
+     - { parameter: fs.mqueue.queues_max, value: 256 }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Configure system limits for posix queues
+   command: ulimit -q 1761607680
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Configure persistant posix queues limits
+   lineinfile: 
+     regexp: '^{{ item.parameter }}.*$'
+     line: '{{ item.parameter }} = {{ item.value }}'
+     path: /etc/sysctl.conf
+   loop:
+     - { parameter: fs.mqueue.msg_max, value: 100 }
+     - { parameter: fs.mqueue.msgsize_max, value: 8388608 }
+     - { parameter: fs.mqueue.queues_max, value: 256 }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Configure persistant system limits for posix queues
+   lineinfile: 
+     regexp: '^root - msgqueue.*$'
+     line: 'root - msgqueue 1761607680'
+     path: /etc/security/limits.d/pulse.conf
+   when:
+     - INSTALL_TYPE == 'p'
+
 ##########################################################
 #                    Install base tools                  #
 ##########################################################
