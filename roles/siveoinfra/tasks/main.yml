@@ -42,6 +42,30 @@
   with_items:
     - "{{ ansible_interfaces }}"
 
+- name: VARS - Set CLIENTS_DOWNLOADS_SERVER
+  set_fact:
+    CLIENTS_DOWNLOADS_SERVER : "{{ SERVER_FQDN }}"
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: VARS - Set CLIENTS_DOWNLOADS_SERVER
+  set_fact:
+    CLIENTS_DOWNLOADS_SERVER : "{{ PULSEMAIN_FQDN }}"
+  when:
+    - INSTALL_TYPE != 'p'
+
+- name: VARS - Set PYTHON_BASEDIR
+  set_fact:
+    PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: VARS - Set PYTHON_BASEDIR
+  set_fact:
+    PYTHON_BASEDIR: /usr/lib/python2.7/site-packages
+  when:
+    - ansible_distribution == 'CentOS'
+
 ##########################################################
 #                       SIVEO Infra                      #
 ##########################################################
@@ -383,6 +407,88 @@
 
 - name: SIVEOINFRA/IPTABLES - Save iptables rules
   shell: "iptables-save > {{ IPTABLES_SAVE_PATH }}"
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/MONITORING - Download machine agent on all Pulse servers
+  get_url:
+    url: 'http://{{ CLIENTS_DOWNLOADS_SERVER }}/downloads/lin/Pulse-Agent-linux-MINIMAL-latest.sh'
+    dest: /tmp/Pulse-Agent-linux-MINIMAL-latest.sh
+    mode: 0755
+    
+- name: SIVEOINFRA/MONITORING - Install machine agent on all Pulse servers
+  command: /tmp/Pulse-Agent-linux-MINIMAL-latest.sh
+
+- name: SIVEOINFRA/MONITORING - Change machine agent local tcp port to 8767
+  command: crudini --set /etc/pulse-xmpp-agent/agentconf.ini kiosk am_local_port 8767
+    
+- name: SIVEOINFRA/MONITORING - Restart machine and relay agents
+  systemd:
+    enabled: yes
+    name: '{{ item }}'
+    state: restarted
+  with_items:
+    - pulse-xmpp-agent-machine
+    - pulse-xmpp-agent-relay
+
+- name: SIVEOINFRA/MONITORING - Get database password
+  command: crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbpasswd
+  register: DB_PASSWORD
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin
+  command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
+  with_items:
+    - { section: 'pulse_main', parameter: 'db_password', value: '{{ DB_PASSWORD.stdout }}' }
+    - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, mmc-agent, pulse-xmpp-agent-relay, pulse2-inventory-server, pulse2-package-server, pulse-xmpp-master-substitute-inventory, pulse-xmpp-master-substitute-registration, pulse-xmpp-master-substitute-logger, pulse-xmpp-master-substitute-monitoring, pulse-xmpp-master-substitute-assessor, pulse-xmpp-master-substitute-reconfigurator, pulse-xmpp-master-substitute-deployment, pulse-xmpp-master-substitute-subscription"' }
+    - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, syncthing_discosrv, apache, tomcat, ssh, mysql, mmc_agent, pulse2_inventory_server, pulse2_package_server"' }
+  when:
+    - INSTALL_TYPE == 'p'
+    
+- name: SIVEOINFRA/MONITORING - Install python-mysql.connector
+  apt:
+    name: python-mysql.connector
+    state: present
+    
+- name: SIVEOINFRA/MONITORING - Enable accounting in systemd
+  command: crudini --set /etc/systemd/system.conf Manager {{ item }} "yes"
+  with_items:
+    - DefaultMemoryAccounting
+    - DefaultCPUAccounting
+    - BlockIOAccounting
+    
+- name: SIVEOINFRA/MONITORING - Run systemctl daemon-reexec to serialise manager state 
+  systemd:
+    daemon_reexec: yes
+
+- name: SIVEOINFRA/MONITORING - Restart all pulse services and dependencies
+  command: python3 -m pulse_debug_tools server --action=manage_pulse_services --options=dryrun=no,deps=yes,only_subs='',action=restart
+
+- name: SIVEOINFRA/MONITORING - Pause for 30 seconds to allow services to restart
+  pause:
+    seconds: 30
+
+- name: SIVEOINFRA/MONITORING - Reset pulse system monitoring
+  command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "{{ item }}"
+  loop:
+    - TRUNCATE TABLE mon_device_service
+    - TRUNCATE TABLE mon_devices
+    - TRUNCATE TABLE mon_event
+    - DELETE FROM mon_machine
+    - DELETE FROM mon_panels_template WHERE id > 1
+    - TRUNCATE TABLE mon_rules
+  when:
+    - INSTALL_TYPE == 'p'
+
+- name: SIVEOINFRA/MONITORING - Delete temporary monitoring files
+  command: '{{ item }}'
+  with_items:
+    - rm -f {{PYTHON_BASEDIR}}/pulse_xmpp_agent/INFOSTMP/*.json
+    - rm -rf /var/lib/pulse2/tmpprocessmonitoring/*
+
+- name: SIVEOINFRA/MONITORING - Setup Pulse system specific monitoring
+  shell: "mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster < /var/lib/pulse2/script_monitoring/schema_mon_pulsesystem.sql"
   when:
     - INSTALL_TYPE == 'p'
     
