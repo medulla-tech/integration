@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.1.8'
+     PLAYBOOK_VERSION: '3.3.3'
 
  - name: VERSION - Display version
    debug:
@@ -1194,8 +1194,10 @@
      - .max_fsm_queue = 10000
      - .shaper.normal = 100000000
      - .shaper.fast = 1000000000
-     - .access_rules.muc_create[].allow = "admin"
-     - .access_rules.trusted_network[].allow = "all"
+     - del(.access_rules.muc_create)
+     - .access_rules.muc_create.allow = "admin"
+     - del(.access_rules.trusted_network)
+     - .access_rules.trusted_network.allow = "all"
      - .modules.mod_muc.access[].allow = "local"
      - .modules.mod_register.welcome_message.subject = ""
      - .modules.mod_register.ip_access = "trusted_network"
@@ -1203,9 +1205,13 @@
      - .modules.mod_ping.ping_interval = 60
      - .modules.mod_ping.timeout_action = "kill"
      - .modules.mod_admin_extra = {}
+     - .modules.mod_s2s_dialback = {}
      - .listen[] |= select(.port == "5222").max_stanza_size = 8388608
      - .listen[] |= select(.port == "5222").starttls = false
-     - .listen[] |= select(.port == "5222").certfile = ""
+     - .listen[] |= select(.port == "5222").starttls_required = false
+     - .listen[] |= select(.port == "5222").certfile = "/etc/ejabberd/ejabberd.pem"
+     - del(.modules.mod_last)
+     - del(.modules.mod_irc)
 
  - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
    fetch:
