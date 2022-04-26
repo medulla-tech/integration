@@ -3887,6 +3887,12 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: MAINPULSE - Pause for 30 seconds to enable mmc-agent start
+   pause:
+     seconds: 30
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: MAINPULSE - Configure interface
    command: crudini --set /etc/mmc/mmc.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
    with_items:
