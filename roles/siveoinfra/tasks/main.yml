@@ -437,7 +437,7 @@
   when:
     - INSTALL_TYPE == 'p'
 
-- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin
+- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin on main pulse
   command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
   with_items:
     - { section: 'pulse_main', parameter: 'db_password', value: '{{ DB_PASSWORD.stdout }}' }
@@ -445,7 +445,15 @@
     - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, syncthing_discosrv, apache, tomcat, ssh, mysql, mmc_agent, pulse2_inventory_server, pulse2_package_server"' }
   when:
     - INSTALL_TYPE == 'p'
-    
+
+- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin on relays
+  command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
+  with_items:
+    - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, mysql, pulse-xmpp-agent-relay, pulse-package-watching"' }
+    - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, apache, tomcat, ssh, mysql"' }
+  when:
+    - INSTALL_TYPE != 'p'
+
 - name: SIVEOINFRA/MONITORING - Install python-mysql.connector
   apt:
     name: python-mysql.connector
