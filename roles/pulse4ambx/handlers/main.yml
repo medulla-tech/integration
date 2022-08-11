@@ -41,7 +41,7 @@
 
  - name: PHP - Restart php-fpm
    systemd:
-     name: php7.0-fpm
+     name: php7.4-fpm
      state: restarted
    when:
      - ansible_distribution == 'Debian'
