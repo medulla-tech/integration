@@ -1,0 +1,9 @@
+dependencies:
+  - role: apache
+  - { role: 'mariadb', when: DBHOST == 'localhost' }
+  - role: ldap
+  - role: php
+  - role: local_certs
+  - { role: glpi, when: GLPI_DBHOST == 'localhost' }
+  - role: ejabberd
+  - role: grafana

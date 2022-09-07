@@ -1,0 +1,40 @@
+##########################################################
+#                     Install Tomcat                     #
+##########################################################
+
+- name: TOMCAT - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - tomcat
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - tomcat9
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: TOMCAT - Change tomcat port from 8080 to 8081
+  ansible.builtin.replace:
+    path: /etc/{{ TOMCAT_DAEMON }}/server.xml
+    regexp: 'Connector port="8080"'
+    replace: 'Connector port="8081"'
+  notify:
+    - TOMCAT - Restart tomcat
+
+- name: TOMCAT - Ensure tomcat is running
+  ansible.builtin.systemd:
+    name: '{{ TOMCAT_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

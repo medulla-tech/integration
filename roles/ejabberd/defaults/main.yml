@@ -1,0 +1,5 @@
+# XMPP_DOMAIN must be set to pulse on main pulse
+XMPP_DOMAIN: '{{ ansible_hostname }}'
+SERVER_FQDN: '{{ ansible_fqdn }}'
+EJABBERDADMINPASSWD: '{{ ROOT_PASSWORD }}'
+PKI_PATH: /var/lib/pulse2/pki

@@ -1,0 +1,21 @@
+- name: MARIADB - Stop service
+  ansible.builtin.systemd:
+    name: mariadb
+    state: stopped
+  ignore_errors: true
+
+- name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - /var/lib/mysql
+    - /root/.my.cnf
+
+- name: MARIADB - Create /var/lib/mysql
+  ansible.builtin.file:
+    path: /var/lib/mysql
+    state: directory
+    owner: mysql
+    group: mysql
+    recurse: yes

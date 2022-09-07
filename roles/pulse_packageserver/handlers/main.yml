@@ -1,0 +1,5 @@
+- name: PULSE_PACKAGESERVER - Restart package server
+  ansible.builtin.systemd:
+    name: 'pulse2-package-server'
+    state: restarted
+    daemon_reload: yes

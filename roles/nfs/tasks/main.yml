@@ -1,0 +1,32 @@
+##########################################################
+#                       Install NFS                      #
+##########################################################
+
+- name: NFS - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: NFS - Install nfs
+  ansible.builtin.yum:
+    pkg:
+      - nfs-utils
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: NFS - Install nfs
+  ansible.builtin.apt:
+    pkg:
+      - nfs-kernel-server
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: NFS - Ensure nfs service is running
+  ansible.builtin.systemd:
+    name: '{{ NFS_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

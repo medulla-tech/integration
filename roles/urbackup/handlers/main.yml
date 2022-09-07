@@ -1,0 +1,5 @@
+- name: BACKUP - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

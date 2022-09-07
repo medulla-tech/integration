@@ -1,0 +1,14 @@
+[main]
+url_to_forward = {{ GLPI_BASEURL }}/plugins/fusioninventory/front/plugin_fusioninventory.communication.php
+enable_forward = True
+
+[database]
+dbhost = {{ DBHOST }}
+dbport = {{ DBPORT }}
+dbuser = {{ DBUSER }}
+dbpasswd = {{ DBPASSWORD }}
+
+{% if PULSEMAIN_IP != '' %}
+[mmc_agent]
+host = {{ PULSEMAIN_IP }}
+{% endif %}

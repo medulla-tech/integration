@@ -1,0 +1,48 @@
+##########################################################
+#                   Setup File Browser                   #
+##########################################################
+
+- name: FILEBROWSER - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: FILEBROWSER - Create file-transfer folder and link
+  ansible.builtin.file:
+    src: '{{ item.src }}'
+    path: '{{ item.path }}'
+    state: '{{ item.state }}'
+  with_items:
+    - { src: '', path: '{{ FILETRANSFER_FOLDER }}', state: 'directory'}
+    - { src: '{{ FILETRANSFER_FOLDER }}/', path: '/var/www/html/file-transfer', state: 'link'}
+
+- name: FILEBROWSER - Enable apache rewrite module
+  community.general.apache2_module:
+    name: rewrite
+  notify:
+    - FILEBROWSER - Restart apache
+  when:
+    - ansible_distribution == "Debian"
+
+- name: FILEBROWSER - Configure path in mmc xmppmaster
+  community.general.ini_file:
+    path: /etc/mmc/plugins/xmppmaster.ini.local
+    section: browserfile
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { option: 'rootfilesystem', value: '{{ FILETRANSFER_FOLDER }}' }
+    - { option: 'defaultdir', value: '{{ FILETRANSFER_FOLDER }}' }
+  notify:
+    - FILEBROWSER - Restart mmc-agent
+
+- name: FILEBROWSER - Configure samba for file-transfer
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK file-transfer"
+  notify:
+    - FILEBROWSER - Restart samba

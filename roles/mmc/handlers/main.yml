@@ -1,0 +1,17 @@
+- name: MMC - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes
+
+- name: MMC - Restart mmc-agent
+  ansible.builtin.systemd:
+    name: 'mmc-agent'
+    state: restarted
+    daemon_reload: yes
+
+- name: MMC - Restart pulse-xmpp-master-substitute-master
+  ansible.builtin.systemd:
+    name: 'pulse-xmpp-master-substitute-master'
+    state: restarted
+    daemon_reload: yes

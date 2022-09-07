@@ -1,0 +1,8 @@
+SERVER_FQDN: '{{ ansible_fqdn }}'
+GLPI_BASEURL: 'http://{{ SERVER_FQDN }}/glpi'
+# For using database on another server, define DBHOST
+DBHOST: localhost
+DBPORT: 3306
+DBUSER: mmc
+DBPASSWORD: '' # 12 character string. Must be vaulted
+PULSEMAIN_IP: '' # PULSEMAIN_IP must be set if inventory server is installed on a separate server

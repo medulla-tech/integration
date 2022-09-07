@@ -1,0 +1,2 @@
+APACHE_DAEMON: httpd
+SAMBA_DAEMON: smb

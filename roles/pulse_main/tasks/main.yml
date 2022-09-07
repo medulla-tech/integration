@@ -1,0 +1,145 @@
+##########################################################
+#                   Pulse Main Server                    #
+# To be run only on mmc                                  #
+##########################################################
+
+- name: PULSE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PULSE/GUACAMOLE - Setup local apache for guacamole
+  ansible.builtin.template:
+    src: guacamole.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE - Restart apache
+
+- name: PULSE/GUACAMOLE - Enable guacamole module
+  ansible.builtin.command: a2enconf guacamole
+  notify:
+    - PULSE - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/GLPI - Initialise session to API
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/initSession"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+  when:
+    - GLPI_DBHOST == 'localhost'
+
+- name: PULSE/GLPI - Create entity in GLPI
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/Entity/"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: POST
+    body_format: json
+    body:
+      input:
+        name: '{{ CLUSTER_NAME }}'
+    return_content: yes
+  register: result
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
+  when:
+    - GLPI_DBHOST == 'localhost'
+    
+- name: PULSE/GLPI - Define created entity as default entity for fusioninventory
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ CLUSTER_NAME }}', 'AND')
+    - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
+    - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
+  when:
+    - GLPI_DBHOST == 'localhost'
+    - result.status == 201
+
+- name: PULSE/AGENT - Generate full agent
+  ansible.builtin.command: '{{ item }}'
+  with_items:
+    - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }}
+    - /var/lib/pulse2/clients/generate-agent-package
+
+- name: PULSE/AGENT - Generate minimal agent
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads -ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }}
+  ignore_errors: true
+
+- name: PULSE/PACKAGESERVER - Configure samba for package server
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_packages.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK packages"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+
+- name: PULSE/IMAGING - Configure samba for drivers
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb_drivers.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Configure samba for postinst
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_postinst.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK postinst"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Configure samba for tools
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_tools.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK tools"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Define Samba drivers Password
+  ansible.builtin.command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
+
+- name: PULSE/IMAGING - Update entity in Imaging
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}' WHERE id = 1
+
+- name: PULSE/IMAGING - Associate imaging server with root entity
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE ImagingServer SET associated = 1, name = '{{ IMAGING_SERVER_NAME }}' WHERE id = 1

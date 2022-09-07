@@ -1,0 +1,4 @@
+config
+generate-*
+reversessh
+.generation_options

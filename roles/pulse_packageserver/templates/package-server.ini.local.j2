@@ -1,0 +1,13 @@
+{% if PUBLIC_IP != '' %}
+[main]
+public_ip = {{ PUBLIC_IP }}
+{% endif %}
+
+[imaging_api]
+glpi_mode = True
+uuid = {{ IMAGING_UUID }}
+
+{% if PULSEMAIN_IP != '' %}
+[mmc_agent]
+host = {{ PULSEMAIN_IP }}
+{% endif %}

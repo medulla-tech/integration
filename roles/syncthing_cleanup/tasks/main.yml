@@ -1,0 +1,19 @@
+
+- name: SYNCTHING - Stop service for deleting any previous configuration
+  ansible.builtin.systemd:
+    name: syncthing@{{ item }}
+    state: stopped
+  with_items:
+    - syncthing
+    - syncthing-depl
+  ignore_errors: true
+
+- name: SYNCTHING - Reset syncthing
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - '/var/lib/syncthing/.config'
+    - '/var/lib/syncthing/Sync'
+    - '/var/lib/syncthing-depl/.config'
+    - '/var/lib/syncthing-depl/Sync'

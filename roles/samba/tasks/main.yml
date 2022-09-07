@@ -1,0 +1,52 @@
+##########################################################
+#                      Install Samba                     #
+##########################################################
+
+- name: SAMBA - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: SAMBA - Install samba
+  ansible.builtin.yum:
+    pkg:
+      - samba
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SAMBA - Install samba
+  ansible.builtin.apt:
+    pkg:
+      - samba
+      - smbclient
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SAMBA - Get smb.conf to check if file was changed
+  ansible.builtin.slurp:
+    src: /etc/samba/smb.conf
+  register: smbconf
+
+- name: SAMBA - Configure samba if not already configured
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    mode: '0644'
+    backup: yes
+  when: 
+    - (smbconf['content'] | b64decode).splitlines() | length <= 32
+  notify:
+    - SAMBA - Restart samba
+
+- name: SAMBA - Define Samba root password
+  ansible.builtin.command: echo -ne "{{ SMBADMINPASSWD }}\n{{ SMBADMINPASSWD }}\n" | smbpasswd -a -s root
+
+- name: SAMBA - Ensure samba is running
+  ansible.builtin.systemd:
+    name: '{{ SAMBA_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

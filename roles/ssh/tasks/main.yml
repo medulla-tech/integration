@@ -1,0 +1,13 @@
+##########################################################
+#                   SSH server setup                     #
+##########################################################
+
+- name: SSH - Setup alternate SSH port if defined
+  ansible.builtin.template:
+    src: pulse.conf.j2
+    dest: '/etc/ssh/sshd_config.d/pulse.conf'
+    mode: '0644'
+  notify:
+    - SSH - Restart ssh
+  when:
+    - REVERSE_SSH_PORT != ''

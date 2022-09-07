@@ -1,0 +1,5 @@
+- name: SAMBA - Restart samba
+  ansible.builtin.systemd:
+    name: '{{ SAMBA_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

@@ -1,0 +1,139 @@
+##########################################################
+#                     PKI Generatiom                     #
+##########################################################
+
+- name: PKI - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PKI - Install openssl and ca-certificates package
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - pyOpenSSL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PKI - Install openssl and ca-certificates package
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - python-openssl
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: PKI - Install openssl and ca-certificates package
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - python3-openssl
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+- name: PKI - Create pki folder tree
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: '{{ item.state }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { path: '{{ PKI_PATH }}', state: 'directory', mode: '0755' }
+    - { path: '{{ PKI_PATH }}/serial', state: 'touch', mode: '0644' }
+    - { path: '{{ PKI_PATH }}/crlnumber', state: 'touch', mode: '0644' }
+    - { path: '{{ PKI_PATH }}/index.txt', state: 'touch', mode: '0644' }
+    - { path: '{{ PKI_PATH }}/index.txt.attr', state: 'touch', mode: '0644' }
+    - { path: '{{ PKI_PATH }}/conf', state: 'directory', mode: '0700' }
+    - { path: '{{ PKI_PATH }}/private', state: 'directory', mode: '0700' }
+    - { path: '{{ PKI_PATH }}/newcerts', state: 'directory', mode: '0755' }
+    - { path: '{{ PKI_PATH }}/req', state: 'directory', mode: '0755' }
+    - { path: '{{ PKI_PATH }}/crl', state: 'directory', mode: '0755' }
+
+- name: PKI - Create root ca
+  community.crypto.openssl_privatekey:
+    path: '{{ PKI_PATH }}/private/rootca.key.pem'
+
+- name: PKI - Create root ca csr
+  community.crypto.openssl_csr:
+    path: '{{ PKI_PATH }}/req/rootca.csr'
+    privatekey_path: '{{ PKI_PATH }}/private/rootca.key.pem'
+    common_name: PulseRootCA
+    country_name: FR
+    organization_name: '{{ PKI_ORG }}'
+    key_usage:
+      - cRLSign
+      - keyCertSign
+    basic_constraints:
+      - CA:TRUE
+
+- name: PKI - Self-sign root ca
+  community.crypto.x509_certificate:
+    path: '{{ PKI_PATH }}/rootca.cert.pem'
+    privatekey_path: '{{ PKI_PATH }}/private/rootca.key.pem'
+    csr_path: '{{ PKI_PATH }}/req/rootca.csr'
+    provider: selfsigned
+
+- name: PKI - Create intermediate ca
+  community.crypto.openssl_privatekey:
+    path: '{{ PKI_PATH }}/private/cakey.pem'
+
+- name: PKI - Create intermediate ca csr
+  community.crypto.openssl_csr:
+    path: '{{ PKI_PATH }}/req/ca.csr'
+    privatekey_path: '{{ PKI_PATH }}/private/cakey.pem'
+    common_name: PulseIntermediateCA
+    country_name: FR
+    organization_name: '{{ PKI_ORG }}'
+    key_usage:
+      - cRLSign
+      - keyCertSign
+    basic_constraints:
+      - CA:TRUE
+
+- name: PKI - Sign intermediate ca using root ca
+  community.crypto.x509_certificate:
+    path: '{{ PKI_PATH }}/cacert.pem'
+    csr_path: '{{ PKI_PATH }}/req/ca.csr'
+    ownca_path: '{{ PKI_PATH }}/rootca.cert.pem'
+    ownca_privatekey_path: '{{ PKI_PATH }}/private/rootca.key.pem'
+    provider: ownca
+
+- name: PKI - Create certificate chain
+  ansible.builtin.shell: cat {{ PKI_PATH }}/cacert.pem {{ PKI_PATH }}/rootca.cert.pem > {{ PKI_PATH }}/ca-chain.cert.pem
+
+- name: PKI - Create ca-certificates folder
+  ansible.builtin.file:
+    path: /usr/local/share/ca-certificates
+    state: directory
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PKI - Copy ca-chain.cert.pem to add to ca certs
+  ansible.builtin.copy:
+    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
+    dest: '{{ CACERTS_PATH }}/pulse-ca-chain.crt'
+    remote_src: yes
+
+- name: PKI - Add pulse ca to ca certs
+  ansible.builtin.command: update-ca-certificates
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PKI - Add pulse ca to ca certs
+  ansible.builtin.command: update-ca-trust extract
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PKI - Remove csr files
+  ansible.builtin.file:
+    path: '{{ PKI_PATH }}/req/{{ item }}'
+    state: absent
+  with_items:
+    - rootca.csr
+    - ca.csr

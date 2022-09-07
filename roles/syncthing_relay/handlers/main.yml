@@ -1,0 +1,5 @@
+- name: STRELAYSRV - Restart relay server
+  ansible.builtin.systemd:
+    name: syncthing-relaysrv
+    state: restarted
+    daemon_reload: yes

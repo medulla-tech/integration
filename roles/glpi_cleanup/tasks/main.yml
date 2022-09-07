@@ -1,0 +1,29 @@
+- name: GLPI - Delete glpi database user
+  community.mysql.mysql_user:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ GLPI_DBUSER }}'
+    host_all: yes
+    state: absent
+
+- name: GLPI - Delete glpi database
+  community.mysql.mysql_db:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ GLPI_DBNAME }}'
+    state: absent
+
+- name: GLPI - Delete previous config file
+  ansible.builtin.file:
+    path: /etc/glpi/config/config_db.php
+    state: absent
+    
+- name: GLPI - Delete marker set for database initialisation
+  ansible.builtin.file:
+    path: /var/lib/glpi/.dbinitialised
+    state: absent
+

@@ -1,0 +1,7 @@
+NFS_DAEMON: nfs-server
+PXELINUX_PATH: /usr/share/syslinux
+SYSLINUX_BIOS_PATH: /usr/share/syslinux
+SYSLINUX_UEFI32_PATH: /usr/share/syslinux
+SYSLINUX_UEFI64_PATH: /usr/share/syslinux/efi64
+SYSLINUX_EFI32: /usr/share/syslinux/syslinux.com
+SYSLINUX_EFI64: /usr/share/syslinux/efi64/syslinux.efi

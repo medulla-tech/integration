@@ -1,0 +1,22 @@
+- name: Debug
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  serial: 1
+  tasks:
+    - name: SUBSTITUTE_AGENT - Find out name of substitute
+      mysql_query:
+        login_host: localhost
+        login_port: 3306
+        login_user: root
+        login_password: siveo
+        login_db: 'xmppmaster'
+        query:
+         - SELECT COUNT( DISTINCT jidsubtitute ) FROM substituteconf  WHERE type = %(type)s")
+        named_args:
+          type: 'registration'
+      register: res_query
+
+    - name: Result
+      debug:
+        var: res_query

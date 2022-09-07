@@ -1,0 +1,4 @@
+MARIADB_CONF_PATH: /etc/my.cnf.d
+MARIADB_DATADIR: /var/lib/mysql
+MARIADB_USER: mysql
+MARIADB_GROUP: mysql

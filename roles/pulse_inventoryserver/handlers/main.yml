@@ -1,0 +1,5 @@
+- name: PULSE_INVENTORYSERVER - Restart inventory server
+  ansible.builtin.systemd:
+    name: 'pulse2-inventory-server'
+    state: restarted
+    daemon_reload: yes

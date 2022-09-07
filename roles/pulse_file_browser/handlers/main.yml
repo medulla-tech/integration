@@ -1,0 +1,17 @@
+- name: FILEBROWSER - Restart mmc-agent
+  ansible.builtin.systemd:
+    name: mmc-agent
+    state: restarted
+    daemon_reload: yes
+
+- name: FILEBROWSER - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes
+
+- name: FILEBROWSER - Restart samba
+  ansible.builtin.systemd:
+    name: '{{ SAMBA_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

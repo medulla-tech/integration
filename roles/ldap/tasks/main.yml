@@ -1,0 +1,124 @@
+##########################################################
+#                  Install LDAP server                   #
+##########################################################
+
+- name: LDAP - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: LDAP - Define parameters for debian
+  ansible.builtin.debconf:
+    name: slapd
+    question: '{{ item.question }}'
+    vtype: '{{ item.vtype }}'
+    value: '{{ item.value }}'
+  with_items:
+    - { question: slapd/password1, vtype: password, value: '{{ LDAPADMINPASSWD }}' }
+    - { question: slapd/password2, vtype: password, value: '{{ LDAPADMINPASSWD }}' }
+    - { question: slapd/domain, vtype: string, value: '{{ ansible_domain }}' }
+    - { question: slapd/purge_database, vtype: boolean, value: 'True' }
+    - { question: slapd/move_old_database, vtype: boolean, value: 'True' }
+  when:
+    - ansible_distribution == 'Debian'
+  no_log: True
+
+- name: LDAP - Install ldap server
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - ldap-server
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: LDAP - Install ldap server
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - openldap-servers
+      - openldap-clients
+      - python-ldap
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Configure ldap olcDatabase
+  ansible.builtin.lineinfile:
+    path: '/etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif'
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+    state: 'present'
+  with_items:
+  - { regexp: '^olcSuffix: .*$' , line: 'olcSuffix: {{ LDAP_BASEDN }}' }
+  - { regexp: '^olcRootDN: .*$', line: 'olcRootDN: cn=admin,{{ LDAP_BASEDN }}' }
+  - { regexp: '', line: 'olcRootPW: {{ LDAPADMINPASSWD }}' }
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Copy ldap dbconfig
+  ansible.builtin.copy:
+    src: /usr/share/openldap-servers/DB_CONFIG.example
+    dest: /var/lib/ldap/DB_CONFIG
+    remote_src: yes 
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Change owner and group for ldap directory
+  ansible.builtin.file:
+    path: /var/lib/ldap/
+    owner: ldap
+    group: ldap   
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Start service
+  ansible.builtin.systemd:
+    enabled: yes
+    state: restarted
+    name: slapd
+
+- name: LDAP - Add entry basedn
+  community.general.ldap_entry:
+    dn: '{{ LDAP_BASEDN }}'
+    server_uri: ldap://localhost/
+    bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+    bind_pw: '{{ LDAPADMINPASSWD }}'
+    objectClass:
+      - top
+      - dcObject
+      - organization
+    attributes:
+      dc: '{{ ansible_domain.split(".", 1)[0] }}'
+      o: '{{ ansible_domain }}'
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Add entry admin
+  community.general.ldap_entry:
+    dn: cn=admin,{{ LDAP_BASEDN }}
+    server_uri: ldap://localhost/
+    bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+    bind_pw: '{{ LDAPADMINPASSWD }}'
+    objectClass:
+      - organizationalRole
+    attributes:
+      cn: admin
+      description: LDAP administrator
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Add entry schema
+  ansible.builtin.command: '{{ item }}'
+  with_items:
+  - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
+  - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
+  - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Ensure ldap server is running
+  ansible.builtin.systemd:
+    name: 'slapd'
+    state: started
+    enabled: yes
+    masked: no

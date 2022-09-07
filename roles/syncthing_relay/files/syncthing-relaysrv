@@ -1,0 +1,2 @@
+NAT=false
+STRELAYSRV_OPTS=-pools=

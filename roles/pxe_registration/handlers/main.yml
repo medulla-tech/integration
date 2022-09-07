@@ -1,0 +1,5 @@
+- name: PXE_REGISTRATION - Restart tftp server
+  ansible.builtin.systemd:
+    name: '{{ TFTP_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

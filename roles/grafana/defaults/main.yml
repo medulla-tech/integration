@@ -1,0 +1,2 @@
+GRAFANAADMINPASSWD: '{{ ROOT_PASSWORD }}'
+GRAFANA_ADMIN_KEY: '' # GRAFANA_ADMIN_KEY is generated using this task 

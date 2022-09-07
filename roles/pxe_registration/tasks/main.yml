@@ -1,0 +1,67 @@
+##########################################################
+#             Install Pulse PXE registration             #
+##########################################################
+
+- name: PXE_REGISTRATION - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PXE_REGISTRATION - Install tftp server and pulse2-register-pxe
+  ansible.builtin.yum:
+    pkg:
+      - tftp
+      - tftp-server
+      - pulse2-register-pxe
+      - pulse2-utilities
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PXE_REGISTRATION - Install tftp server and pulse2-register-pxe
+  ansible.builtin.apt:
+    pkg:
+      - tftpd-hpa
+      - pulse2-register-pxe
+      - pulse2-utilities
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+  
+- name: PXE_REGISTRATION - Configure TFTP Server
+  ansible.builtin.copy:
+    src: tftpd-hpa
+    dest: /etc/default/
+    mode: '0644'
+  notify:
+    - PXE_REGISTRATION - Restart tftp server
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PXE_REGISTRATION - Configure TFTP Server
+  ansible.builtin.copy:
+    src: '{{ item }}'
+    dest: /etc/systemd/system/
+    mode: '0644'
+  with_items:
+    - tftp-server.service
+    - tftp-server.socket
+  notify:
+    - PXE_REGISTRATION - Restart tftp server
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PXE_REGISTRATION - Ensure tftp server is running
+  ansible.builtin.systemd:
+    name: '{{ TFTP_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no
+
+- name: PXE_REGISTRATION - Ensure pulse2-register-pxe service is running
+  ansible.builtin.systemd:
+    name: pulse2-register-pxe
+    state: started
+    enabled: yes
+    masked: no

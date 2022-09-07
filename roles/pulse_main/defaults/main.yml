@@ -1,0 +1,19 @@
+SERVER_FQDN: '{{ ansible_fqdn }}'
+DRIVERS_PASSWORD: '' # 12 character string. Must be vaulted
+DRIVERS_FOLDER: /var/lib/pulse2/imaging/postinst/sysprep/drivers
+GLPI_DBHOST: localhost
+GLPI_DBPORT: 3306
+GLPI_DBUSER: glpi
+GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBNAME: glpi
+ENTITY: Public
+CLUSTER_NAME: '{{ ENTITY }}'
+ORGANISATION: Siveo Pulse
+IMAGING_SERVER_NAME: '{{ ENTITY }}'
+NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
+CLIENTS_SSH_PORT: 22
+CLIENTS_VNC_PORT: 5900
+DBHOST: localhost
+DBPORT: 3306
+DBUSER: mmc
+DBPASSWORD: '' # 12 character string. Must be vaulted

@@ -1,0 +1,11 @@
+- name: GRAFANA - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes
+
+- name: GRAFANA - Restart grafana
+  ansible.builtin.systemd:
+    name: 'grafana-server'
+    state: restarted
+    daemon_reload: yes

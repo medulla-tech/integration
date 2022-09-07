@@ -1,0 +1,8 @@
+<Context path="/guacamole" docBase="/var/lib/tomcat8/webapps/guacamole-0.9.14">
+ <Resources allowLinking="true" />
+{% if PULSEMAIN_IP != '' %}
+    <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}" />
+{% else %}
+    <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}" />
+{% endif %}
+</Context>

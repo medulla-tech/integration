@@ -1,0 +1,5 @@
+PKI_PATH: /var/lib/pulse2/pki
+SERVER_FQDN: '{{ ansible_fqdn }}'
+PKI_ORG: SIVEO
+XMPP_DOMAIN: '{{ ansible_hostname }}'
+PKI_SERVER: localhost # PKI_SERVER must be set to main server instead of localhost for relay server

@@ -1,0 +1,5 @@
+- name: NFS - Restart nfs service
+  ansible.builtin.systemd:
+    name: '{{ NFS_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

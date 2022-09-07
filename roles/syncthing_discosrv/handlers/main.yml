@@ -1,0 +1,5 @@
+- name: STDISCOSRV - Restart discovery server
+  ansible.builtin.systemd:
+    name: '{{ STDISCOSRV_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

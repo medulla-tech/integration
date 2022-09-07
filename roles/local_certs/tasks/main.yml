@@ -1,0 +1,165 @@
+##########################################################
+#                  Create local certs                    #
+##########################################################
+
+- name: CERT - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: CERT - Install openssl and ca-certificates package
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - pyOpenSSL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: CERT - Install openssl and ca-certificates package
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - python-openssl
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: CERT - Install openssl and ca-certificates package
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - openssl
+      - ca-certificates
+      - python3-openssl
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+- name: CERT - Fetch ca-chain.cert.pem from pki server
+  ansible.builtin.fetch:
+    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
+    dest: /tmp/pulse-ca-chain.cert.pem
+    flat: yes
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Copy pulse-ca-chain.cert.pem to add to ca certs
+  ansible.builtin.copy:
+    src: /tmp/pulse-ca-chain.cert.pem
+    dest: '{{ CACERTS_PATH }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Add pulse ca to ca certs
+  ansible.builtin.command: update-ca-certificates
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: CERT - Add pulse ca to ca certs
+  ansible.builtin.command: update-ca-trust extract
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: CERT - Create pki folder tree
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: '{{ item.state }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { path: '{{ PKI_PATH }}', state: 'directory', mode: '0755' }
+    - { path: '{{ PKI_PATH }}/private', state: 'directory', mode: '0700' }
+    - { path: '{{ PKI_PATH }}/newcerts', state: 'directory', mode: '0755' }
+    - { path: '{{ PKI_PATH }}/req', state: 'directory', mode: '0755' }
+
+- name: CERT - Create local private key
+  community.crypto.openssl_privatekey:
+    path: '{{ PKI_PATH }}/private/{{ SERVER_FQDN }}.key.pem'
+
+- name: CERT - Create local csr
+  community.crypto.openssl_csr:
+    path: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    privatekey_path: '{{ PKI_PATH }}/private/{{ SERVER_FQDN }}.key.pem'
+    common_name: 127.0.0.1
+    country_name: FR
+    organization_name: '{{ PKI_ORG }}'
+    subject_alt_name: 'DNS:127.0.0.1,DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+    key_usage:
+      - nonRepudiation
+      - digitalSignature
+      - keyEncipherment
+      - dataEncipherment
+    basic_constraints:
+      - CA:FALSE
+
+- name: CERT - Fetch csr from remote server
+  ansible.builtin.fetch:
+    src: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    dest: /tmp/{{ ansible_hostname }}-req.pem
+    flat: yes
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Send csr to pki server
+  ansible.builtin.copy:
+    src: /tmp/{{ ansible_hostname }}-req.pem
+    dest: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Sign local key using intermadiate ca
+  community.crypto.x509_certificate:
+    path: '{{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem'
+    csr_path: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    ownca_path: '{{ PKI_PATH }}/cacert.pem'
+    ownca_privatekey_path: '{{ PKI_PATH }}/private/cakey.pem'
+    provider: ownca
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Sign local key using intermadiate ca
+  community.crypto.x509_certificate:
+    path: '{{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem'
+    csr_path: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    ownca_path: '{{ PKI_PATH }}/cacert.pem'
+    ownca_privatekey_path: '{{ PKI_PATH }}/private/cakey.pem'
+    provider: ownca
+  when:
+    - PKI_SERVER == 'localhost'
+
+- name: CERT - Fetch cert from remote server
+  ansible.builtin.fetch:
+    src: '{{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem'
+    dest: /tmp/{{ ansible_hostname }}-cert.pem
+    flat: yes
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Send cert to client
+  ansible.builtin.copy:
+    src: /tmp/{{ ansible_hostname }}-cert.pem
+    dest: '{{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Create local pem file
+  ansible.builtin.shell: cat {{ PKI_PATH }}/private/{{ SERVER_FQDN }}.key.pem {{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem > {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem
+
+- name: CERT - Remove local csr files
+  ansible.builtin.file:
+    path: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    state: absent
+
+- name: CERT - Remove csr files on pki server
+  ansible.builtin.file:
+    path: '{{ PKI_PATH }}/req/{{ SERVER_FQDN }}-req.pem'
+    state: absent
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'

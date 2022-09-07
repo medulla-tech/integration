@@ -1,5 +1,3 @@
----
-
 ##########################################################
 #                    Compute variables                   #
 ##########################################################
@@ -36,7 +34,7 @@
   set_fact:
     PUBLIC_INTERFACE_NAME : "{{ item }}"
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
     - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
   with_items:
@@ -46,23 +44,23 @@
   set_fact:
     CLIENTS_DOWNLOADS_SERVER : "{{ SERVER_FQDN }}"
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: VARS - Set CLIENTS_DOWNLOADS_SERVER
   set_fact:
     CLIENTS_DOWNLOADS_SERVER : "{{ PULSEMAIN_FQDN }}"
   when:
-    - INSTALL_TYPE != 'p'
+    - PULSEMAIN_IP != ''
 
 - name: VARS - Set PYTHON_BASEDIR
   set_fact:
-    PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
+    PYTHON_BASEDIR: /usr/lib/python3/dist-packages
   when:
     - ansible_distribution == 'Debian'
 
 - name: VARS - Set PYTHON_BASEDIR
   set_fact:
-    PYTHON_BASEDIR: /usr/lib/python2.7/site-packages
+    PYTHON_BASEDIR: /usr/lib/python3/site-packages
   when:
     - ansible_distribution == 'CentOS'
 
@@ -76,24 +74,11 @@
     pkg:
       - vim
       - htop
-      - ntopng
       - less
       - open-vm-tools
       - curl
       - wget
     update_cache: yes
-
-- name: SIVEOINFRA - Configure ntopng on port 3003
-  lineinfile:
-    path: /etc/ntopng.conf
-    regexp: '^-w='
-    line: '-w=3003'
-
-- name: SIVEOINFRA - Restart ntopng
-  systemd:
-    enabled: yes
-    name: ntopng
-    state: restarted
 
 - name: SIVEOINFRA - Add all users ssh keys to root account
   lineinfile:
@@ -115,7 +100,7 @@
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDxuTbvxmFMIObNne3nNrOjfH+G/zXsbHvXmgf/RDtrqQoykzFwvL0MzY6nyEroGtGKB2rCHXbQbtWa2j5E9ItJksVv6vnbt1VQxEvYQaj+SGUudr/rBOALjw5SziHrqDAW8jeQTZhfm99FQ5nCkHmngLfoyJAb5jkPppHHs2+jfM04sI/v9pro8I/LQGsvTGCt+2MUv5iDwsM7caPW9NoE/3Uxe6buvnLI8qikKVDLSy2g6XBtuQxvcDBqAS7qk9Q6sx1oblYE7nF/GSH6T9VyLpg8EIsZvfAtKwmR7TjAT3f339/UXwS1I7nyYycTUczfpKTKLju1orkKb6ISdhn6nNVPc7KTcgnRwDFvZsI3Ytc9bHQq5ASm1RSD5FxUmlS7ulyPlENDpUURvvGxeMaF/400VH4VwkP973QCERTyk9K1qdKFjI0bOseoSNbsJfq0c63/s/bzVxfiNZk/3R2qTDYRFgqtQRG8pcqiUhIkBps2rAmgmm1clxPXW1cG3js= yvan@rider
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8y9uLS6+Sdan2Ej19g7OP1MjSsF9RlZiGZafwLkfqtlAjG/MV8Yi2txTP2db5zND7x07Jb6yIskNRzUTvSK6CExi4Vl3+JEbHawNCeXRpaZ3rpi0sSSImWuguWf9Y2SkGgnP/IdSrYoZNzPhvLW4W/+jZgkC9FQVfbMqwUT1fS9gLPZsbFWFRkWILKWDWpJ4OUrwb+pIRrv2jKimS0r3nuZA/17O4AWcvTuv17f4PFxkLAqvJHhxO5Dbh1jX5RIkQaNDFRBuRefS/x3DtBxyRVXs04sSOsM+37H46FrDj7kk1i8D+453PoTnzDbxPq2+u+RwFp9UbV4eDXA8znqtWb/qlCFZpYyL9bj9+F2s3kCq1yJGoy7X+4opgadDax/VN+WzVEtlgDmF+tPlLWi9ICVIkJxI5SV4sfOe4E7pcnZqHTx+vcTUVadPnQoelgHSLliur8gg6T4S3dVsOPGmabWbZzD0gX5bhmvZdcEVafDyzQ+gWQkXRo30bGXtxI0YVSEKjHO7qdMyECf2JWdr/h8MKAt9yiLW+ldJLfZxqnW/DOcLsAAzkBgNkdab3/ER2obWsvssrlPxuYn1f9zgCFFe/A4bfU4pkBlvDjMjUF9EedFCNg0hGaeaVJkeuKkducFSPaeBTtj1eOyy8NmZcEw+CTCppXEaD6X0QVZ8bTw== William@LAPTOP-76SPQQ11
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDe+Fidc9A5f1myXEz1MpWDIH860rXDC8kEMAUbCS0VXR/mcABUuBTn4wVvw5Oj2hvrgxQOxfIhAd5b5VizsFDGFaKkqqQ8tx1+az4TOmLFAYt+P4QtyqsnIYXBnRT7rNHE/LCBhjuzg1Oe00ay7Y8AO2znYGvs5QE4jpjEYVotLF71wtLt4C+J0DAH2SRGiZDK7KYtL3lthF0jcy18MQ/+qhCqehlBUT+lc2vwBPkBJlCsGz0q7yYIc62htvESpPlN/ItCYJDJaEKxASpjCwqfrRGrhl2aCYP/W0FJovR8FKKzObiH8TGwg68OAOr6Rcsg0/XZ1oBdqB3F6uUNFwH31k77i/i+QDYA3sD/JEvaa7i8YwDqd0ZWCSgkEZc+w2Tz/ejNvo0WUn/lU5p1w7o2p5ucho2job5em6qPt02p8IUZSfPz+hNGQa8VmYMyuLi5UPc9d2YE/dn/DTFG0TkSca5vuWsvvrTLq+HH9KnHvpCgW+7pFwH07E9f/SjAFkM= root@WILLIAMSIVEO
-    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQClLAhpxnSYXlRvwCRZK39bPHOtguBu34z7EE2l/2IjDhM5YAnwIto+z44doRK47KlSfDC/iRqLNllT4mNFCEKFrrCNBxZyXCs8KwuY7spkekT9KxdCno7IpPFq0tGgKaW3Sjghru6gZ4WP/XGRbEBmSVoh8dZa2CBTXOBb6+6YriQuo/2M0zDEXSCPfNWkfT4lvdRfTRrHi7VcKYsY4IyKCu3N0cs42TZQL1M4RuQT+HcC6VkT8X289JFWdOEs1dPPZ9LRvj2+kCDUy52pPjz8mVQuNTbdSn34qFKsn5DbsWXdVG8iiC4s4mkH+gCv2XWW0cmM+NyLHJ9mI+mfAPkz Tom
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDJwbBieGVByY+1SLG36eR+XuPYjQdYtELRDLgdQ6tzUMFnP5x9bheWMq6MWzZ4c9nmNUIWd1Xz2uZfjA6dNPO7nuolS8+YvAoaE2W1EwhKhb4yX5a4emLp3/JJp/IZQn0pUQst7KECQHwjNfdoy3MITJvDhhvH5iYIjZ+Cn58KvR+t0cAigSe+q1yPtap/mUyXv2zk7kOuCgyQB5bIISmkzJB9CuKiDdPAkvuk3yY2rUoW+qQpe00h2PfaIpan37U0tgbVm3/iTS3kVecjtMzIuRGxgpTXzd2bG+6DWG843RhClyXUR+djJjo8PQ0/CAI66hQl+MGGL0YJ2i8X1m0MGmK6lFpuTb674yXVX/+1EuIFaHwQ5OW5pVy7komhlriYGhZs18FzGrDH+nCbnAaoAXbBWkmYJEBMcQNyugn+DkjG3EI2QSMhmQN7ImcuBHiT86BQOomHBAB0+E08w+mpYLgqFc9drpPOBrqemuvsjwgWMRSCziBGtm663uBsMNM= lucas@nblucas
 
 - name: SIVEOINFRA - Disable password-based logins in SSH
   lineinfile:
@@ -148,15 +133,7 @@
     - INSERT INTO has_relayserverrules (`rules_id`, `order`, `subject`, `relayserver_id`) VALUES (9, 1, '{{ NETWORK_ADDRESS }}', 3)
     - UPDATE relayserver SET mandatory=0 WHERE id>1;
   when:
-    - INSTALL_TYPE == 'p'
-
-- name: SIVEOINFRA - Imaging setup
-  command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' imaging -e "{{ item }}"
-  loop:
-    - DELETE FROM ImagingServer WHERE id>1
-    - DELETE FROM Entity WHERE id>1
-  when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA - Set permissions for Workbench
   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
@@ -164,7 +141,7 @@
     - GRANT ALL PRIVILEGES ON *.* TO '{{ DBADMINUSER }}'@'localhost' IDENTIFIED BY '{{ DBADMINPASSWD }}'
     - FLUSH PRIVILEGES
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA - Create my.cnf
   file:
@@ -173,7 +150,7 @@
     owner: root
     group: root
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     
 - name: SIVEOINFRA - Complete data to my.cnf
   blockinfile: 
@@ -195,7 +172,7 @@
         user={{ DBADMINUSER }}
         password={{ DBADMINPASSWD}}
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     
 - name: SIVEOINFRA - Install python modules needed for deploy_pulse_files_from_git.py
   apt:
@@ -204,14 +181,14 @@
       - python3-pip
       - python3-git
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     - ansible_distribution == 'Debian'
 
 - name: SIVEOINFRA - Find number of substitutes
   shell: "python3 -m pulse_debug_tools server --action=list_substitutes --options=type=asse | grep master_asse |wc -l"
   register: nb_substitutes
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA - Create substitutes
   command: python3 -m pulse_debug_tools server --action=create_substitute --options=dryrun=no,type={{ item }}
@@ -224,7 +201,7 @@
     - log
     - depl
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     - nb_substitutes.stdout == '1'
 
 - name: SIVEOINFRA - Create Teams 
@@ -233,7 +210,7 @@
     - TeamA
     - TeamB
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
   ignore_errors: yes
 
 - name: SIVEOINFRA - Provision users 
@@ -245,7 +222,7 @@
     - { file: glpi.ini.local, section: provisioning_glpi, field: profiles_order, value: Technician }
     - { file: glpi.ini.local, section: provisioning_glpi, field: profile_acl_Technician, value: "{{ TECHNICIAN_ACL }}" }
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/SYNCTHING - Stop service for setting up discovery and relay server urls
   systemd:
@@ -294,7 +271,7 @@
     - { file: '/etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local', section: 'parameters', parameter: 'announce_server' }
     - { file: '/etc/mmc/plugins/assessor_agent.ini.local', section: 'parameters', parameter: 'announce_server' }
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/SYNCTHING - Restart mmc-agent and assessor services
   systemd:
@@ -304,7 +281,7 @@
     - mmc-agent
     - pulse-xmpp-master-substitute-assessor
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
   yum:
@@ -313,7 +290,7 @@
       - iptables-services
   when:
     - ansible_distribution == 'CentOS'
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
   apt:
@@ -322,7 +299,7 @@
       - iptables-persistent
   when:
     - ansible_distribution == 'Debian'
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Iptables flush filter
   iptables:
@@ -330,7 +307,7 @@
     flush: yes
   with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Allow inbound established,related traffic on public interface
   iptables:
@@ -340,7 +317,7 @@
     ctstate: ESTABLISHED,RELATED
     in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Allow outbound established,related traffic on public interface
   iptables:
@@ -350,7 +327,7 @@
     ctstate: ESTABLISHED,RELATED
     out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Allow specific ports in on public interface
   iptables:
@@ -367,7 +344,7 @@
     - 80
     - 3306
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Allow specific ports out on public interface
   iptables:
@@ -384,7 +361,7 @@
     - 443
     - 22
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Drop other inbound traffic on public interface
   iptables:
@@ -395,7 +372,7 @@
     - INPUT
     - FORWARD
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Drop other outbound traffic on public interface
   iptables:
@@ -403,12 +380,12 @@
     jump: DROP
     out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Save iptables rules
   shell: "iptables-save > {{ IPTABLES_SAVE_PATH }}"
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/MONITORING - Download machine agent on all Pulse servers
   get_url:
@@ -435,17 +412,25 @@
   command: crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbpasswd
   register: DB_PASSWORD
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
-- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin
+- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin on main pulse
   command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
   with_items:
     - { section: 'pulse_main', parameter: 'db_password', value: '{{ DB_PASSWORD.stdout }}' }
     - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, mmc-agent, pulse-xmpp-agent-relay, pulse2-inventory-server, pulse2-package-server, pulse-xmpp-master-substitute-inventory, pulse-xmpp-master-substitute-registration, pulse-xmpp-master-substitute-logger, pulse-xmpp-master-substitute-monitoring, pulse-xmpp-master-substitute-assessor, pulse-xmpp-master-substitute-reconfigurator, pulse-xmpp-master-substitute-deployment, pulse-xmpp-master-substitute-subscription"' }
     - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, syncthing_discosrv, apache, tomcat, ssh, mysql, mmc_agent, pulse2_inventory_server, pulse2_package_server"' }
   when:
-    - INSTALL_TYPE == 'p'
-    
+    - PULSEMAIN_IP == ''
+
+- name: SIVEOINFRA/MONITORING - Configure pulsesystem monitoring plugin on relays
+  command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
+  with_items:
+    - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, mysql, pulse-xmpp-agent-relay, pulse-package-watching"' }
+    - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, apache, tomcat, ssh, mysql"' }
+  when:
+    - PULSEMAIN_IP != ''
+
 - name: SIVEOINFRA/MONITORING - Install python-mysql.connector
   apt:
     name: python-mysql.connector
@@ -479,7 +464,7 @@
     - DELETE FROM mon_panels_template WHERE id > 1
     - TRUNCATE TABLE mon_rules
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/MONITORING - Delete temporary monitoring files
   command: '{{ item }}'
@@ -490,7 +475,7 @@
 - name: SIVEOINFRA/MONITORING - Setup Pulse system specific monitoring
   shell: "mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster < /var/lib/pulse2/script_monitoring/schema_mon_pulsesystem.sql"
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
     
 - name: SIVEOINFRA - Restart mmc-agent
   systemd:
@@ -498,6 +483,5 @@
     name: mmc-agent
     state: restarted
   when:
-    - INSTALL_TYPE == 'p'
+    - PULSEMAIN_IP == ''
 
-...

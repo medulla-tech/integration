@@ -1,0 +1,181 @@
+##########################################################
+#                      GLPI setup                        #
+##########################################################
+
+- name: GLPI - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: GLPI - Install glpi
+  ansible.builtin.yum:
+    pkg:
+      - glpi-{{ GLPI_VERSION }}.*
+      - glpi
+      - glpi-fusioninventory-{{ GLPI_VERSION }}.*
+      - php-ldap
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GLPI - Install glpi
+  ansible.builtin.apt:
+    pkg:
+      - glpi={{ GLPI_VERSION }}.*
+      - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
+      - php-ldap
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GLPI - Create glpi database
+  community.mysql.mysql_db:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ GLPI_DBNAME }}'
+    state: present
+
+- name: GLPI - Create glpi database user
+  community.mysql.mysql_user:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ GLPI_DBUSER }}'
+    password: '{{ GLPI_DBPASSWD }}'
+    state: present
+    priv:
+      '{{ GLPI_DBNAME }}.*:ALL'
+  no_log: True
+
+- name: GLPI - Reset GLPI_CHANGED variable
+  ansible.builtin.set_fact:
+    GLPI_CHANGED: False
+
+- name: GLPI - Check if .dbinitialised is present
+  ansible.builtin.stat:
+    path: /var/lib/glpi/.dbinitialised
+  register: resdbinitialised
+
+- name: GLPI - Set GLPI_DBINITIALISED if .dbinitialised is present
+  ansible.builtin.set_fact:
+    GLPI_DBINITIALISED: True
+  when:
+    - resdbinitialised.stat.exists
+
+- name: GLPI - Initialise glpi database on debian
+  ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+  when:
+    - ansible_distribution == 'Debian'
+    - GLPI_DBINITIALISED is not defined
+  register: glpi_init
+
+- name: GLPI - Register GLPI_CHANGED variable
+  ansible.builtin.set_fact:
+    GLPI_CHANGED: '{{ glpi_init.changed }}'
+  when:
+    glpi_init.changed
+
+- name: GLPI - Initialise glpi database on centos
+  ansible.builtin.command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
+  when:
+    - ansible_distribution == 'CentOS'
+    - GLPI_DBINITIALISED is not defined
+  register: glpi_init
+
+- name: GLPI - Register GLPI_CHANGED variable
+  ansible.builtin.set_fact:
+    GLPI_CHANGED: '{{ glpi_init.changed }}'
+  when:
+    glpi_init.changed
+
+- name: GLPI - Set marker for database initialisation
+  ansible.builtin.file:
+    path: /var/lib/glpi/.dbinitialised
+    state: touch
+  when:
+    - GLPI_CHANGED | bool
+
+- name: GLPI - Upgrade glpi database if needed on debian
+  ansible.builtin.command: php /usr/share/glpi/bin/console -n db:update
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GLPI - Upgrade glpi database if needed on centos
+  ansible.builtin.command: php /usr/share/glpi/scripts/cliupdate.php
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GLPI - Initialise glpi database for Pulse
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'
+    - DELETE FROM glpi_profiles_users WHERE id NOT LIKE (SELECT id FROM glpi_users where name = 'glpi')
+    - UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0
+    - INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
+    single_transaction: yes
+  when:
+    - GLPI_CHANGED | bool
+
+- name: GLPI - Define password and enable token for root user
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'
+    - UPDATE glpi_users SET password = MD5('{{ GLPI_ADMINPASSWD }}') where name = 'root'
+    - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
+    - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
+    - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
+    - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
+    single_transaction: yes
+  no_log: True
+
+- name: GLPI - Enable fusioninventory plugin after glpi db init
+  ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} fusioninventory
+  with_items:
+    - 'glpi:plugin:install --username=root'
+    - 'glpi:plugin:activate'
+  when:
+    - GLPI_CHANGED | bool
+
+- name: GLPI - Configure fusioninventory after glpi db init
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'
+    - INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
+    - UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname'
+    - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009')
+    - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable')
+    - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable')
+    - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-')
+    - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
+  when:
+    - GLPI_CHANGED | bool
+
+- name: GLPI - Set owner of /var/lib/glpi/files/_plugins/fusioninventory
+  ansible.builtin.file:
+    path: /var/lib/glpi/files/_plugins/fusioninventory
+    state: directory
+    recurse: yes
+    owner: '{{ APACHE_USER }}'
+
+- name: GLPI - Make log file writable for all
+  ansible.builtin.file:
+    path: /usr/share/glpi/files/_log/php-errors.log
+    mode: '0666'

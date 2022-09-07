@@ -1,0 +1,2 @@
+SERVER_FQDN: '{{ ansible_fqdn }}'
+STRELAYSRV_URL: '' # STRELAYSRV_URL is set by the role to be used by syncthing role

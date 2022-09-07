@@ -1,0 +1,3 @@
+PKI_PATH: /var/lib/pulse2/pki
+SERVER_FQDN: '{{ ansible_fqdn }}'
+STDISCOSRV_URL: '' # STDISCOSRV_URL is set by the role to be used by syncthing role

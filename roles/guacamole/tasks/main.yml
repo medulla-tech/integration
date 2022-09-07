@@ -1,0 +1,164 @@
+##########################################################
+#                    Install guacamole                   #
+##########################################################
+
+- name: GUACAMOLE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: GUACAMOLE - Generate GUACAMOLE_ROOT_PASSWORD
+  ansible.builtin.set_fact:
+    GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+
+- name: GUACAMOLE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GUACAMOLE - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GUACAMOLE - Install guacamole
+  ansible.builtin.yum:
+    pkg:
+      - guacamole
+      - guacd
+      - libguac-client-vnc
+      - libguac-client-ssh
+      - libguac-client-rdp
+      - guacamole-auth-mysql
+      - mysql-connector-java
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GUACAMOLE - Guacamole tomcat restart server true
+  ansible.builtin.debconf:
+    name: guacamole-tomcat
+    question: guacamole-tomcat/restart-server
+    vtype: boolean
+    value: 'True'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GUACAMOLE - Install guacamole
+  ansible.builtin.apt:
+    pkg:
+      - guacd
+      - libguac-client-rdp0
+      - libguac-client-ssh0
+      - libguac-client-vnc0
+      - guacamole-auth-jdbc
+      - guacamole-tomcat
+    state: latest
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+- name: GUACAMOLE - Install guacamole
+  ansible.builtin.apt:
+    pkg:
+      - guacamole-tomcat
+      - libguac-client-rdp0
+      - libguac-client-ssh0
+      - libguac-client-vnc0
+      - guacamole-auth-jdbc
+      - mysql-connector-java
+    state: latest
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: GUACAMOLE - Delete guacamole database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: guacamole
+    host_all: yes
+    state: absent
+
+- name: GUACAMOLE - Delete guacamole database
+  community.mysql.mysql_db:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: guacamole
+    state: absent
+
+- name: GUACAMOLE - Create guacamole database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: guacamole
+    password: '{{ GUACDBPASSWD }}'
+    state: present
+    priv:
+      'guacamole.*': 'SELECT,INSERT,UPDATE,DELETE'
+  no_log: True
+
+- name: GUACAMOLE - Create guacamole database
+  community.mysql.mysql_db:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: guacamole
+    state: import
+    target: '{{ GUAC_SCHEMAS_PATH }}/{{ item }}'
+  with_items:
+    - 001-create-schema.sql
+    - 002-create-admin-user.sql
+
+- name: GUACAMOLE - Define guacamole root user password in database
+  community.mysql.mysql_query:
+    login_db: guacamole
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    query: 
+    - UPDATE guacamole_entity SET name = 'root' WHERE entity_id = 1
+    - SET @salt = UNHEX(SHA2(UUID(), 256))
+    - UPDATE guacamole_user SET password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT(%(guac_root_pw)s, HEX(@salt)), 256)) WHERE user_id=1
+    single_transaction: yes
+    named_args:
+      guac_root_pw: '{{ GUACAMOLE_ROOT_PASSWORD }}'
+
+- name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
+  ansible.builtin.copy:
+    src: /usr/share/java/mysql-connector-java.jar
+    dest: /etc/guacamole/lib/
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '644'
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GUACAMOLE - Configure guacamole.properties
+  ansible.builtin.template:
+    src: guacamole.properties.j2
+    dest: /etc/guacamole/guacamole.properties
+    mode: '0644'
+    backup: yes
+  notify:
+    - GUACAMOLE - Restart tomcat
+
+- name: GUACAMOLE - Allow requests to Tomcat coming from Pulse
+  ansible.builtin.template:
+    src: tomcat.xml.j2
+    dest: /etc/guacamole/tomcat.xml
+    mode: '0644'
+    backup: yes
+  notify:
+    - GUACAMOLE - Restart tomcat
+
+- name: GUACAMOLE - Ensure guacd is running
+  ansible.builtin.systemd:
+    name: guacd
+    state: started
+    enabled: yes
+    masked: no

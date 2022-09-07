@@ -1,0 +1,5 @@
+dependencies:
+  - role: nfs
+  - role: pxe_registration
+  - role: pulse_packageserver
+  - role: syncthing

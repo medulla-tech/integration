@@ -1,0 +1,9 @@
+/var/log/syncthing.log
+{
+    missingok
+    daily
+    rotate 7
+    notifempty
+    create 0644 root root
+    compress
+}

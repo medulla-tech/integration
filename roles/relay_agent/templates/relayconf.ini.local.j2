@@ -1,0 +1,29 @@
+[connection]
+server = {{ IP_ADDRESS }}
+password = {{ XMPP_MASTER_PASSWORD }}
+
+[chat]
+domain = {{ XMPP_DOMAIN }}
+
+[jid_01]
+jidname = RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/{{ XMPP_DOMAIN }}01a
+
+[global]
+allow_order = master_reg
+
+[type]
+{% if XMPP_DOMAIN == 'pulse' %}
+guacamole_baseurl = http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
+{% else %}
+guacamole_baseurl = http://{{ SERVER_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
+{% endif %}
+{% if PUBLIC_IP != '' %}
+request_type = public
+public_ip = {{ PUBLIC_IP }}
+{% endif %}
+
+[plugin]
+pluginlist = manage_scheduler_relay, guacamoleconf, applicationdeploymentjson, downloadfileexpert, downloadfile, guacamole, reverse_ssh_on
+
+[quick_deploy]
+max_size_stanza_xmpp = 0

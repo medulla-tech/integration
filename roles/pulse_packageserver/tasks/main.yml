@@ -1,0 +1,37 @@
+##########################################################
+#                  Pulse Package Server                  #
+##########################################################
+
+- name: PULSE_PACKAGESERVER - Install Pulse package server
+  ansible.builtin.yum:
+    pkg:
+      - pulse2-package-server
+      - pulse2-common
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE_PACKAGESERVER - Install Pulse package server
+  ansible.builtin.apt:
+    pkg:
+      - pulse2-package-server
+      - pulse2-common
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE_PACKAGESERVER - Configure package server
+  ansible.builtin.template:
+    src: package-server.ini.local.j2
+    dest: /etc/mmc/pulse2/package-server/package-server.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE_PACKAGESERVER - Restart package server
+
+- name: PULSE_PACKAGESERVER - Ensure package server is running
+  ansible.builtin.systemd:
+    name: pulse2-package-server
+    state: started
+    enabled: yes
+    masked: no

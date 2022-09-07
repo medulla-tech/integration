@@ -1,0 +1,11 @@
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBHOST: localhost
+GLPI_DBPORT: 3306
+GLPI_DBUSER: glpi
+GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBNAME: glpi
+GLPI_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+ORGANISATION: Siveo Pulse
+LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
