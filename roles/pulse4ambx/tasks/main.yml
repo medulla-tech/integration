@@ -3533,13 +3533,13 @@
      - (INSTALL_TYPE == 'p') and (RESET_DB|bool)
 
  - name: MAINPULSE - Run pulse2-setup with database reset
-   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}' --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
    when:
      - RESET_DB|bool
      - INSTALL_TYPE == 'p'
      
  - name: MAINPULSE - Run pulse2-setup without database reset
-   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}' --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
    when:
      - not RESET_DB|bool
      - INSTALL_TYPE == 'p'
