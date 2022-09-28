@@ -1906,7 +1906,8 @@
      value: '/media/BACKUP/urbackup'
    when:
      - ansible_distribution == 'Debian'
-
+     - INSTALL_TYPE == "p"
+     
  - name: BACKUP - Install backup-server
    apt:
      update_cache: yes
@@ -1915,7 +1916,8 @@
        - urbackup-server
    when:
      - ansible_distribution == 'Debian'
-
+     - INSTALL_TYPE == "p"
+     
  - name: BACKUP - Install backup-server
    yum:
      update_cache: yes
@@ -1924,7 +1926,8 @@
        - urbackup-server
    when:
      - ansible_distribution == 'CentOS'
-
+     - INSTALL_TYPE == "p"
+     
  - name: BACKUP/APACHE - Configure apache for pulse backup
    copy:
      content: |
