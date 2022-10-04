@@ -223,6 +223,7 @@ modules:
     ip_access: trusted_network
   mod_roster:
     versioning: true
+    cache_size: 400000
   mod_s2s_dialback: {}
   mod_shared_roster: {}
   mod_sic: {}
@@ -237,6 +238,10 @@ modules:
 registration_timeout: infinity
 
 max_fsm_queue: 10000
+
+# cache_size set to the number of online users at the same time
+# In mod_roster the cache_size parameter should be set to 20 times the number of online users
+cache_size: 20000
 
 ### Local Variables:
 ### mode: yaml
