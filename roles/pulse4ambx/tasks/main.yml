@@ -96,6 +96,12 @@
    set_fact:
      GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
 
+ - name: VARS - Generate backup API password
+   set_fact:
+     BACKUP_API_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: VARS - Set LDAP_BASEDN
    set_fact:
      LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
@@ -1949,6 +1955,78 @@
      state: reloaded
    when:
      - INSTALL_TYPE == "p"
+
+ - name: BACKUP - Generate session key
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=login
+     method: GET
+     return_content: true
+   register: session_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Get session key
+   set_fact:
+     URBACKUP_SESSION: '{{ session_key.json.session }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Configure backup server internet settings
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: general_save
+       internet_mode_enabled: 'true'
+       internet_server: '{{ SERVER_FQDN }}'
+       no_images: 'true'
+       allow_tray_exit: 'false'
+       allow_starting_full_image_backups: 'false'
+       allow_starting_incr_image_backups: 'false'
+       allow_overwrite: 'false'
+       update_freq_image_incr: -5184000
+       internet_full_file_backups: 'true'
+       ses: '{{ URBACKUP_SESSION }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Configure backup server port setting
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: general_save
+       ses: '{{ URBACKUP_SESSION }}'
+       internet_server_port: '{{ SERVER_URBACKUP_PORT }}'
+   when:
+     - SERVER_URBACKUP_PORT != ''
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Create admin user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ ROOT_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Create API user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ BACKUP_API_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Change API password
+   lineinfile:
+     path: /etc/mmc/plugins/urbackup.ini
+     regexp: '^passwordapi=.*$'
+     line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
+   when:
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                      Install Samba                     #
@@ -4477,6 +4555,23 @@
    ignore_errors: true
    when:
      - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Change backup server name in .ini
+   lineinfile:
+     path: /var/lib/pulse2/clients/config/updatebackupclient.ini
+     regexp: '^backup_server=.*$'
+     line: 'backup_server={{ SERVER_FQDN }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Change backup server port in .ini
+   lineinfile:
+     path: /var/lib/pulse2/clients/config/updatebackupclient.ini
+     regexp: '^backup_port=.*$'
+     line: 'backup_port={{ SERVER_URBACKUP_PORT }}'
+   when:
+     - SERVER_URBACKUP_PORT != ''
      - INSTALL_TYPE == 'p'
 
 ##########################################################
