@@ -9,23 +9,19 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
-- name: BASE - Install tools needed for the setup
+- name: BASE - Install python3 bindings to SELinux shared libraries 
   yum:
     state: latest
     pkg:
-      - python3-PyMySQL
       - libselinux-python3
-      - xmlstarlet
   when:
     - ansible_distribution == 'CentOS'
 
-- name: BASE - Install tools needed for the setup
+- name: BASE - Install python3 bindings to SELinux shared libraries
   apt:
     state: latest
     pkg:
-      - python3-pymysql
       - python3-selinux
-      - xmlstarlet
   when:
     - ansible_distribution == 'Debian'
 
@@ -200,5 +196,23 @@
 - name: BASE - Run apt update
   ansible.builtin.apt:
     update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Install tools needed for the setup
+  yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+      - xmlstarlet
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Install tools needed for the setup
+  apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+      - xmlstarlet
   when:
     - ansible_distribution == 'Debian'
