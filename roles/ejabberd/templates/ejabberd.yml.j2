@@ -100,6 +100,9 @@ acl:
       - root@{{ XMPP_DOMAIN }}
       - master@{{ XMPP_DOMAIN }}
       - rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}
+  substitutes:
+    user_regexp:
+      - "^master_.*$": {{ XMPP_DOMAIN }}
 
   local:
     user_regexp: ""
@@ -162,6 +165,7 @@ shaper_rules:
   max_user_sessions: 10
   max_user_offline_messages:
     5000: admin
+    1000: substitutes
     100: all
   c2s_shaper:
     none: admin
