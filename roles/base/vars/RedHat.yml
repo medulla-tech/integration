@@ -1,3 +1,4 @@
-PULSE4REPO_URL: https://pulse-repo.siveo.net/cnam-repo/pulse4.repo
+#PULSE4REPO_URL: https://cnam.siveo.net/pulse4.repo
+PULSE4REPO_URL: https://git.siveo.net/centos7-py3.repo
 PULSE4REPO_DEST: /etc/yum.repos.d/pulse4.repo
 NTP_DAEMON: ntpd
