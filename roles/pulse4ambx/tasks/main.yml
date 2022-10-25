@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.4.0'
+     PLAYBOOK_VERSION: '3.4.1'
 
  - name: VERSION - Display version
    debug:
@@ -1888,7 +1888,6 @@
      state: absent
    with_items:
      - '^.* pulse$'
-     - '^.* {{ XMPP_DOMAIN }}$'
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
@@ -1900,7 +1899,6 @@
      regexp: "{{ item.regex }}"
    with_items:
      - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse' }
-     - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}' }
    when:
      - INSTALL_TYPE != 'p'
    no_log: True
