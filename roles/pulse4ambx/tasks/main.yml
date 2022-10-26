@@ -504,7 +504,7 @@
      - .modules.mod_register.welcome_message.subject = ""
      - .modules.mod_register.ip_access = "trusted_network"
      - .modules.mod_ping.send_pings = true
-     - .modules.mod_ping.ping_interval = 60
+     - .modules.mod_ping.ping_interval = 5
      - .modules.mod_ping.timeout_action = "kill"
      - .modules.mod_admin_extra = {}
      - .modules.mod_s2s_dialback = {}
