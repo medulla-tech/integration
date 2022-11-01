@@ -13,7 +13,7 @@
     GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
 
 - name: GUACAMOLE - Install tools needed for the setup
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     state: latest
     pkg:
       - python3-PyMySQL
@@ -29,7 +29,7 @@
     - ansible_distribution == 'Debian'
 
 - name: GUACAMOLE - Install guacamole
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - guacamole
       - guacd

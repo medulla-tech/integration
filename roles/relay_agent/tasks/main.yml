@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: RELAY_AGENT - Install relay server packages
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     state: latest
     pkg:
       - pulse-xmpp-agent-relay

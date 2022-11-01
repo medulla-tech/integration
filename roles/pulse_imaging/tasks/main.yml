@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: PULSE_IMAGING - Install Pulse imaging and clonezilla
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - pulse2-package-server
       - pulse2-common

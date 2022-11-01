@@ -3,7 +3,7 @@
 ##########################################################
 
 - name: EJABBERD - Install ejabberd
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     state: latest
     pkg:
       - ejabberd

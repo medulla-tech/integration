@@ -3,7 +3,7 @@
 ##########################################################
 
 - name: PULSE_PACKAGESERVER - Install Pulse package server
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - pulse2-package-server
       - pulse2-common

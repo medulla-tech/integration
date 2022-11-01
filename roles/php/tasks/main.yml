@@ -14,7 +14,7 @@
   register: phpfpm_exists
 
 - name: PHP - Uninstall previous version
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - php-common
       - php-mysql
@@ -24,7 +24,7 @@
     - phpfpm_exists.stat == false
 
 - name: PHP - Install php
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - php
       - php-fpm

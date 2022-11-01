@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: SAMBA - Install samba
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     pkg:
       - samba
     state: latest
