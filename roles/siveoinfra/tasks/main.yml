@@ -285,7 +285,7 @@
     - PULSEMAIN_IP == ''
 
 - name: SIVEOINFRA/IPTABLES - Install packages for iptable persistance
-  yum:
+  ansible.builtin.dnf:
     state: latest
     pkg:
       - iptables-services
