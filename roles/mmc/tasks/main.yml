@@ -14,22 +14,22 @@
     pkg:
       - pulse2
       - mmc-web-kiosk
-      - python-mmc-kiosk
+      - python3-mmc-kiosk
       - mmc-web-backuppc
-      - python-mmc-backuppc
+      - python3-mmc-backuppc
       - mmc-web-dashboard
-      - python-mmc-dashboard
+      - python3-mmc-dashboard
       - mmc-web-glpi
-      - python-mmc-glpi
+      - python3-mmc-glpi
       - mmc-web-ppolicy
-      - python-mmc-ppolicy
+      - python3-mmc-ppolicy
       - mmc-web-services
-      - python-mmc-services
+      - python3-mmc-services
       - mmc-web-support
-      - python-mmc-support
+      - python3-mmc-support
       - mmc-web-base
-      - python-mmc-xmppmaster
-      - python-mmc-guacamole
+      - python3-mmc-xmppmaster
+      - python3-mmc-guacamole
       - pulse-xmppmaster-agentplugins
       - pulse-agent-installers
       - pulse2-uuid-resolver
@@ -44,22 +44,22 @@
     pkg:
       - pulse2
       - mmc-web-kiosk
-      - python-mmc-kiosk
+      - python3-mmc-kiosk
       - mmc-web-backuppc
-      - python-mmc-backuppc
+      - python3-mmc-backuppc
       - mmc-web-dashboard
-      - python-mmc-dashboard
+      - python3-mmc-dashboard
       - mmc-web-glpi
-      - python-mmc-glpi
+      - python3-mmc-glpi
       - mmc-web-ppolicy
-      - python-mmc-ppolicy
+      - python3-mmc-ppolicy
       - mmc-web-services
-      - python-mmc-services
+      - python3-mmc-services
       - mmc-web-support
-      - python-mmc-support
+      - python3-mmc-support
       - mmc-web-xmppmaster
-      - python-mmc-xmppmaster
-      - python-mmc-guacamole
+      - python3-mmc-xmppmaster
+      - python3-mmc-guacamole
       - pulse-xmppmaster-agentplugins
       - pulse-agent-installers
       - pulse-update-manager
