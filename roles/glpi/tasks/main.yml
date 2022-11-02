@@ -68,20 +68,6 @@
 - name: GLPI - Initialise glpi database on debian
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
-    - ansible_distribution == 'Debian'
-    - GLPI_DBINITIALISED is not defined
-  register: glpi_init
-
-- name: GLPI - Register GLPI_CHANGED variable
-  ansible.builtin.set_fact:
-    GLPI_CHANGED: '{{ glpi_init.changed }}'
-  when:
-    glpi_init.changed
-
-- name: GLPI - Initialise glpi database on centos
-  ansible.builtin.command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
-  when:
-    - ansible_distribution == 'CentOS'
     - GLPI_DBINITIALISED is not defined
   register: glpi_init
 
@@ -100,13 +86,6 @@
 
 - name: GLPI - Upgrade glpi database if needed on debian
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:update
-  when:
-    - ansible_distribution == 'Debian'
-
-- name: GLPI - Upgrade glpi database if needed on centos
-  ansible.builtin.command: php /usr/share/glpi/scripts/cliupdate.php
-  when:
-    - ansible_distribution == 'CentOS'
 
 - name: GLPI - Initialise glpi database for Pulse
   community.mysql.mysql_query:
