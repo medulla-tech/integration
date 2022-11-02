@@ -17,6 +17,8 @@
     mode: '0644'
   notify:
     - STRELAYSRV - Restart relay server
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: STRELAYSRV - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
@@ -27,16 +29,22 @@
     state: started
     enabled: yes
     masked: no
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: STRELAYSRV - Get Service Status
   ansible.builtin.shell: systemctl status syncthing-relaysrv.service |awk 'match($0, /.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}/) {print substr($0, RSTART, RLENGTH)}'
   register: strelaysrv_status
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: STRELAYSRV - Set STRELAYSRV_URL variable
   ansible.builtin.set_fact:
     STRELAYSRV_URL: relay://{{ SERVER_FQDN }}:22067/?id={{ strelaysrv_status.stdout }}
-  when: strelaysrv_status.stdout != ""
+  when: strelaysrv_status.stdout != "" and ansible_distribution == 'Debian'
 
 - name: STRELAYSRV - Print STRELAYSRV_URL variable
   ansible.builtin.debug:
     var: STRELAYSRV_URL
+  when:
+    - ansible_distribution == 'Debian'
