@@ -3,7 +3,7 @@
 ##########################################################
 
 - name: PULSE_INVENTORYSERVER - Install Pulse inventory server
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - pulse2-inventory-server
     state: latest

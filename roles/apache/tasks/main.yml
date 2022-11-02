@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: APACHE - Install Apache
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - httpd

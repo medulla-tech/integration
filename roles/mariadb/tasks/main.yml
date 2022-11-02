@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: MARIADB - Install tools needed for the setup
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - python3-PyMySQL
@@ -25,7 +25,7 @@
     - ansible_distribution == 'Debian'
 
 - name: MARIADB - Install mariadb
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - mariadb

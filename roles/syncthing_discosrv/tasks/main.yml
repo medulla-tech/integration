@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: STDISCOSRV - Install syncthing discovery server
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - syncthing-tools
       - syncthing-systemd-addons

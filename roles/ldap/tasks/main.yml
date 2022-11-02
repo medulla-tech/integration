@@ -33,7 +33,7 @@
     - ansible_distribution == 'Debian'
 
 - name: LDAP - Install ldap server
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - openldap-servers

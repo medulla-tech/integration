@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: SYNCTHING - Install syncthing
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - syncthing
     state: latest

@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: CERT - Install openssl and ca-certificates package
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - openssl

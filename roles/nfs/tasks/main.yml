@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: NFS - Install nfs
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - nfs-utils
     state: latest

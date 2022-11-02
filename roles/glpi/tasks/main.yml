@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: GLPI - Install glpi
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - glpi-{{ GLPI_VERSION }}.*
       - glpi

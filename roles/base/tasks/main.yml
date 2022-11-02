@@ -90,7 +90,7 @@
     - ansible_distribution == 'Debian'
 
 - name: BASE - Install ntp
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - ntp

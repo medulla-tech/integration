@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: PXE_REGISTRATION - Install tftp server and pulse2-register-pxe
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     pkg:
       - tftp
       - tftp-server

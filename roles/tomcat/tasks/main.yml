@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: TOMCAT - Install Tomcat
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - tomcat

@@ -3,7 +3,7 @@
 ##########################################################
 
 - name: SUBSTITUTE_AGENT - Install packages
-  ansible.builtin.dnf:
+  ansible.builtin.yum:
     state: latest
     pkg:
       - pulse-xmpp-master-substitute
