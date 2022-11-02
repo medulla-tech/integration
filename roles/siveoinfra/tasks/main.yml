@@ -79,6 +79,8 @@
       - curl
       - wget
     update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: SIVEOINFRA - Add all users ssh keys to root account
   lineinfile:
