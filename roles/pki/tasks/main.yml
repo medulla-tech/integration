@@ -15,6 +15,7 @@
       - openssl
       - ca-certificates
       - pyOpenSSL
+      - python-cryptography
   when:
     - ansible_distribution == 'CentOS'
 
