@@ -10,7 +10,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: BASE - Install python3 bindings to SELinux shared libraries 
-  ansible.builtin.dnf:
+  yum:
     state: latest
     pkg:
       - libselinux-python3
@@ -18,7 +18,7 @@
     - ansible_distribution == 'CentOS'
 
 - name: BASE - Install python3 bindings to SELinux shared libraries
-  ansible.builtin.apt:
+  apt:
     state: latest
     pkg:
       - python3-selinux
@@ -200,7 +200,7 @@
     - ansible_distribution == 'Debian'
 
 - name: BASE - Install tools needed for the setup
-  ansible.builtin.dnf:
+  yum:
     state: latest
     pkg:
       - python3-PyMySQL
@@ -209,7 +209,7 @@
     - ansible_distribution == 'CentOS'
 
 - name: BASE - Install tools needed for the setup
-  ansible.builtin.apt:
+  apt:
     state: latest
     pkg:
       - python3-pymysql
