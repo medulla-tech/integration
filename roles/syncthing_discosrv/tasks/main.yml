@@ -25,6 +25,15 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: STDISCOSRV - Create user accounts
+  ansible.builtin.user:
+    name: syncthing
+    state: present
+    createhome: yes
+    home: /var/lib/syncthing
+    shell: /sbin/nologin
+    system: yes
+
 - name: STDISCOSRV - Make sure folder structure exists
   ansible.builtin.file:
     path: '{{ STDISCOSRV_PATH }}'
