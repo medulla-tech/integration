@@ -13,7 +13,8 @@
     pkg:
       - glpi-{{ GLPI_VERSION }}.*
       - glpi
-      - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}.*
+      - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}*
+      - glpi-plugin-fusioninventory
       - php-ldap
   when:
     - ansible_distribution == 'CentOS'
