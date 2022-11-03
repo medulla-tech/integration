@@ -50,18 +50,7 @@
 
 - name: BACKUP - Ensure urbackup is running
   ansible.builtin.systemd:
-    name: urbackupsrv
+    name: '{{ URBACKUP_DAEMON }}'
     state: started
     enabled: yes
     masked: no
-  when:
-    - ansible_distribution == 'Debian'
-
-- name: BACKUP - Ensure urbackup is running
-  ansible.builtin.systemd:
-    name: urbackup-server
-    state: started
-    enabled: yes
-    masked: no
-  when:
-    - ansible_distribution == 'CentOS'
