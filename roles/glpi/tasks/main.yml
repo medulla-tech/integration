@@ -8,14 +8,6 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
-
-- name: GLPI - Update Php to version 7.4
-  ansible.builtin.yum:
-    pkg:
-      - php
-  when:
-    - ansible_distribution == 'CentOS'
-
 - name: GLPI - Install glpi
   ansible.builtin.yum:
     pkg:
