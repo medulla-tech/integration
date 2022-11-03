@@ -13,12 +13,6 @@
   ansible.builtin.yum:
     pkg:
       - php
-      - php-xml
-      - php-gd
-      - php-zip
-      - php-xmlrpc
-      - php-mbstring
-      - php-intl
   when:
     - ansible_distribution == 'CentOS'
 
