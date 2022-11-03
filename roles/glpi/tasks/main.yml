@@ -65,7 +65,7 @@
   when:
     - resdbinitialised.stat.exists
 
-- name: GLPI - Initialise glpi database on debian
+- name: GLPI - Initialise glpi database
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
     - GLPI_DBINITIALISED is not defined
@@ -84,7 +84,7 @@
   when:
     - GLPI_CHANGED | bool
 
-- name: GLPI - Upgrade glpi database if needed on debian
+- name: GLPI - Upgrade glpi database if needed
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:update
 
 - name: GLPI - Initialise glpi database for Pulse
