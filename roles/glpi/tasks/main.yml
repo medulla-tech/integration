@@ -16,6 +16,12 @@
       - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}*
       - glpi-plugin-fusioninventory
       - php-ldap
+      - php-xml
+      - php-gd
+      - php-zip
+      - php-xmlrpc
+      - php-mbstring
+      - php-intl
   when:
     - ansible_distribution == 'CentOS'
 
@@ -25,6 +31,12 @@
       - glpi={{ GLPI_VERSION }}.*
       - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
       - php-ldap
+      - php-xml
+      - php-gd
+      - php-zip
+      - php-xmlrpc
+      - php-mbstring
+      - php-intl
   when:
     - ansible_distribution == 'Debian'
 
