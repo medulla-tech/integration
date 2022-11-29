@@ -196,6 +196,7 @@
     - admin
     - imaging
     - kiosk
+    - urbackup
   notify:
     - MMC - Restart mmc-agent
   when: 

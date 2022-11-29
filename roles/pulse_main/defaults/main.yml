@@ -17,3 +17,5 @@ DBHOST: localhost
 DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
+URBACKUP_SERVERADDRESS: '{{ ansible_fqdn }}'
+URBACKUP_SERVERPORT: 55415

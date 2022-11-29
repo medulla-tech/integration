@@ -8,6 +8,10 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
+- name: VARS - Generate backup API password
+  set_fact:
+    URBACKUP_API_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+    
 - name: BACKUP - Define parameters for debian
   ansible.builtin.debconf:
     name: urbackup-server
@@ -47,6 +51,45 @@
     - BACKUP - Restart apache
   when:
     - ansible_distribution == 'Debian'
+
+- name: BACKUP - Generate session key
+    uri:
+      url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
+      method: GET
+      return_content: true
+    register: session_key
+
+- name: BACKUP - Get session key
+  set_fact:
+    urbackup_session: '{{ session_key.json.session }}'
+
+- name: BACKUP - Configure backup server internet settings
+  uri:
+    url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=settings
+    method: POST
+    body_format: form-urlencoded
+    return_content: true
+    headers:
+      Accept: application/json
+    body:
+      sa: general_save
+      internet_mode_enabled: 'true'
+      internet_server: '{{ URBACKUP_SERVERADDRESS }}'
+      internet_server_port: '{{ URBACKUP_SERVERPORT }}'
+      no_images: 'true'
+      allow_tray_exit: 'false'
+      allow_starting_full_image_backups: 'false'
+      allow_starting_incr_image_backups: 'false'
+      allow_overwrite: 'false'
+      update_freq_image_incr: -5184000
+      internet_full_file_backups: 'true'
+      ses: '{{ urbackup_session }}'
+
+- name: BACKUP - Create admin user
+  command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
+
+- name: BACKUP - Create API user
+  command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
 
 - name: BACKUP - Ensure urbackup is running
   ansible.builtin.systemd:

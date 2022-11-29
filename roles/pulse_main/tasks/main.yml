@@ -70,6 +70,13 @@
     - GLPI_DBHOST == 'localhost'
     - result.status == 201
 
+- name: PULSE/AGENT - Configure the agent updatebackupclient plugin
+  ansible.builtin.template:
+    src: updatebackupclient.ini.j2
+    dest: /var/lib/pulse2/clients/config/updatebackupclient.ini
+    mode: '0644'
+    backup: yes
+
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
   with_items:

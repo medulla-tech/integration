@@ -1,0 +1,13 @@
+[main]
+disable=0
+
+[database]
+dbhost = {{ DBHOST }}
+dbport = {{ DBPORT }}
+dbuser = {{ DBUSER }}
+dbpasswd = {{ DBPASSWORD }}
+
+[urbackup]
+url = http://{{ URBACKUP_API_SERVER }}/urbackup/x
+password = {{ URBACKUP_ADMINPASSWD }}
+passwordapi = {{ URBACKUP_API_PASSWORD }}
