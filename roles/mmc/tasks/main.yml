@@ -15,8 +15,8 @@
       - pulse2
       - mmc-web-kiosk
       - python3-mmc-kiosk
-      - mmc-web-backuppc
-      - python3-mmc-backuppc
+      - mmc-web-urbackup
+      - python3-mmc-urbackup
       - mmc-web-dashboard
       - python3-mmc-dashboard
       - mmc-web-glpi
@@ -45,8 +45,8 @@
       - pulse2
       - mmc-web-kiosk
       - python3-mmc-kiosk
-      - mmc-web-backuppc
-      - python3-mmc-backuppc
+      - mmc-web-urbackup
+      - python3-mmc-urbackup
       - mmc-web-dashboard
       - python3-mmc-dashboard
       - mmc-web-glpi
