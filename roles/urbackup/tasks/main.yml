@@ -52,11 +52,24 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: BACKUP - Create admin user
+  command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
+
+- name: BACKUP - Create API user
+  command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
+
 - name: BACKUP - Generate session key
     uri:
       url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
-      method: GET
+      method: POST
+      body_format: form-urlencoded
       return_content: true
+    headers:
+      Accept: application/json
+    body:
+      username: admin
+      password: '{{ URBACKUP_ADMINPASSWD }}'
+      plainpw: 1
     register: session_key
 
 - name: BACKUP - Get session key
@@ -84,12 +97,6 @@
       update_freq_image_incr: -5184000
       internet_full_file_backups: 'true'
       ses: '{{ urbackup_session }}'
-
-- name: BACKUP - Create admin user
-  command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
-
-- name: BACKUP - Create API user
-  command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
 
 - name: BACKUP - Ensure urbackup is running
   ansible.builtin.systemd:
