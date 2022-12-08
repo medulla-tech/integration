@@ -3905,11 +3905,6 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: MAINPULSE - Generate pulse agent in minimal for debian
-   command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --linux-distros=debian-buster,debian-stretch
-   when:
-     - INSTALL_TYPE == 'p'
-
 ##########################################################
 #                  Relay server setup                    #
 ##########################################################
