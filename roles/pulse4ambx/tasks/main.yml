@@ -2020,14 +2020,6 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: BACKUP - Change API password
-   lineinfile:
-     path: /etc/mmc/plugins/urbackup.ini
-     regexp: '^passwordapi=.*$'
-     line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
-   when:
-     - INSTALL_TYPE == 'p'
-
 ##########################################################
 #                      Install Samba                     #
 ##########################################################
@@ -3966,6 +3958,8 @@
      path: /etc/mmc/plugins/urbackup.ini
      regexp: '^passwordapi=.*$'
      line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
+   when:
+     - INSTALL_TYPE == 'p'
      
  - name: MAINPULSE - Restart mmc-agent
    systemd:
