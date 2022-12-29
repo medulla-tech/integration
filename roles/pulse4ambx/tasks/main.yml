@@ -1959,8 +1959,15 @@
  - name: BACKUP - Generate session key
    uri:
      url: http://{{ SERVER_FQDN }}/urbackup/x?a=login
-     method: GET
+     method: POST
+     body_format: form-urlencoded
      return_content: true
+     headers:
+       Accept: application/json
+     body:
+       username: admin
+       password: '{{ URBACKUP_ADMINPASSWD }}'
+       plainpw: 1
    register: session_key
    when:
      - INSTALL_TYPE == 'p'
