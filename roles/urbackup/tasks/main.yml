@@ -9,7 +9,7 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: VARS - Generate backup API password
-  set_fact:
+  ansible.builtin.set_fact:
     URBACKUP_API_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
     
 - name: BACKUP - Define parameters for debian
@@ -53,13 +53,13 @@
     - ansible_distribution == 'Debian'
 
 - name: BACKUP - Create admin user
-  command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
+  ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
 
 - name: BACKUP - Create API user
-  command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
+  ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
 
 - name: BACKUP - Generate session key
-  uri:
+  ansible.builtin.uri:
     url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
     method: POST
     body_format: form-urlencode
@@ -73,11 +73,11 @@
   register: session_key
 
 - name: BACKUP - Get session key
-  set_fact:
+  ansible.builtin.set_fact:
     urbackup_session: '{{ session_key.json.session }}'
 
 - name: BACKUP - Configure backup server internet settings
-  uri:
+  ansible.builtin.uri:
     url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=settings
     method: POST
     body_format: form-urlencoded
