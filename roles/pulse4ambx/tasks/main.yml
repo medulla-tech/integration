@@ -4583,6 +4583,18 @@
      - SERVER_URBACKUP_PORT != ''
      - INSTALL_TYPE == 'p'
 
+ - name: PULSEAGENT/BACKUP - Define SERVER_URBACKUP_PORT if default port
+   set_fact:
+     SERVER_URBACKUP_PORT: 55415
+   when:
+     - SERVER_URBACKUP_PORT == ''
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Create quick action for deploying updatebackupclient.ini
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO `qa_custom_command` VALUES ('allusers','windows','Deploy updatebackupclient.ini file','powershell.exe \"$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ SERVER_FQDN }} {0}backup_port = {{ SERVER_URBACKUP_PORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent\"','Copy urbackup installation config file to cli')"
+   when:
+     - INSTALL_TYPE == 'p'
+
 ##########################################################
 #                     Final steps                        #
 ##########################################################
