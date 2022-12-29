@@ -59,18 +59,18 @@
   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
 
 - name: BACKUP - Generate session key
-    uri:
-      url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
-      method: POST
-      body_format: form-urlencoded
-      return_content: true
+  uri:
+    url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
+    method: POST
+    body_format: form-urlencode
+    return_content: true
     headers:
       Accept: application/json
     body:
       username: admin
       password: '{{ URBACKUP_ADMINPASSWD }}'
       plainpw: 1
-    register: session_key
+  register: session_key
 
 - name: BACKUP - Get session key
   set_fact:
