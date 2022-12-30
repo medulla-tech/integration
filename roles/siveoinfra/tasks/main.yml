@@ -76,24 +76,11 @@
     pkg:
       - vim
       - htop
-      - ntopng
       - less
       - open-vm-tools
       - curl
       - wget
     update_cache: yes
-
-- name: SIVEOINFRA - Configure ntopng on port 3003
-  lineinfile:
-    path: /etc/ntopng.conf
-    regexp: '^-w='
-    line: '-w=3003'
-
-- name: SIVEOINFRA - Restart ntopng
-  systemd:
-    enabled: yes
-    name: ntopng
-    state: restarted
 
 - name: SIVEOINFRA - Add all users ssh keys to root account
   lineinfile:
