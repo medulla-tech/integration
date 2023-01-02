@@ -2626,6 +2626,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -2677,6 +2678,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
@@ -2701,6 +2703,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
      - DELETE_PACKAGES is defined and DELETE_PACKAGES|bool == true
@@ -2716,6 +2719,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2729,6 +2733,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Create folder named after the cluster
    file:
@@ -2760,6 +2765,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Create syncthing special folder for cluster
    file:
@@ -2832,6 +2838,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Define ACLs on the folders for cluster
    acl:
@@ -2858,6 +2865,31 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SHARE - Define ACLs on the folders for winupdates
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders for winupdates on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
      path: '{{ item.destination }}'
@@ -2873,6 +2905,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Define ACLs on the folders with inheritance for cluster
    acl:
@@ -2901,6 +2934,33 @@
    when:
      - INSTALL_TYPE != 'p'
 
+ - name: SHARE - Define ACLs on the folders with inheritance for winupdates
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance for winupdates on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
  - name: SHARE - Create shares on relay
    command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
@@ -2909,6 +2969,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2931,6 +2992,7 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3920,8 +3982,10 @@
    with_items:
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (2, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', 1, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (3, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 2)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', 3)
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
    when:
      - INSTALL_TYPE == 'p'
