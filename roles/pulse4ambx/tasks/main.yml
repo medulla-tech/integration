@@ -1935,6 +1935,16 @@
    when:
      - ansible_distribution == 'CentOS'
      - INSTALL_TYPE == "p"
+
+ - name: BACKUP - Create admin user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ ROOT_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Create API user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ BACKUP_API_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
      
  - name: BACKUP/APACHE - Configure apache for pulse backup
    copy:
@@ -2017,16 +2027,6 @@
        internet_server_port: '{{ SERVER_URBACKUP_PORT }}'
    when:
      - SERVER_URBACKUP_PORT != ''
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Create admin user
-   command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ ROOT_PASSWORD }}
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Create API user
-   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ BACKUP_API_PASSWORD }}
-   when:
      - INSTALL_TYPE == 'p'
 
 ##########################################################
