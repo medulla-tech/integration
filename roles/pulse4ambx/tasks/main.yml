@@ -360,6 +360,7 @@
        - xmlstarlet
        - acl
        - yq
+       - python3-mysqldb
    when:
      - ansible_distribution == 'CentOS'
 
@@ -372,6 +373,7 @@
        - xmlstarlet
        - acl
        - yq
+       - python3-mysqldb
    when:
      - ansible_distribution == 'Debian'
 
@@ -3866,6 +3868,21 @@
      - INSTALL_TYPE == 'p'
    no_log: True
 
+ - name: MAINPULSE - Configure updates substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_upd.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbport', value: '{{ DBPORT }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
  - name: MAINPULSE - Update default ARS if public ip is defined
    command: crudini --set {{ item.conf_file }} {{ item.section }} serverip {{ PUBLIC_IP }}
    with_items:
@@ -3941,6 +3958,7 @@
      - deployment
      - reconfigurator
      - monitoring
+     - updates
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4031,7 +4049,47 @@
      line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
    when:
      - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/UPDATES - Define products to manage
+   command: crudini --set /etc/mmc/plugins/updates.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'main', parameter: 'disable', value: '0' }
+     - { section: 'database', parameter: 'dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'products', parameter: 'families', value: 'Win_Malicious, Win10' }
+     - { section: 'products', parameter: 'Win10_versions', value: 'X64_21H2' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
      
+ - name: MAINPULSE/UPDATES - Configure script
+   ansible.builtin.template:
+     src: medulla-generate-winupdate-packages.j2
+     dest: /usr/sbin/medulla-generate-winupdate-packages
+     mode: '0755'
+     owner: root
+
+ - name: MAINPULSE/UPDATES - Create database
+   community.mysql.mysql_db:
+     login_host: '{{ DBHOST }}'
+     login_port: '{{ DBPORT }}'
+     login_user: '{{ DBADMINUSER }}'
+     login_password: '{{ DBADMINPASSWD }}'
+     name: 'base_wsusscn2'
+     state: present
+
+ - name: MAINPULSE/UPDATES - Create database user
+   community.mysql.mysql_user:
+     login_host: '{{ DBHOST }}'
+     login_port: '{{ DBPORT }}'
+     login_user: '{{ DBADMINUSER }}'
+     login_password: '{{ DBADMINPASSWD }}'
+     name: '{{ DBUSER }}'
+     password: "{{ DBPASSWORD }}"
+     state: present
+     priv:
+       'base_wsusscn2.*': 'ALL'
+   no_log: True
+
  - name: MAINPULSE - Restart mmc-agent
    systemd:
      name: mmc-agent
@@ -4412,6 +4470,7 @@
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
      - { type: 'deployment', jid: 'master_depl@pulse' }
+     - { type: 'updates', jid: 'master_upd@pulse' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4425,6 +4484,7 @@
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
      - { type: 'deployment', jid: 'master_depl@pulse' }
+     - { type: 'updates', jid: 'master_upd@pulse' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -4725,6 +4785,11 @@
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
+
+ - name: FINAL - Download and generate updates packages
+   command: /usr/sbin/medulla-generate-winupdate-packages
+   when:
+     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                        DEBUG                           #
