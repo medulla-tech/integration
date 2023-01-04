@@ -4086,6 +4086,7 @@
      name: 'mmc'
      password: "{{ MMCUSER_DBPASS }}"
      state: present
+     append_privs: true
      priv:
        'base_wsusscn2.*': 'ALL'
    no_log: True
