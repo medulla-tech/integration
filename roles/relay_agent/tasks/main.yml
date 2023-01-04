@@ -89,6 +89,7 @@
     password: "{{ DBPASSWORD }}"
     host: '{{ IP_ADDRESS }}'
     state: present
+    append_privs: true
     priv:
       'xmppmaster.*': 'ALL'
   vars:

@@ -60,6 +60,7 @@
     password: '{{ GLPI_DBPASSWD }}'
     host: '{{ IP_ADDRESS }}'
     state: present
+    append_privs: true
     priv:
       'glpi.*': 'ALL'
   vars:
@@ -112,6 +113,7 @@
     password: "{{ DBPASSWORD }}"
     host: '{{ IP_ADDRESS }}'
     state: present
+    append_privs: true
     priv:
       'xmppmaster.*': 'ALL'
       'pkgs.*': 'ALL'
