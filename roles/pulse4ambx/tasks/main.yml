@@ -4083,8 +4083,8 @@
      login_port: '{{ DBPORT }}'
      login_user: '{{ DBADMINUSER }}'
      login_password: '{{ DBADMINPASSWD }}'
-     name: '{{ DBUSER }}'
-     password: "{{ DBPASSWORD }}"
+     name: 'mmc'
+     password: "{{ MMCUSER_DBPASS }}"
      state: present
      priv:
        'base_wsusscn2.*': 'ALL'
