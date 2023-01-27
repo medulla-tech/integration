@@ -3451,6 +3451,24 @@
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
 
+ - name: GLPI - Initialise glpi 9.5 database on debian
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.5'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Initialise glpi 10.0 database on debian
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '10.0'
+     - INSTALL_TYPE == 'p'
+
  - name: GLPI - Initialise glpi database on centos
    command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
    when:
@@ -3473,6 +3491,22 @@
      - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Upgrade glpi 9.5 database if needed on debian
+   command: php /usr/share/glpi/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.5'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Upgrade glpi 10.0 database if needed on debian
+   command: php /usr/share/glpi/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '10.0'
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Upgrade glpi database if needed on centos
