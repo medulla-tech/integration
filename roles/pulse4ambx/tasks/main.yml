@@ -3417,6 +3417,19 @@
      - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - GLPI_VERSION != '10.0'
+
+ - name: GLPI - Install glpi 10.0
+   apt:
+     pkg:
+       - glpi={{ GLPI_VERSION }}.*
+       - fusioninventory-for-glpi={{ FUSION_VERSION }}+*
+       - php-ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
 
  - name: GLPI - Drop and recreate glpi database and user
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
