@@ -3558,12 +3558,45 @@
      - INSTALL_TYPE == 'p'
    no_log: True
 
- - name: GLPI - Enable fusioninventory plugin
+ - name: GLPI - Enable fusioninventory plugin for glpi 9.2
    command: php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root
    when:
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.2'
+
+ - name: GLPI - Install fusioninventory plugin for glpi 9.5
+   command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+
+ - name: GLPI - Activate fusioninventory plugin for glpi 9.5
+   command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+
+ - name: GLPI - Install fusioninventory plugin for glpi 10.0
+   command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
+
+ - name: GLPI - Activate fusioninventory plugin for glpi 10.0
+   command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
 
  - name: GLPI - Configure fusioninventory
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
