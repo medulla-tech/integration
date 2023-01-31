@@ -6,7 +6,7 @@
 
  - name: VERSION - Set version for this playbook
    set_fact:
-     PLAYBOOK_VERSION: '3.4.1'
+     PLAYBOOK_VERSION: '3.4.2'
 
  - name: VERSION - Display version
    debug:
@@ -23,7 +23,7 @@
      msg: The OS platform is outdated ( {{ ansible_distribution }} , {{ ansible_distribution_version }} )
    when: 
      - ansible_distribution == 'CentOS'
-     - ansible_distribution_version is version('7.8', '<')
+     - ansible_distribution_version is version('7.9', '<')
    
 
 ##########################################################
