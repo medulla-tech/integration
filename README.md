@@ -44,7 +44,7 @@ Following command configure Relay Medulla server (one line or more following num
 hostname-ars-1.siveo.lan INSTALL_TYPE='m' SERVER_FQDN='full_hostname_relay_server' PULSEMAIN_IP='interne_ip_main_server' PULSEMAIN_FQDN='full_hostname_main_server' ENTITY='Private'
 ```
 
-All the following variables is required to install and configure Medulla :
+All the following variables are required to install and configure Medulla :
 
 ```yaml
 [all:vars]
