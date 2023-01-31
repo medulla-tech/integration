@@ -20,13 +20,15 @@ ansible
 ├── ansible_hosts
 ├── playbook.yml
 └── roles
-*Tabspace*└── pulse4ambx
-*Tabspace**Tabspace*├── handlers	
-*Tabspace**Tabspace*│*Tabspace*└── main.yml
-*Tabspace**Tabspace*├── tasks
-*Tabspace**Tabspace*│*Tabspace*└── main.yml
-*Tabspace**Tabspace*└── templates
-*Tabspace**Tabspace**Tabspace*└── medulla-generate-winupdate-packages.j2
+    └── pulse4ambx
+        ├── handlers	
+        │   └── main.yml
+        ├── tasks
+        │   └── main.yml
+        └── templates
+               └── medulla-generate-winupdate-packages.j2
+
+
 
 Given ansible_hosts file is an exemple, it will install and configure Medulla on your server.
 
