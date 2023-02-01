@@ -14,7 +14,7 @@ To simplify documentation, passwords are in clear text. Good practice would sugg
 
 ## Included in delivery
 
-Medulla.tar.gz folder contains :
+Repository contains :
 ```bash
 ansible
 ├── ansible_hosts
