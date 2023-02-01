@@ -15,7 +15,7 @@ To simplify documentation, passwords are in clear text. Good practice would sugg
 ## Included in delivery
 
 Medulla.tar.gz folder contains :
-
+```bash
 ansible
 ├── ansible_hosts
 ├── playbook.yml
@@ -27,7 +27,7 @@ ansible
         │   └── main.yml
         └── templates
                └── medulla-generate-winupdate-packages.j2
-
+```
 
 
 Given ansible_hosts file is an exemple, it will install and configure Medulla on your server.
