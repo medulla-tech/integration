@@ -3406,6 +3406,7 @@
      - ansible_distribution == 'CentOS'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Install glpi
    apt:
@@ -3418,6 +3419,7 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION != '10.0'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Install glpi 10.0
    apt:
@@ -3430,6 +3432,32 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
+
+ - name: ITSM-NG - Install itsm-ng
+   yum:
+     pkg:
+       - itsm-ng-{{ ITSM_NG_VERSION }}.*
+       - itsm-ng
+       - itsm-ng-fusioninventory-{{ GLPI_VERSION }}.*
+       - php-ldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: ITSM-NG - Install itsm-ng
+   apt:
+     pkg:
+       - itsm-ng={{ ITSM_NG_VERSION }}.*
+       - fusioninventory-for-itsm-ng={{ GLPI_VERSION }}+*
+       - php-ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
 
  - name: GLPI - Drop and recreate glpi database and user
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
@@ -3454,6 +3482,7 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi 9.4 database on debian
    command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
@@ -3463,9 +3492,10 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi 9.5 database on debian
-   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
@@ -3481,6 +3511,7 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '10.0'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi database on centos
    command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
@@ -3489,6 +3520,7 @@
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Upgrade glpi 9.2 database if needed on debian
    command: php /usr/share/glpi/scripts/cliupdate.php
@@ -3497,6 +3529,7 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Upgrade glpi 9.4 database if needed on debian
    command: php /usr/share/glpi/bin/console -n db:update
@@ -3505,9 +3538,10 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Upgrade glpi 9.5 database if needed on debian
-   command: php /usr/share/glpi/bin/console -n db:update
+   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:update
    when:
      - ansible_distribution == 'Debian'
      - GLPI_DBHOST == 'localhost'
@@ -3521,6 +3555,7 @@
      - GLPI_DBHOST == 'localhost'
      - GLPI_VERSION == '10.0'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Upgrade glpi database if needed on centos
    command: php /usr/share/glpi/scripts/cliupdate.php
@@ -3528,6 +3563,7 @@
      - ansible_distribution == 'CentOS'
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Create view for pulse
    shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/mmc/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
@@ -3554,9 +3590,9 @@
  - name: GLPI - Prepare glpi database for Pulse
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
    with_items:
-     - DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'
+     - DELETE FROM glpi_users WHERE name NOT LIKE '{{ ITSM_USER }}'
      - DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'
-     - UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'
+     - UPDATE glpi_users SET name = 'root' WHERE name = '{{ ITSM_USER }}'
      - UPDATE glpi_users SET password = MD5('{{ ROOT_PASSWORD }}') where name = 'root'
      - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
      - UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0
@@ -3578,6 +3614,7 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.2'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Install fusioninventory plugin for glpi 9.5
    command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
@@ -3586,6 +3623,7 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Activate fusioninventory plugin for glpi 9.5
    command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
@@ -3594,6 +3632,24 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Install fusioninventory plugin for itsm 1.4
+   command: php /usr/share/itsm-ng/bin/console itsmng:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: GLPI - Activate fusioninventory plugin for itsm 1.4
+   command: php /usr/share/itsm-ng/bin/console itsmng:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
 
  - name: GLPI - Install fusioninventory plugin for glpi 10.0
    command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
@@ -3602,6 +3658,7 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Activate fusioninventory plugin for glpi 10.0
    command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
@@ -3610,6 +3667,7 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Configure fusioninventory
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
@@ -3626,10 +3684,11 @@
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
 
- - name: GLPI - Set owner of /var/lib/glpi/files/_plugins/fusioninventory
+ - name: GLPI - Set owner of /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
    file:
-     path: /var/lib/glpi/files/_plugins/fusioninventory
+     path: /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
      state: directory
      recurse: yes
      owner: '{{ APACHE_USER }}'
