@@ -4661,6 +4661,13 @@
    when:
      - INSTALL_TYPE != "p"
 
+ - name: RELAY/APACHE - Enable apache rewrite module
+   apache2_module:
+     name: rewrite
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE != "p"
+
  - name: RELAY/APACHE - Enable pulse module
    command: a2enconf pulse
    when:
