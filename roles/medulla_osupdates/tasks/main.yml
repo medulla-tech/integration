@@ -1,0 +1,111 @@
+##########################################################
+#                    Setup OS Updates                    #
+##########################################################
+
+- name: MEDULLA_OSUPDATES - Install tools needed for Medulla OS Updates
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - curl
+      - crudini>=0.9
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MEDULLA_OSUPDATES - Install tools needed for Medulla OS Updates
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - curl
+      - crudini>=0.9
+      - python3-mysqldb
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MEDULLA_OSUPDATES - Configure script
+  ansible.builtin.template:
+    src: medulla-generate-winupdate-packages.j2
+    dest: /usr/sbin/medulla-generate-winupdate-packages
+    mode: '0755'
+    owner: root
+
+- name: MEDULLA_OSUPDATES - Create database
+  community.mysql.mysql_db:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: 'base_wsusscn2'
+    state: present
+
+- name: MEDULLA_OSUPDATES - Create database user
+  community.mysql.mysql_user:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    state: present
+    append_privs: true
+    priv:
+      'base_wsusscn2.*': 'ALL'
+  no_log: True
+
+- name: MEDULLA_OSUPDATES - Create winupdates folder
+  ansible.builtin.file:
+    path: /var/lib/pulse2/packages/sharing/winupdates
+    state: directory
+    mode: '0755'
+
+- name: MEDULLA_OSUPDATES - Get share id for winupdates share if it exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+      - SELECT id from pkgs_shares where name = %(name)s
+    named_args:
+      name: winupdates
+  register: res_queryshareid
+
+- name: MEDULLA_OSUPDATES - Get MAX_ID FROM pkgs_shares when share does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+     - SELECT MAX(id) as id FROM cluster_ars
+  register: res_querymaxshareid
+  when: 
+    - res_queryshareid.rowcount[0] == 0
+
+- name: MEDULLA_OSUPDATES - Create winupdates share and add root user for packages management if it does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+     - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ res_querymaxshareid.query_result[0][0].id + 1 }}, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
+     - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', {{ res_querymaxshareid.query_result[0][0].id + 1 }})
+  when: 
+    - res_queryshareid.rowcount[0] == 0
+
+- name: MEDULLA_OSUPDATES - Cron to generate the update packages
+  ansible.builtin.cron:
+    name: "Generate windows updates packages"
+    cron_file: pulse_updates_dl
+    weekday: "6"
+    minute: "30"
+    hour: "1"
+    user: root
+    job: "/usr/sbin/medulla-generate-winupdate-packages 2>&1 | tee -a /tmp/medulla-generate-winupdate-packages.log"
+
+- name: MEDULLA_OSUPDATES - Generate the update packages
+  ansible.builtin.shell:
+    cmd: /usr/sbin/medulla-generate-winupdate-packages 2>&1 | tee -a /tmp/medulla-generate-winupdate-packages.log

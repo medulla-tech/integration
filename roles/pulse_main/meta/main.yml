@@ -14,9 +14,11 @@ dependencies:
   - { role: substitute_agent, SUBS_LONG_TYPE: 'deployment' }
   - { role: substitute_agent, SUBS_LONG_TYPE: 'monitoring' }
   - { role: substitute_agent, SUBS_LONG_TYPE: 'reconfigurator' }
+  - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
   - role: relay_agent
   - role: pulse_file_browser
   - role: pulse_inventoryserver
   - role: pulse_packageserver
   - role: pxe_registration
   - role: pulse_imaging
+  - role: medulla_osupdates

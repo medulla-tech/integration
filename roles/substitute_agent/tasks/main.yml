@@ -133,6 +133,15 @@
   when:
     - SUBS_LONG_TYPE == 'deployment' or SUBS_NAME.startswith('deployment')
 
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: upd
+    subs_short_name: 'upd{{ subs_number }}'
+    SUBS_LONG_TYPE: updates
+    subs_long_name: 'updates{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'updates' or SUBS_NAME.startswith('updates')
+
 - name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account
   community.general.ejabberd_user:
     username: master_{{ subs_short_name }}

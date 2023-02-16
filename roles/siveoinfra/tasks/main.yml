@@ -421,7 +421,7 @@
   command: crudini --set /etc/pulse-xmpp-agent/scheduling_mon_pulsesystem.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
   with_items:
     - { section: 'pulse_main', parameter: 'db_password', value: '{{ DB_PASSWORD.stdout }}' }
-    - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, mmc-agent, pulse-xmpp-agent-relay, pulse2-inventory-server, pulse2-package-server, pulse-xmpp-master-substitute-inventory, pulse-xmpp-master-substitute-registration, pulse-xmpp-master-substitute-logger, pulse-xmpp-master-substitute-monitoring, pulse-xmpp-master-substitute-assessor, pulse-xmpp-master-substitute-reconfigurator, pulse-xmpp-master-substitute-deployment, pulse-xmpp-master-substitute-subscription"' }
+    - { section: 'services', parameter: 'services_list', value: '"ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, mmc-agent, pulse-xmpp-agent-relay, pulse2-inventory-server, pulse2-package-server, pulse-xmpp-master-substitute-inventory, pulse-xmpp-master-substitute-registration, pulse-xmpp-master-substitute-logger, pulse-xmpp-master-substitute-monitoring, pulse-xmpp-master-substitute-assessor, pulse-xmpp-master-substitute-reconfigurator, pulse-xmpp-master-substitute-deployment, pulse-xmpp-master-substitute-subscription, pulse-xmpp-master-substitute-subscription, pulse-xmpp-master-substitute-updates"' }
     - { section: 'ports', parameter: 'ports_list', value: '"ejabberd_c2s, ejabberd_s2s, syncthing_web, syncthing_discosrv, apache, tomcat, ssh, mysql, mmc_agent, pulse2_inventory_server, pulse2_package_server"' }
   when:
     - PULSEMAIN_IP == ''

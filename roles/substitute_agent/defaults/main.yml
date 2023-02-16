@@ -19,6 +19,6 @@ GLPI_DBPORT: 3306
 GLPI_DBNAME: glpi
 GLPI_DBUSER: glpi
 GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
-SUBS_LONG_TYPE: '' # can be assessor, registration, inventory, subscription, logger, monitoring, reconfigurator. master substitute is managed by mmc role
+SUBS_LONG_TYPE: '' # can be assessor, registration, inventory, subscription, logger, monitoring, reconfigurator, updates. master substitute is managed by mmc role
 # SUBS_NAME can be forced by defining the variable. Else it is calculated
 SUBS_NAME: '' #eg registration3

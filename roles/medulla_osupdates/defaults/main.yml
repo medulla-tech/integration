@@ -1,0 +1,8 @@
+DBDUMP_DL_BASEURL: https://updates.siveo.net
+# For using database on another server, define DBHOST
+DBHOST: localhost
+DBPORT: 3306
+DBUSER: mmc
+DBPASSWORD: '' # 12 character string. Must be vaulted
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
