@@ -137,6 +137,7 @@
     - admin
     - imaging
     - kiosk
+    - urbackup
   when:
     - MMC_DBINITIALISED is not defined
   register: db_init
@@ -165,6 +166,7 @@
       'admin.*': 'ALL'
       'imaging.*': 'ALL'
       'kiosk.*': 'ALL'
+      'urbackup.*': 'ALL'
   no_log: True
 
 - name: MMC - Set marker for database initialisation
