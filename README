@@ -1,8 +1,0 @@
-Ansible needs:
-- python3-passlib (for password_hash)
-- python3-jmespath (for json_query)
-
-For vaulting a password:
-ansible-vault encrypt_string --ask-vault-pass 'ij%G2r923aHAy5' --name 'ROOT_PASSWORD'
-Then create a file named vp.siveo containing the vault password and run the playbook with the following parameter:
-  --vault-password-file vp.siveo
