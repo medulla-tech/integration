@@ -138,6 +138,7 @@
     - imaging
     - kiosk
     - urbackup
+    - updates
   when:
     - MMC_DBINITIALISED is not defined
   register: db_init
@@ -167,6 +168,7 @@
       'imaging.*': 'ALL'
       'kiosk.*': 'ALL'
       'urbackup.*': 'ALL'
+      'updates.*': 'ALL'
   no_log: True
 
 - name: MMC - Set marker for database initialisation
@@ -198,6 +200,7 @@
     - admin
     - imaging
     - kiosk
+    - updates
     - urbackup
   notify:
     - MMC - Restart mmc-agent
