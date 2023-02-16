@@ -1,0 +1,4948 @@
+---
+
+##########################################################
+#                         Version                        #
+##########################################################
+
+ - name: VERSION - Set version for this playbook
+   set_fact:
+     PLAYBOOK_VERSION: '3.3.3'
+
+ - name: VERSION - Display version
+   debug:
+     msg:
+     - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
+ - name: VERSION - If CentOS, verify his version
+   shell: rpm --eval '%{centos_ver}'
+   register: result
+   failed_when:
+     - result.stdout != '7'
+   when:
+     - ansible_distribution == 'CentOS'
+
+##########################################################
+#                    Compute variables                   #
+##########################################################
+
+ - name: VARS - Set XMPP_DOMAIN to ansible_hostname if not on pulsemain
+   set_fact:
+     XMPP_DOMAIN: "{{ ansible_hostname }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: VARS - Set XMPP_DOMAIN to pulse if on pulsemain
+   set_fact:
+     XMPP_DOMAIN: 'pulse'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Set SERVER_FQDN to ansible_fqdn
+   set_fact:
+     SERVER_FQDN: "{{ ansible_fqdn }}"
+   when:
+     - (SERVER_FQDN is undefined) or (SERVER_FQDN|length == 0)
+
+ - name: VARS - Set IP_ADDRESS and NETWORK_ADDRESS if INTERFACE defined
+   set_fact:
+     IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+     NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
+   when:
+     - (INTERFACE is defined) and (INTERFACE|length > 0)
+
+ - name: VARS - Set IP_ADDRESS and NETWORK_ADDRESS if INTERFACE not defined
+   set_fact:
+     IP_ADDRESS: "{{ ansible_default_ipv4.address }}"
+     NETWORK_ADDRESS: "{{ ansible_default_ipv4.network }}"
+   when:
+     - (INTERFACE is undefined) or (INTERFACE|length == 0)
+
+ - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE defined
+   set_fact:
+     IP_REMOTE_SERVER: "{{ vars['ansible_'~INTERFACE_TO_PULSE].ipv4.address }}"
+   when:
+     - (INTERFACE_TO_PULSE is defined) and (INTERFACE_TO_PULSE|length > 0)
+     - INSTALL_TYPE != 'p'
+
+ - name: VARS - Set IP_REMOTE_SERVER if INTERFACE_TO_PULSE not defined
+   set_fact:
+     IP_REMOTE_SERVER: "{{ ansible_default_ipv4.address }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - (INTERFACE_TO_PULSE is undefined) or (INTERFACE_TO_PULSE|length == 0)
+
+ - name: VARS - Set CLUSTER_NAME to ENTITY for relay
+   set_fact:
+     CLUSTER_NAME: "{{ ENTITY }}"
+   when:
+     - (ENTITY is defined) and (ENTITY|string|length > 0)
+
+ - name: VARS - Set CLUSTER_NAME to ansible_hostname if entity not defined
+   set_fact:
+     CLUSTER_NAME: "{{ ansible_hostname }}"
+   when:
+     - (ENTITY is undefined) or (ENTITY|string|length == 0)
+
+ - name: VARS - Generate needed passwords specific to pulsemain
+   set_fact:
+     XMPP_MASTER_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+     XMPP_MUCROOM_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+     AES_KEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+     GLPI_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Generate needed passwords
+   set_fact:
+     GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+
+ - name: VARS - Generate backup API password
+   set_fact:
+     BACKUP_API_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Set LDAP_BASEDN
+   set_fact:
+     LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: VARS - Set PYTHON_BASEDIR
+   set_fact:
+     PYTHON_BASEDIR: /usr/lib/python2.7/dist-packages
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: VARS - Set PYTHON_BASEDIR
+   set_fact:
+     PYTHON_BASEDIR: /usr/lib/python2.7/site-packages
+   when:
+     - ansible_distribution == 'CentOS'
+
+##########################################################
+#                  Preparation checks                    #
+##########################################################
+
+ - name: PREPARATION - Make sure ssh key exists
+   user:
+     name: root
+     generate_ssh_key: yes
+     ssh_key_bits: 2048
+   register: sshkey
+
+ - name: PREPARATION - Add relay ssh public key to authorized_keys on pulsemain
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ sshkey.ssh_public_key }}"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PREPARATION - Fetch ssh public key from pulsemain
+   user:
+     name: root
+     generate_ssh_key: yes
+     ssh_key_bits: 2048
+   register: pulsemain_sshkey
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PREPARATION - Add pulsemain ssh public key to authorized_keys on relay
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ pulsemain_sshkey.ssh_public_key }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PREPARATION - Create rbash shell
+   file:
+     src: /bin/bash
+     dest: /bin/rbash
+     state: link
+     force: yes
+
+ - name: PREPARATION - Delete old siveo repo
+   file:
+     path: '{{ item }}'
+     state: absent
+   with_items:
+     - /etc/yum.repos.d/siveo.repo
+     - /etc/yum.repos.d/pulse4.repo
+     - /etc/apt/sources.list.d/pulse4.list
+
+ - name: PREPARATION - Install apt-transport-https
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - apt-transport-https
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Download repo file from {{ PULSE4REPO_URL }}
+   get_url:
+     url: '{{ PULSE4REPO_URL }}'
+     dest: /etc/yum.repos.d/pulse4.repo
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Download list file from {{ PULSE4REPO_URL }}
+   get_url:
+     url: '{{ PULSE4REPO_URL }}'
+     dest: /etc/apt/sources.list.d/pulse4.list
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Find out URL of SIVEO public key
+   command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
+   register: grep_output
+   ignore_errors: true
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Import SIVEO public key
+   rpm_key:
+     state: present
+     key: '{{ grep_output.stdout.split("=")[1] }}'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Install gpg
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - gpg
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+ - name: PREPARATION - Remove old SIVEO public key
+   ansible.builtin.apt_key:
+     id: '{{ item }}'
+     state: absent
+   with_items:
+     - CB9B37635473A6F7A8A1488A5D953FC16CF5F04C
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Import SIVEO public key
+   apt_key:
+     state: present
+     url: '{{ PULSE4REPOKEY_URL }}'
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Clean yum repo metadata
+   command: yum clean metadata
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Clean yum repo cache
+   command: yum clean all
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Disable pulse2-package-server and deps
+   lineinfile:
+     dest:  /etc/yum.conf
+     state: present
+     line: exclude= pulse2-common pulse2-package-server python-pulse2-common python-mmc-core pulse2-uuid-resolver clonezilla
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != 'p'
+
+ - name: PREPARATION - Configure locales
+   lineinfile:
+     dest: /etc/locale.gen
+     state: present
+     create: yes
+     line: '{{ item }}'
+   with_items:
+     - da_DK.UTF-8 UTF-8
+     - de_DE.UTF-8 UTF-8
+     - en_US.UTF-8 UTF-8
+     - es_ES.UTF-8 UTF-8
+     - fr_FR.UTF-8 UTF-8
+     - it_IT.UTF-8 UTF-8
+     - ja_JP.UTF-8 UTF-8
+     - nb_NO.UTF-8 UTF-8
+     - pl_PL.UTF-8 UTF-8
+     - pt_BR.UTF-8 UTF-8
+     - ru_RU.UTF-8 UTF-8
+     - uk_UA.UTF-8 UTF-8
+     - zh_CN.UTF-8 UTF-8
+     - zh_TW.UTF-8 UTF-8
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Install locales
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - locales
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Generate locales
+   command: locale-gen
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: PREPARATION - Install ntp
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Install ntp
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - ntp
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntpd'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PREPARATION - Enable ntp
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: 'ntp'
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PREPARATION - Check if SELinux is enabled
+   shell: sestatus |grep 'SELinux status' | awk -F ':' '{print $2}' | tr -d ' '
+   register: selinuxstatus
+
+ - name: PREPARATION - Disable SELinux
+   lineinfile:
+     regexp: '^SELINUX=.*$'
+     line: 'SELINUX=disabled'
+     path: /etc/selinux/config
+   when:
+     - (selinuxstatus.stdout != 'disabled') and (selinuxstatus.stdout != '')
+
+##########################################################
+#                    Install base tools                  #
+##########################################################
+
+ - name: BASE - Install tools needed for the setup
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+       - xmlstarlet
+       - acl
+       - yq
+       - python3-mysqldb
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: BASE - Install tools needed for the setup
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - crudini
+       - xmlstarlet
+       - acl
+       - yq
+       - python3-mysqldb
+   when:
+     - ansible_distribution == 'Debian'
+
+##########################################################
+#                     PKI Generatiom                     #
+##########################################################
+
+ - name: PKI - Install openssl and ca-certificates package
+   yum:
+     state: latest
+     pkg:
+       - openssl
+       - ca-certificates
+       - pyOpenSSL
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PKI - Install openssl and ca-certificates package
+   apt:
+     state: latest
+     pkg:
+       - openssl
+       - ca-certificates
+       - python-openssl
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+ - name: PKI - Install openssl and ca-certificates package
+   apt:
+     state: latest
+     pkg:
+       - openssl
+       - ca-certificates
+       - python3-openssl
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+ - name: PKI - Create pki folder tree
+   file:
+     path: '{{ item.path }}'
+     state: '{{ item.state }}'
+     mode: '{{ item.mode }}'
+   with_items:
+     - { path: '/var/lib/pulse2/pki', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/serial', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/crlnumber', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/index.txt', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/index.txt.attr', state: 'touch', mode: '0644' }
+     - { path: '/var/lib/pulse2/pki/conf', state: 'directory', mode: '0700' }
+     - { path: '/var/lib/pulse2/pki/private', state: 'directory', mode: '0700' }
+     - { path: '/var/lib/pulse2/pki/newcerts', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/req', state: 'directory', mode: '0755' }
+     - { path: '/var/lib/pulse2/pki/crl', state: 'directory', mode: '0755' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create root ca
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/rootca.key.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create root ca csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/rootca.csr
+     privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     common_name: PulseRootCA
+     country_name: FR
+     organization_name: SIVEO
+     key_usage:
+       - cRLSign
+       - keyCertSign
+     basic_constraints:
+       - CA:TRUE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Self-sign root ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/rootca.cert.pem
+     privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     csr_path: /var/lib/pulse2/pki/req/rootca.csr
+     provider: selfsigned
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create intermediate ca
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/cakey.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create intermediate ca csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/ca.csr
+     privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     common_name: PulseIntermediateCA
+     country_name: FR
+     organization_name: SIVEO
+     key_usage:
+       - cRLSign
+       - keyCertSign
+     basic_constraints:
+       - CA:TRUE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Sign intermediate ca using root ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/cacert.pem
+     csr_path: /var/lib/pulse2/pki/req/ca.csr
+     ownca_path: /var/lib/pulse2/pki/rootca.cert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/rootca.key.pem
+     provider: ownca
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create certificate chain
+   shell: cat /var/lib/pulse2/pki/cacert.pem /var/lib/pulse2/pki/rootca.cert.pem > /var/lib/pulse2/pki/ca-chain.cert.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create ca-certificates folder
+   file:
+     path: /usr/local/share/ca-certificates
+     state: directory
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
+     remote_src: yes
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Copy /var/lib/pulse2/pki/ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /etc/pki/ca-trust/source/anchors/
+     remote_src: yes
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Fetch ca-chain.cert.pem from pulsemain
+   fetch:
+     src: /var/lib/pulse2/pki/ca-chain.cert.pem
+     dest: /tmp/ca-chain.cert.pem
+     flat: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Copy ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /tmp/ca-chain.cert.pem
+     dest: /usr/local/share/ca-certificates/pulse-ca-chain.crt
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Copy ca-chain.cert.pem to add to ca certs
+   copy:
+     src: /tmp/ca-chain.cert.pem
+     dest: /etc/pki/ca-trust/source/anchors/
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Add pulse ca to ca certs
+   command: update-ca-certificates
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PKI - Add pulse ca to ca certs
+   command: update-ca-trust extract
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PKI - Create local private key
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay private key on pulsemain
+   openssl_privatekey:
+     path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Create local csr
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     privatekey_path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+     common_name: 127.0.0.1
+     country_name: FR
+     organization_name: SIVEO
+     subject_alt_name: 'DNS:127.0.0.1,DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+     key_usage:
+       - nonRepudiation
+       - digitalSignature
+       - keyEncipherment
+       - dataEncipherment
+     basic_constraints:
+       - CA:FALSE
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay csr on pulsemain
+   openssl_csr:
+     path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     privatekey_path: /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem
+     common_name: 127.0.0.1
+     country_name: FR
+     organization_name: SIVEO
+     subject_alt_name: 'DNS:{{ SERVER_FQDN }},DNS:{{ XMPP_DOMAIN }}'
+     key_usage:
+       - nonRepudiation
+       - digitalSignature
+       - keyEncipherment
+       - dataEncipherment
+     extended_key_usage:
+       - serverAuth
+     basic_constraints:
+       - CA:FALSE
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Sign local key using intermadiate ca
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+     csr_path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     ownca_path: /var/lib/pulse2/pki/cacert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     provider: ownca
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Sign relay key using intermadiate ca on pulsemain
+   openssl_certificate:
+     path: /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem
+     csr_path: /var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem
+     ownca_path: /var/lib/pulse2/pki/cacert.pem
+     ownca_privatekey_path: /var/lib/pulse2/pki/private/cakey.pem
+     provider: ownca
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Create local pem file
+   shell: cat /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem > /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Create relay pem file on pulsemain
+   shell: cat /var/lib/pulse2/pki/private/{{ SERVER_FQDN }}.key.pem /var/lib/pulse2/pki/newcerts/{{ SERVER_FQDN }}.cert.pem > /var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: PKI - Remove csr files
+   file:
+     path: '/var/lib/pulse2/pki/req/{{ item }}'
+     state: absent
+   with_items:
+     - rootca.csr
+     - ca.csr
+     - '{{ SERVER_FQDN }}-req.pem'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PKI - Remove relay csr file on pulsemain
+   file:
+     path: '/var/lib/pulse2/pki/req/{{ SERVER_FQDN }}-req.pem'
+     state: absent
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+##########################################################
+#                     Install apache                     #
+##########################################################
+
+ - name: APACHE - Install Apache
+   yum:
+     state: latest
+     pkg:
+       - httpd
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: APACHE - Install Apache
+   apt:
+     state: latest
+     pkg:
+       - apache2
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: APACHE - Enable and disable apache module
+   apache2_module:
+     state: '{{ item.state }}'
+     name: '{{ item.name }}'
+   with_items:
+     - { name: 'proxy', state: 'present' }
+     - { name: 'proxy_http', state: 'present' }
+     - { name: 'proxy_wstunnel', state: 'present' }
+     - { name: 'proxy_fcgi', state: 'present' }
+     - { name: 'mpm_prefork', state: 'absent' }
+     - { name: 'mpm_event', state: 'present' }
+   when:
+     - ansible_distribution == "Debian"
+
+ - name: APACHE - Define Apache variables for CentOS
+   set_fact:
+     APACHE_DAEMON: "httpd"
+     APACHE_USER: "apache"
+     APACHE_CONF_PATH: "/etc/httpd/conf.d"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: APACHE - Define Apache variables for Debian
+   set_fact:
+     APACHE_DAEMON: "apache2"
+     APACHE_USER: "www-data"
+     APACHE_CONF_PATH: "/etc/apache2/conf-available"
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: APACHE - Ensure /etc/systemd/system/httpd.service.d exists
+   file:
+     path: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d
+     state: directory
+     mode: '0755'
+
+ - name: APACHE - Configure PrivateTmp=false in nopt.conf
+   copy:
+     content: "[Service]\nPrivateTmp=false"
+     dest: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d/nopt.conf
+     mode: '0644'
+
+ - name: APACHE - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: '{{ APACHE_DAEMON }}'
+
+##########################################################
+#                     Install php-fpm                    #
+##########################################################
+
+ - name: PHP - Check if php-fpm exist
+   stat:
+     path: /etc/init.d/php-fpm
+   register: phpfpm_exists
+
+ - name: PHP - Uninstall previous version
+   yum:
+     pkg:
+       - php-common
+       - php-mysql
+     state: absent
+   when:
+     - ansible_distribution == 'CentOS'
+     - phpfpm_exists.stat == false
+
+ - name: PHP - Install php
+   yum:
+     update_cache: yes
+     pkg:
+       - php
+       - php-fpm
+       - php-mysqlnd
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PHP - Install php
+   apt:
+     update_cache: yes
+     pkg:
+       - php-fpm
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PHP - Enable modules
+   command: a2enconf php{{ DEB_PHP_VERSION }}-fpm
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PHP - Set variable for php.ini path
+   set_fact:
+     PHP_INI_PATH: "/etc/php.ini"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PHP - Set variable for php.ini path
+   set_fact:
+     PHP_INI_PATH: "/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini"
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PHP - Update php.ini
+   command: crudini --set {{ PHP_INI_PATH }} {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'PHP', parameter: 'post_max_size', value: '200M' }
+     - { section: 'PHP', parameter: 'upload_max_filesize', value: '200M' }
+     - { section: 'PHP', parameter: 'memory_limit', value: '1024M' }
+     - { section: 'PHP', parameter: 'short_open_tag', value: 'On' }
+     - { section: 'Date', parameter: 'date.timezone', value: 'Europe/Paris' }
+     - { section: 'Session', parameter: 'session.cookie_httponly', value: '1' }
+
+ - name: PHP - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: php-fpm
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PHP - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: php{{ DEB_PHP_VERSION }}-fpm
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PHP - Restart apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: restarted
+
+##########################################################
+#                  Install LDAP server                   #
+##########################################################
+
+ - name: LDAP - Define parameters for debian
+   debconf:
+     name: slapd
+     question: '{{ item.question }}'
+     vtype: '{{ item.vtype }}'
+     value: '{{ item.value }}'
+   with_items:
+     - { question: slapd/password1, vtype: password, value: '{{ ROOT_PASSWORD }}' }
+     - { question: slapd/password2, vtype: password, value: '{{ ROOT_PASSWORD }}' }
+     - { question: slapd/purge_database, vtype: boolean, value: 'True' }
+     - { question: slapd/move_old_database, vtype: boolean, value: 'True' }
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: LDAP - Remove ldap server
+   apt:
+     state: absent
+     pkg:
+       - ldap-server
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+  
+ - name: LDAP - Install ldap server
+   apt:
+     state: latest
+     pkg:
+       - ldap-server
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Install ldap server
+   yum:
+     state: latest
+     pkg:
+       - openldap-servers
+       - openldap-clients
+       - python-ldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Set variable for ldap server config path
+   set_fact:
+     LDAP_CONFIG_PATH: /etc/openldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Set variable for ldap server config path
+   set_fact:
+     LDAP_CONFIG_PATH: /etc/ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Cleanup data
+   file:
+     state: absent
+     path: '{{ item }}'
+   with_items:
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={1}cosine.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={2}nis.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
+    - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Configure ldap olcDatabase
+   lineinfile:
+     path: '/etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif'
+     regexp: '{{ item.regexp }}'
+     line: '{{ item.line }}'
+     state: 'present'
+   with_items:
+    - { regexp: '^olcSuffix: .*$' , line: 'olcSuffix: {{ LDAP_BASEDN }}' }
+    - { regexp: '^olcRootDN: .*$', line: 'olcRootDN: cn=admin,{{ LDAP_BASEDN }}' }
+    - { regexp: '', line: 'olcRootPW: {{ ROOT_PASSWORD }}' }
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Copy ldap dbconfig
+   copy:
+     src: /usr/share/openldap-servers/DB_CONFIG.example
+     dest: /var/lib/ldap/DB_CONFIG
+     remote_src: yes 
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Change owner and group for ldap directory
+   file:
+     path: /var/lib/ldap/
+     owner: ldap
+     group: ldap   
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Start service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: slapd
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Add entry basedn
+   ldap_entry:
+     dn: '{{ LDAP_BASEDN }}'
+     server_uri: ldap://localhost/
+     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+     bind_pw: '{{ ROOT_PASSWORD }}'
+     objectClass:
+       - top
+       - dcObject
+       - organization
+     attributes:
+       dc: '{{ ansible_domain.split(".", 1)[0] }}'
+       o: '{{ ansible_domain }}'
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Add entry admin
+   ldap_entry:
+     dn: cn=admin,{{ LDAP_BASEDN }}
+     server_uri: ldap://localhost/
+     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+     bind_pw: '{{ ROOT_PASSWORD }}'
+     objectClass:
+       - organizationalRole
+     attributes:
+       cn: admin
+       description: LDAP administrator
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: LDAP - Add entry schema
+   command: '{{ item }}'
+   with_items:
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
+    - 'ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                     Install mariadb                    #
+##########################################################
+
+ - name: MARIADB - Install mariadb
+   yum:
+     state: latest
+     pkg:
+       - mariadb
+       - mariadb-server
+       - MySQL-python
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: MARIADB - Install mariadb
+   apt:
+     state: latest
+     pkg:
+       - mariadb-client-10.3
+       - mariadb-server-10.3
+       - mariadb-server-core-10.3
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+ - name: MARIADB - Install mariadb
+   apt:
+     state: latest
+     pkg:
+       - mariadb-client
+       - mariadb-server
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+ - name: MARIADB - Enable service
+   systemd:
+     state: stopped
+     name: mariadb
+
+ - name: MARIADB - Delete /var/lib/mysql and /root/.my.cnf
+   file:
+     path: '{{ item }}'
+     state: absent
+   with_items:
+     - /var/lib/mysql
+     - /root/.my.cnf
+
+ - name: MARIADB - Install initial database
+   command: mysql_install_db
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: MARIADB - Apply permissions on /var/lib/mysql/
+   file:
+     path: /var/lib/mysql
+     state: directory
+     owner: mysql
+     group: mysql
+     recurse: yes
+
+ - name: MARIADB - Apply permissions on /var/log/mariadb/
+   file:
+     path: /var/log/mariadb
+     state: directory
+     owner: mysql
+     group: mysql
+     recurse: yes
+
+ - name: MARIADB - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: mariadb
+
+ - name: MARIADB - Define root password
+   command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
+
+ - name: MARIADB - Secure installation
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' mysql -e "{{ item }}"
+   with_items:
+     - "FLUSH PRIVILEGES"
+     - "DELETE FROM mysql.user WHERE User='{{ DBADMINUSER }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
+     - "DELETE FROM mysql.user WHERE User=''"
+     - "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
+     - "FLUSH PRIVILEGES"
+
+ - name: MARIADB - Define Mariadb variables for CentOS
+   set_fact:
+     MARIADB_CONF_PATH: "/etc/my.cnf.d"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: MARIADB - Define Mariadb variables for Debian
+   set_fact:
+     MARIADB_CONF_PATH: "/etc/mysql/mariadb.conf.d"
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: MARIADB - Create limits file of system
+   file: 
+     path: /etc/security/limits.d/mysql.conf
+     state: touch
+
+ - name: MARIADB - Define limits of system
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/security/limits.d/mysql.conf"
+   with_items:
+     - "mysql soft  nofile  8192"
+     - "mysql hard  nofile  8192"
+
+ - name: MARIADB - Create directory mariadb.service.d
+   file:
+     path: /etc/systemd/system/mariadb.service.d
+     state: directory
+
+ - name: MARIADB - Create limits file for mariadb
+   file: 
+     path: /etc/systemd/system/mariadb.service.d/limits.conf
+     state: touch
+
+ - name: MARIADB - Define open_files number by systemd
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/systemd/system/mariadb.service.d/limits.conf"
+   with_items:
+     - "[Service]"
+     - "LimitNOFILE=65535"
+     - "LimitMEMLOCK=infinity"
+
+ - name: MARIADB - Define engine settings
+   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse.cnf mariadb {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'event_scheduler', value: 'ON' }
+     - { parameter: 'sql_mode', value: 'ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' }
+
+ - name: MARIADB - Define performance settings
+   command: crudini --set {{ MARIADB_CONF_PATH }}/99-pulse.cnf mariadb {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'query_cache_limit', value: '0' }
+     - { parameter: 'query_cache_size', value: '0' }
+     - { parameter: 'query_cache_type', value: '0' }
+     - { parameter: 'tmp_table_size', value: '2G' }
+     - { parameter: 'max_heap_table_size', value: '2G' }
+     - { parameter: 'key_buffer_size', value: '2G' }
+     - { parameter: 'innodb_buffer_pool_size', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}G' }
+     - { parameter: 'innodb_buffer_pool_instances', value: '{{ (ansible_memtotal_mb * 0.8 / 1000) | int | abs }}' }
+     - { parameter: 'innodb_file_per_table', value: '1' }
+     - { parameter: 'innodb_flush_log_at_trx_commit', value: '0' }
+     - { parameter: 'innodb_flush_method', value: 'o_direct' }
+     - { parameter: 'innodb_stats_on_metadata', value: '0' }
+     - { parameter: 'max_connections', value: 512 }
+     - { parameter: 'table_open_cache', value: '2000' }
+     - { parameter: 'open_files_limit', value: 65535 }
+
+ - name: MARIADB - Daemon reload and restart mariadb
+   systemd:
+     state: restarted
+     daemon_reload: yes
+     name: mariadb
+
+##########################################################
+#                    Install ejabberd                    #
+##########################################################
+
+ - name: EJABBERD - Install ejabberd
+   yum:
+     state: latest
+     pkg:
+       - ejabberd
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: EJABBERD - Install ejabberd
+   apt:
+     state: latest
+     pkg:
+       - ejabberd
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: EJABBERD - Enable service
+   systemd:
+     enabled: yes
+     name: ejabberd
+
+ - name: EJABBERD - Stop service
+   systemd:
+     name: ejabberd
+     state: stopped
+
+ - name: EJABBERD - Delete /var/lib/ejabberd
+   file:
+     path: /var/lib/ejabberd
+     state: absent
+
+ - name: EJABBERD - Create /var/lib/ejabberd
+   file:
+     path: /var/lib/ejabberd
+     state: directory
+     mode: '0755'
+     owner: ejabberd
+     group: ejabberd
+
+ - name: EJABBERD - Set home folder to /var/lib/ejabberd for ejabberd user
+   shell: "usermod ejabberd -d /var/lib/ejabberd"
+
+ - name: EJABBERD - Configure ejabberd
+   command: yq eval '{{ item }}' --inplace /etc/ejabberd/ejabberd.yml
+   with_items:
+     - del(.hosts)
+     - .hosts = ["localhost", "{{ XMPP_DOMAIN }}"] | .hosts[] style="double"
+     - del(.acl.admin)
+     - .acl.admin.user = ["root@{{ XMPP_DOMAIN }}", "master@{{ XMPP_DOMAIN }}", "rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"]
+     - .registration_timeout = "infinity"
+     - .max_fsm_queue = 10000
+     - .shaper.normal = 100000000
+     - .shaper.fast = 1000000000
+     - del(.access_rules.muc_create)
+     - .access_rules.muc_create.allow = "admin"
+     - del(.access_rules.trusted_network)
+     - .access_rules.trusted_network.allow = "all"
+     - .modules.mod_muc.access[].allow = "local"
+     - .modules.mod_register.welcome_message.subject = ""
+     - .modules.mod_register.ip_access = "trusted_network"
+     - .modules.mod_ping.send_pings = true
+     - .modules.mod_ping.ping_interval = 60
+     - .modules.mod_ping.timeout_action = "kill"
+     - .modules.mod_admin_extra = {}
+     - .modules.mod_s2s_dialback = {}
+     - .listen[] |= select(.port == "5222").max_stanza_size = 8388608
+     - .listen[] |= select(.port == "5222").starttls = false
+     - .listen[] |= select(.port == "5222").starttls_required = false
+     - .listen[] |= select(.port == "5222").certfile = "/etc/ejabberd/ejabberd.pem"
+     - del(.modules.mod_last)
+     - del(.modules.mod_irc)
+
+ - name: EJABBERD/PKI - Fetch relay certificate from pulsemain
+   fetch:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "/tmp/{{ ansible_hostname }}-temp.pem"
+     flat: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: EJABBERD/PKI - Copy relay certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   copy:
+     src: "/tmp/{{ ansible_hostname }}-temp.pem"
+     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: EJABBERD/PKI - Copy pulsemain certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+   copy:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+     remote_src: yes
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: EJABBERD/PKI - Replace ejabberd.pem by the certificate
+   replace:
+     path: /etc/ejabberd/ejabberd.yml
+     regexp: '^\s*certfile: .*$'
+     replace: '    certfile: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"'
+
+ - name: EJABBERD - Change ower of ejabberd config file
+   file:
+     path: /etc/ejabberd/ejabberd.yml
+     owner: ejabberd
+
+ - name: EJABBERD - Restart service
+   systemd:
+     name: ejabberd
+     state: restarted
+
+ - name: EJABBERD - Pause for 5 seconds to build ejabberd domain
+   pause:
+     seconds: 5
+
+ - name: EJABBERD - Copy .erlang.cookie
+   copy:
+     src: /var/lib/ejabberd/.erlang.cookie
+     dest: /root/.erlang.cookie
+     remote_src: yes
+     owner: root
+     group: root
+     mode: '400'
+
+ - name: EJABBERD - register root account
+   command: ejabberdctl register root {{ XMPP_DOMAIN }} '{{ ROOT_PASSWORD }}'
+
+ - name: EJABBERD - Create limits file of system
+   file: 
+     path: /etc/security/limits.d/ejabberd.conf
+     state: touch
+
+ - name: EJABBERD - Define limits of system
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/security/limits.d/ejabberd.conf"
+   with_items:
+     - "ejabberd soft  nofile  8192"
+     - "ejabberd hard  nofile  8192"
+
+ - name: EJABBERD - Create directory ejabberd.service.d
+   file:
+     path: /etc/systemd/system/ejabberd.service.d
+     state: directory
+
+ - name: EJABBERD - Create limits file for ejabberd
+   file: 
+     path: /etc/systemd/system/ejabberd.service.d/limits.conf
+     state: touch
+
+ - name: EJABBERD - Define open_files number by systemd
+   lineinfile:
+     line: "{{ item }}"
+     path: "/etc/systemd/system/ejabberd.service.d/limits.conf"
+   with_items:
+     - "[Service]"
+     - "LimitNOFILE=65535"
+     - "LimitMEMLOCK=infinity"
+
+ - name: EJABBERD - Daemon reload and restart service
+   systemd:
+     state: restarted
+     daemon_reload: yes
+     name: ejabberd
+
+ - name: EJABBERD - Pause for 2 to 300 seconds to enable ejabberd start
+   wait_for:
+     port: 5222
+     delay: 2
+
+##########################################################
+#                    Install guacamole                   #
+##########################################################
+
+ - name: GUACAMOLE - Install guacamole
+   yum:
+     pkg:
+       - guacamole
+       - guacd
+       - libguac-client-vnc
+       - libguac-client-ssh
+       - libguac-client-rdp
+       - guacamole-auth-mysql
+       - mysql-connector-java
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Guacamole tomcat restart server true
+   debconf:
+     name: guacamole-tomcat
+     question: guacamole-tomcat/restart-server
+     vtype: boolean
+     value: 'True'
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: GUACAMOLE - Install guacamole
+   apt:
+     pkg:
+       - guacamole-tomcat
+       - libguac-client-rdp0
+       - libguac-client-ssh0
+       - libguac-client-vnc0
+       - guacamole-auth-mysql
+       - libmysql-java
+     state: latest
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+ - name: GUACAMOLE - Install guacamole
+   apt:
+     pkg:
+       - guacamole-tomcat
+       - libguac-client-rdp0
+       - libguac-client-ssh0
+       - libguac-client-vnc0
+       - guacamole-auth-mysql
+       - libmysql-java
+     state: latest
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
+
+ - name: GUACAMOLE - Install guacamole
+   apt:
+     pkg:
+       - guacamole-tomcat
+       - libguac-client-rdp0
+       - libguac-client-ssh0
+       - libguac-client-vnc0
+       - guacamole-auth-jdbc
+       - mysql-connector-java
+     state: latest
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+ - name: GUACAMOLE - Set variable of tomcat version
+   set_fact:
+     TOMCAT_VERSION: "tomcat"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Get tomcat version
+   shell: |
+    cd /etc/default
+    ls tomcat*
+   register: versionTC
+   changed_when: False
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: GUACAMOLE - Set variable of tomcat version
+   set_fact:
+     TOMCAT_VERSION: "{{ versionTC.stdout }}"
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: GUACAMOLE - Define GUACAMOLE_HOME in tomcat
+   blockinfile:
+     dest: /etc/default/{{ TOMCAT_VERSION }}
+     create: yes
+     block: |
+       # Guacamole env variable
+       GUACAMOLE_HOME=/etc/guacamole
+
+ - name: GUACAMOLE - Enable tomcat
+   systemd:
+     enabled: yes
+     state: restarted
+     name: '{{ TOMCAT_VERSION }}'
+
+ - name: GUACAMOLE - Enable guacd
+   systemd:
+     enabled: yes
+     state: restarted
+     name: guacd
+
+ - name: GUACAMOLE - Reset guacamole database
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
+   with_items:
+     - "DROP DATABASE IF EXISTS guacamole"
+     - "DROP USER IF EXISTS 'guacamole'"
+     - "FLUSH PRIVILEGES"
+     - "CREATE DATABASE guacamole"
+     - "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '{{ ROOT_PASSWORD }}'"
+     - "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost'"
+   no_log: True
+
+ - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
+   set_fact:
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
+   set_fact:
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+ - name: GUACAMOLE - Set variable GUAC_SCHEMAS_PATH
+   set_fact:
+     GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-mysql/schema
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '10'
+
+ - name: GUACAMOLE - Import schemas
+   shell: "mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole < {{ item }}"
+   with_items:
+     - '{{ GUAC_SCHEMAS_PATH }}/001-create-schema.sql'
+     - '{{ GUAC_SCHEMAS_PATH }}/002-create-admin-user.sql'
+
+ - name: GUACAMOLE - Define guacamole root user password in database
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Define guacamole root user password in database
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+
+ - name: GUACAMOLE - Define guacamole root user password in database
+   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
+   when:
+     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+ - name: GUACAMOLE - Create /etc/guacamole/lib/
+   file:
+     path: /etc/guacamole/lib/
+     state: directory
+     mode: '0755'
+     owner: root
+     group: root
+
+ - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
+   copy:
+     src: /usr/share/java/mysql-connector-java.jar
+     dest: /etc/guacamole/lib/
+     remote_src: yes
+     owner: root
+     group: root
+     mode: '644'
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: GUACAMOLE - Configure guacamole.properties
+   lineinfile:
+     dest: /etc/guacamole/guacamole.properties
+     regexp: "{{ item.regex }}"
+     line: "{{ item.line }}"
+     state: "{{ item.state }}"
+   with_items:
+     - { regex: '', line: '# Hostname and port of guacamole proxy', state: 'present' }
+     - { regex: '', line: 'guacd-hostname: localhost', state: 'present' }
+     - { regex: '', line: 'guacd-port:     4822', state: 'present' }
+     - { regex: '^basic-user-mapping.*$', line: '', state: 'absent' }
+     - { regex: '^noauth-config:.*$', line: '', state: 'absent' }
+     - { regex: '^mysql-disallow-simultaneous-connections:.*$', line: 'mysql-disallow-simultaneous-connections: false', state: 'present' }
+     - { regex: '^mysql-disallow-duplicate-connections:.*$', line: 'mysql-disallow-duplicate-connections: false', state: 'present' }
+     - { regex: '^lib-directory:.*$', line: 'lib-directory: /var/lib/guacamole/classpath', state: 'present' }
+     - { regex: '^mysql-hostname:.*$', line: 'mysql-hostname: localhost', state: 'present' }
+     - { regex: '^mysql-port:.*$', line: 'mysql-port: 3306', state: 'present' }
+     - { regex: '^mysql-database:.*$', line: 'mysql-database: guacamole', state: 'present' }
+     - { regex: '^mysql-username:.*$', line: 'mysql-username: guacamole', state: 'present' }
+     - { regex: '^mysql-password:.*$', line: 'mysql-password: {{ ROOT_PASSWORD }}', state: 'present' }
+   no_log: True
+
+ - name: GUACAMOLE - Change tomcat port from 8080 to 8081
+   replace:
+     path: /etc/{{ TOMCAT_VERSION }}/server.xml
+     regexp: 'Connector port="8080"'
+     replace: 'Connector port="8081"'
+
+ - name: GUACAMOLE - Allow requests from IP_ADDRESS on pulsemain
+   command: xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n 'Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ IP_ADDRESS }}"' /etc/{{ TOMCAT_VERSION }}/server.xml
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: GUACAMOLE - Allow requests from PULSEMAIN_IP on relay
+   command: xmlstarlet ed --inplace -s "Server[@port='8005']/Service[@name='Catalina']/Engine[@name='Catalina']/Host[@name='localhost']" -t elem -n 'Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="{{ PULSEMAIN_IP }}"' /etc/{{ TOMCAT_VERSION }}/server.xml
+   when:
+     - INSTALL_TYPE != "p"
+
+ - name: GUACAMOLE - Restart tomcat
+   systemd:
+     name: '{{ TOMCAT_VERSION }}'
+     state: restarted
+
+ - name: GUACAMOLE/APACHE - Configure apache for pulsemain guacamole
+   copy:
+     content: |
+        <Location /guacamole/>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
+        </Location>
+        <Location /guacamole/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+        </Location>
+        SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
+     dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: GUACAMOLE/APACHE - Enable guacamole configuration
+   command: a2enconf guacamole
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+
+ - name: GUACAMOLE/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: GUACAMOLE/APACHE - Configure apache for pulsemain guacamole
+   copy:
+     content: |
+        <Location /guacamole-{{ XMPP_DOMAIN }}/>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on
+            ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
+        </Location>
+        <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
+            SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+            Order Deny,Allow
+            Deny from all
+            Allow from env=GUACAMOLE_ALLOWED
+            ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+            ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
+        </Location>
+        SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
+     dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != "p"
+
+ - name: GUACAMOLE/APACHE - Enable guacamole configuration
+   command: a2enconf guacamole-{{ XMPP_DOMAIN }}
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != "p"
+
+ - name: GUACAMOLE/APACHE - Reload apache on pulsemain
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != "p"
+
+##########################################################
+#                   Setup File Browser                   #
+##########################################################
+
+ - name: FILEBROWSER - Create file-transfer folder and link
+   file:
+     src: '{{ item.src }}'
+     path: '{{ item.path }}'
+     state: '{{ item.state }}'
+   with_items:
+     - { src: '', path: '/var/lib/pulse2/file-transfer', state: 'directory'}
+     - { src: '/var/lib/pulse2/file-transfer/', path: '/var/www/html/file-transfer', state: 'link'}
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: FILEBROWSER - Enable apache rewrite module
+   apache2_module:
+     name: rewrite
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE == "p"
+
+##########################################################
+#                     Imaging_Server                     #
+##########################################################
+
+ - name: IMAGING - Install nfs-kernel-server
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - nfs-utils
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Install nfs-kernel-server
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - nfs-kernel-server
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Install clonezilla
+   yum:
+     pkg:
+       - clonezilla
+       - pulse2-davos-client
+       - udpcast
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Install pulse2-common
+   yum:
+     pkg:
+       - pulse2-common
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: IMAGING - Install Pulse imaging and clonezilla
+   apt:
+     state: latest
+     pkg:
+       - pulse2-common
+       - pulse-imaging-scripts
+       - pulse2-davos-client
+       - clonezilla
+       - udpcast
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Create needed exports
+   copy:
+     src: '/usr/share/doc/mmc/contrib/imaging-server/exports'
+     dest: '/etc/'
+     remote_src: yes
+     force: yes
+
+ - name: IMAGING - Restart service nfs-kernel
+   systemd:
+     name: nfs-server
+     state: restarted
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Restart service nfs-kernel
+   systemd:
+     name: nfs-kernel-server
+     state: restarted
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Install pxe-linux
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - pxelinux
+       - syslinux-common
+       - syslinux-efi
+       - hwdata
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Install pxe-linux
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - tftp-server
+       - syslinux
+       - syslinux-efi64
+       - hwdata
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Delete old bootloader directory
+   file:
+     path: '{{ item }}'
+     state: absent
+     mode: '0755'
+   with_items:
+     - /var/lib/pulse2/imaging/bootloader
+     - /var/lib/pulse2/imaging/bootloader-uefi32
+     - /var/lib/pulse2/imaging/bootloader-uefi64
+     - /home/partimag
+
+ - name: IMAGING - Create new bootloader directory
+   file:
+     path: '{{ item }}'
+     state: directory
+   with_items:
+     - /var/lib/pulse2/imaging/bootloader
+     - /var/lib/pulse2/imaging/bootloader-uefi32
+     - /var/lib/pulse2/imaging/bootloader-uefi64
+     - /var/lib/pulse2/imaging/tools
+     - /var/lib/pulse2/imaging/bootmenus
+     - /home/partimag
+
+ - name: IMAGING - Define imaging variables for Debian
+   set_fact:
+     PXELINUX_PATH: "/usr/lib/PXELINUX"
+     SYSLINUX_BIOS_PATH: "/usr/lib/syslinux/modules/bios"
+     SYSLINUX_UEFI32_PATH: "/usr/lib/syslinux/modules/efi32"
+     SYSLINUX_UEFI64_PATH: "/usr/lib/syslinux/modules/efi64"
+     SYSLINUX_EFI32: "/usr/lib/SYSLINUX.EFI/efi32/syslinux.efi"
+     SYSLINUX_EFI64: "/usr/lib/SYSLINUX.EFI/efi64/syslinux.efi"
+     PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
+     PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
+     PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Define imaging variables for CentOS
+   set_fact:
+     PXELINUX_PATH: "/usr/share/syslinux"
+     SYSLINUX_BIOS_PATH: "/usr/share/syslinux"
+     SYSLINUX_UEFI32_PATH: "/usr/share/syslinux"
+     SYSLINUX_UEFI64_PATH: "/usr/share/syslinux/efi64"
+     SYSLINUX_EFI32: "/usr/share/syslinux/syslinux.com"
+     SYSLINUX_EFI64: "/usr/share/syslinux/efi64/syslinux.efi"
+     PULSE_BIOS_PATH: "/var/lib/pulse2/imaging/bootloader"
+     PULSE_UEFI32_PATH: "/var/lib/pulse2/imaging/bootloader-uefi32"
+     PULSE_UEFI64_PATH: "/var/lib/pulse2/imaging/bootloader-uefi64"
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
+   file:
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
+     state: hard
+     force: yes
+   with_items:
+     - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/reboot.c32', dest: '{{ PULSE_BIOS_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/ldlinux.c32', dest: '{{ PULSE_BIOS_PATH }}/ldlinux.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/liblua.c32', dest: '{{ PULSE_BIOS_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/vesamenu.c32', dest: '{{ PULSE_BIOS_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/hdt.c32', dest: '{{ PULSE_BIOS_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/libcom32.c32', dest: '{{ PULSE_BIOS_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/poweroff.c32', dest: '{{ PULSE_BIOS_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_BIOS_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_EFI32 }}', dest: '{{ PULSE_UEFI32_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI32_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/liblua.c32', dest: '{{ PULSE_UEFI32_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/vesamenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI32_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/libcom32.c32', dest: '{{ PULSE_UEFI32_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/libmenu.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI32_PATH }}/poweroff.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI32_PATH }}/pci.ids' }
+     - { src: '{{ SYSLINUX_EFI64 }}', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/ldlinux.e64', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.e64' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/liblua.c32', dest: '{{ PULSE_UEFI64_PATH }}/liblua.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/vesamenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/vesamenu.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/libcom32.c32', dest: '{{ PULSE_UEFI64_PATH }}/libcom32.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
+     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
+
+ - name: IMAGING - Create syslinux specific setup for Debian
+   file:
+     src: '{{ item.src }}'
+     dest: '{{ item.dest }}'
+     state: hard
+     force: yes
+   with_items:
+     - { src: '{{ SYSLINUX_BIOS_PATH }}/inventory.c32', dest: '{{ PULSE_BIOS_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/inventory.c32', dest: '{{ PULSE_UEFI32_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/inventory.c32', dest: '{{ PULSE_UEFI64_PATH }}/inventory.c32' }
+     - { src: '{{ SYSLINUX_UEFI32_PATH }}/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
+     - { src: '{{ SYSLINUX_UEFI64_PATH }}/poweroff.c32', dest: '{{ PULSE_UEFI64_PATH }}/poweroff.c32' }
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Create symlink
+   file:
+     src: ../bootmenus
+     dest: '{{ item }}'
+     state: link
+     force: yes
+   with_items:
+     - /var/lib/pulse2/imaging/bootloader/pxelinux.cfg
+     - /var/lib/pulse2/imaging/bootloader-uefi32/pxelinux.cfg
+     - /var/lib/pulse2/imaging/bootloader-uefi64/pxelinux.cfg
+
+ - name: IMAGING - Copy utilities.menu.in from template imaging to pulse2 imaging
+   copy:
+     src: /usr/share/doc/mmc/contrib/imaging/template/utilities.menu.in
+     dest: /var/lib/pulse2/imaging/tools/utilities.menu
+     force: no
+     remote_src: yes
+
+ - name: IMAGING - Define TFTP server ip address in utilities.menu
+   command: sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu
+
+ - name: IMAGING - Prevent clonezilla from being upgraded
+   dpkg_selections:
+     name: clonezilla
+     selection: hold
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: IMAGING - Delete old /home/partimag
+   file:
+     path: /home/partimag
+     state: absent
+
+ - name: IMAGING - Create new /home/partimag
+   file:
+     path: /home/partimag
+     state: directory
+
+ - name: IMAGING - Link masters to /home/partimag
+   file:
+     src: /var/lib/pulse2/imaging/masters
+     dest: /home/partimag/masters
+     state: link
+     force: yes
+
+ - name: IMAGING - Configure UDP Sender
+   command: sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
+
+##########################################################
+#                  Install Pulse Backup                  #
+##########################################################
+
+ - name: BACKUP - Configure storage path
+   debconf:
+     name: urbackup-server
+     question: urbackup/backuppath
+     vtype: string
+     value: '/media/BACKUP/urbackup'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+     
+ - name: BACKUP - Install backup-server
+   apt:
+     update_cache: yes
+     state: latest
+     pkg:
+       - urbackup-server
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+     
+ - name: BACKUP - Install backup-server
+   yum:
+     update_cache: yes
+     state: latest
+     pkg:
+       - urbackup-server
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP - Create admin user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ ROOT_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Create API user
+   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ BACKUP_API_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+     
+ - name: BACKUP/APACHE - Configure apache for pulse backup
+   copy:
+     content: |
+          Alias /urbackup /usr/share/urbackup/www 
+          ProxyPass "/urbackup/x" "fcgi://localhost:55413"
+     dest: '{{ APACHE_CONF_PATH }}/urbackup.conf'
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP/APACHE - Enable pulse backup configuration
+   command: a2enconf urbackup
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: BACKUP - Generate session key
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=login
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       username: admin
+       password: '{{ URBACKUP_ADMINPASSWD }}'
+       plainpw: 1
+   register: session_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Get session key
+   set_fact:
+     URBACKUP_SESSION: '{{ session_key.json.session }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Configure backup server internet settings
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: general_save
+       internet_mode_enabled: 'true'
+       internet_server: '{{ SERVER_FQDN }}'
+       no_images: 'true'
+       allow_tray_exit: 'false'
+       allow_starting_full_image_backups: 'false'
+       allow_starting_incr_image_backups: 'false'
+       allow_overwrite: 'false'
+       update_freq_image_incr: -5184000
+       internet_full_file_backups: 'true'
+       ses: '{{ URBACKUP_SESSION }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: BACKUP - Configure backup server port setting
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: general_save
+       ses: '{{ URBACKUP_SESSION }}'
+       internet_server_port: '{{ SERVER_URBACKUP_PORT }}'
+   when:
+     - SERVER_URBACKUP_PORT != ''
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                      Install Samba                     #
+##########################################################
+
+ - name: SAMBA - Install samba
+   yum:
+     pkg:
+       - samba
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: SAMBA - Install samba
+   apt:
+     pkg:
+       - samba
+       - smbclient
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: SAMBA - Copy mmc smb.conf template
+   copy:
+     src: /usr/share/doc/mmc/contrib/samba/smb.conf
+     dest: /etc/samba/
+     remote_src: yes
+
+ - name: SAMBA - Define Samba root password
+   command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
+
+ - name: SAMBA - Create user drivers with no home and group
+   user:
+     name: drivers
+     shell: /bin/false
+
+ - name: SAMBA - Define Samba drivers Password
+   command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
+
+ - name: SAMBA - Set samba service name for CentOS
+   set_fact:
+     SAMBA_SERVICE: smb
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: SAMBA - Set samba service name for Debian
+   set_fact:
+     SAMBA_SERVICE: smbd
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: SAMBA - Restart and Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: '{{ SAMBA_SERVICE }}'
+
+##########################################################
+#                    Install syncthing                   #
+##########################################################
+
+ - name: SYNCTHING - Install syncthing
+   yum:
+     pkg:
+       - syncthing
+       - syncthingmanager
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: SYNCTHING - Install syncthing
+   apt:
+     pkg:
+       - syncthing
+       - syncthingmanager
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: SYNCTHING - Install additional packages on pulsemain
+   yum:
+     pkg:
+       - syncthing-tools
+       - syncthing-systemd-addons
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == "p"
+
+ - name: SYNCTHING - Install additional packages on pulsemain
+   apt:
+     pkg:
+       - syncthing-discosrv
+       - syncthing-systemd-addons
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == "p"
+
+ - name: SYNCTHING - Set variable for name server of discosrv CentOS
+   set_fact:
+     DISCOSRV_NAME: 'syncthing-discosrv'
+   when:
+    - ansible_distribution == 'CentOS'
+
+ - name: SYNCTHING - Set variable for name server of discosrv Debian
+   set_fact:
+     DISCOSRV_NAME: 'stdiscosrv'
+   when:
+    - ansible_distribution == 'Debian'
+
+ - name: SYNCTHING - Stop service for deleting any previous configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Reset syncthing
+   file:
+     path: '{{ item }}'
+     state: absent
+   with_items:
+     - '/var/lib/syncthing/.config'
+     - '/var/lib/syncthing/Sync'
+     - '/var/lib/syncthing-depl/.config'
+     - '/var/lib/syncthing-depl/Sync'
+
+ - name: SYNCTHING - Create user accounts
+   user:
+     name: '{{ item.name }}'
+     state: present
+     createhome: yes
+     home: '{{ item.home }}'
+     shell: /sbin/nologin
+     system: yes
+   with_items:
+     - { name: 'syncthing', home: '/var/lib/syncthing' }
+     - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
+
+ - name: SYNCTHING - Create log file
+   file:
+     path: /var/log/syncthing.log
+     mode: 0644
+     state: touch
+     owner: syncthing
+     group: syncthing
+
+ - name: SYNCTHING - Ensure /etc/systemd/system/syncthing@.service.d exists
+   file:
+     path: /etc/systemd/system/syncthing@.service.d
+     state: directory
+     mode: '0755'
+
+ - name: SYNCTHING - Separate syncthing logs
+   copy:
+     content: "[Service]\nExecStart=\nExecStart=/usr/bin/syncthing -no-browser -logflags=3 -logfile /var/log/syncthing.log\nStandardOutput=null\nStandardError=null "
+     dest: /etc/systemd/system/syncthing@.service.d/log.conf
+     mode: '0644'
+
+ - name: SYNCTHING - Setup rotation of syncthing logs
+   copy:
+     content: |
+       /var/log/syncthing.log
+       {
+           missingok
+           daily
+           rotate 7
+           notifempty
+           create 0644 root root
+           compress
+       }
+     dest: '/etc/logrotate.d/syncthing'
+
+ - name: SYNCTHING - Enable services
+   systemd:
+     enabled: yes
+     daemon_reload: yes
+     state: restarted
+     name: 'syncthing@{{ item }}.service'
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
+   wait_for:
+     path: /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing-depl start
+   wait_for:
+     path: /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Create backups of syncthing configure
+   copy:
+     src: '/var/lib/{{ item }}/.config/syncthing/config.xml'
+     dest: '/var/lib/{{ item }}/.config/syncthing/config.xml.orig'
+     remote_src: yes
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Get local device id for syncthing
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   register: localdeviceid
+
+ - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
+
+ - name: SYNCTHING/APACHE - Setup local apache for syncthing
+   copy:
+     content: |
+       ProxyPass /syncthing/ http://localhost:8384/
+       <Location /syncthing/>
+           ProxyPassReverse http://localhost:8384/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing.conf'
+
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: SYNCTHING/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+
+ - name: SYNCTHING/APACHE - Setup pulsemain apache for relay syncthing
+   copy:
+     content: |
+       ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+       <Location /syncthing-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ SERVER_FQDN }}/syncthing/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-{{ XMPP_DOMAIN }}
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING/APACHE - Reload apache on pulsemain
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: resid
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Stop discovery server
+   systemd:
+     name: '{{ DISCOSRV_NAME }}'
+     state: stopped
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Create directory for discosrv
+   file:
+     path: /var/lib/syncthing-discosrv
+     state: directory
+   when:
+    - ansible_distribution == 'CentOS'
+    - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Create user for discosrv
+   user:
+     name: syncthing-discosrv
+     group: syncthing
+     state: present
+   when:
+    - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Configure discovery server
+   copy:
+     src: /var/lib/syncthing/.config/syncthing/{{ item.file }}
+     dest: /var/lib/syncthing-discosrv/{{ item.file }}
+     owner: syncthing-discosrv
+     group: syncthing
+     mode: '{{ item.mode }}'
+     remote_src: yes
+   with_items:
+     - { file: 'cert.pem', mode: '0644' }
+     - { file: 'key.pem', mode: '0600' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Start discovery server
+   systemd:
+     enabled: yes
+     daemon_reload: yes
+     state: restarted
+     name: '{{ DISCOSRV_NAME }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to PULSEMAIN_DEVICE_ID on relay
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ PULSEMAIN_DEVICE_ID }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Set DISCOSRV_DEVICE_ID to LOCAL_DEVICE_ID on pulsemain
+   set_fact:
+     DISCOSRV_DEVICE_ID: '{{ LOCAL_DEVICE_ID }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHING - Stop service for editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Define global announce server as pulsemain on relay syncthing
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Define global announce server as localhost on pulsemain
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHING - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'natEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
+
+ - name: SYNCTHING - Add root user
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Generate Syncthing root user hash
+   shell: "htpasswd -bnBC 10 '' '{{ ROOT_PASSWORD }}' | tr -d ':\n' | sed 's/$2y/$2a/'"
+   register: syncthing_pass
+
+ - name: SYNCTHING - Define ENCRYPTED_PASS
+   set_fact:
+     ENCRYPTED_PASS: "{{ syncthing_pass.stdout }}"
+
+ - name: SYNCTHING - Set root password to ENCRYPTED_PASS
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Get api key from syncthing
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
+
+ - name: SYNCTHING - Set SYNCTHING_API_KEY
+   set_fact:
+     SYNCTHING_API_KEY: "{{ apikey.stdout }}"
+
+ - name: SYNCTHING - Configure SYNCTHING_API_KEY in stman
+   command: stman configure -k {{ SYNCTHING_API_KEY }}
+
+ - name: SYNCTHING - Define XMPP_DOMAIN for device name
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']/@name" -v "{{ XMPP_DOMAIN }}" /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Delete the default share
+   command: xmlstarlet ed --inplace -d "configuration/folder[@label='Default Folder']" /var/lib/syncthing/.config/syncthing/config.xml
+
+ - name: SYNCTHING - Delete pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Add pulsemain device as introducer on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ PULSEMAIN_DEVICE_ID }}' name='pulse' introducer='true'" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Edit pulsemain device on relay syncthing
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { field: 'autoAcceptFolders', value: 'false' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Delete relayserver device from pulsemain syncthing
+   command: xmlstarlet ed --inplace -d "configuration/device[@name='{{ XMPP_DOMAIN }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Add relayserver device to pulsemain syncthing
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart service after editing configuration on pulsemain
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart service after editing configuration
+   systemd:
+     name: syncthing@syncthing
+     state: restarted
+
+ - name: SYNCTHING - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+   when:
+     - INSTALL_TYPE != 'p'
+
+##########################################################
+#                   Install TFTP Server                  #
+##########################################################
+
+ - name: TFTP_SERVER - Install TFTP server
+   apt:
+     pkg:
+       - tftpd-hpa
+       - pulse2-register-pxe
+       - pulse2-utilities
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Install TFTP server
+   yum:
+     pkg:
+       - tftp
+       - tftp-server
+       - pulse2-register-pxe
+       - pulse2-utilities
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Enable pulse2-register-pxe service
+   systemd:
+     name: pulse2-register-pxe
+     state: restarted
+     enabled: yes
+     daemon_reload: yes
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Configure TFTP Server
+   lineinfile:
+     dest: /etc/default/tftpd-hpa
+     regexp: "{{ item.regex }}"
+     line: "{{ item.line }}"
+   with_items:
+     - { regex: '^TFTP_DIRECTORY=.*$', line: 'TFTP_DIRECTORY="/var/lib/pulse2/imaging"' }
+     - { regex: '^TFTP_OPTIONS=.*$', line: 'TFTP_OPTIONS="--secure --create --ipv4 -l"' }
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Enable service
+   systemd:
+     name: tftpd-hpa
+     state: restarted
+     enabled: yes
+     daemon_reload: yes
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Copy service files from usr lib to systemd
+   copy:
+     src: /usr/lib/systemd/system/{{ item.src }}
+     dest: /etc/systemd/system/{{ item.dest }}
+     remote_src: yes
+   with_items:
+     - { src: 'tftp.service', dest: 'tftp-server.service' }
+     - { src: 'tftp.socket', dest: 'tftp-server.socket' }
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Configure TFTP Server
+   replace:
+     dest: /etc/systemd/system/tftp-server.service
+     regexp: "{{ item.regex }}"
+     replace: "{{ item.replace }}"
+   with_items:
+     - { regex: 'tftp.socket', replace: 'tftp-server.socket' }
+     - { regex: '-s /var/lib/tftpboot', replace: '--secure --create /var/lib/pulse2/imaging' }
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: TFTP_SERVER - Enable service
+   systemd:
+     state: restarted
+     enabled: yes
+     daemon_reload: yes
+     name: tftp-server
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                   Syncthing shares                     #
+##########################################################
+
+ - name: SHARE - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SHARE - Stop service on pulsemain for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Delete all shares on main pulse before recreating them
+   command: xmlstarlet ed -d "configuration/folder[@type='sendonly']" /var/lib/syncthing/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Create shares on main pulse
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Edit shares on main pulse
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'device id=\"{{ LOCAL_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@type='sendonly']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@type='sendonly']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Check if cluster share exists on pulsemain syncthing
+   command: xmlstarlet sel -t -v "/configuration/folder[@id=\"pulsemaster_{{ CLUSTER_NAME }}\"]/@id" -n /var/lib/syncthing/.config/syncthing/config.xml
+   register: syncthingshareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create cluster share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="pulsemaster_{{ CLUSTER_NAME }}" label="{{ CLUSTER_NAME }}" path="/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - syncthingshareexists.stdout == ''
+
+ - name: SHARE - Edit cluster share on pulsemain if it did not exist
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@id='pulsemaster_{{ CLUSTER_NAME }}']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE != 'p'
+     - syncthingshareexists.stdout == ''
+
+ - name: SHARE - Delete all shares on ars
+   command: xmlstarlet ed --inplace -d "configuration/folder[@id='{{ item.share_id }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   ignore_errors: yes
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Unshare all folders with relay from main pulse if already shared
+   command: xmlstarlet ed --inplace -d "configuration/folder[@type='sendonly']/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing/.config/syncthing/config.xml
+   ignore_errors: yes
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Remove destination folders if present
+   file:
+     path: '{{ item.destination }}'
+     state: absent
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   when:
+     - INSTALL_TYPE != 'p'
+     - DELETE_PACKAGES is defined and DELETE_PACKAGES|bool == true
+
+ - name: SHARE - Remove syncthing folders if present on relays
+   file:
+     path: '/var/lib/syncthing/{{ item.syncthing_folder }}'
+     state: absent
+   with_items:
+     - { share_id: 'pulsemaster_packages', syncthing_folder: 'packages', destination: '/var/lib/pulse2/packages/' }
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create destination folders
+   file:
+     path: '{{ item.destination }}'
+     state: directory
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+
+ - name: SHARE - Create folder named after the cluster
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     state: directory
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create folder named after the cluster on pulsemain
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     state: directory
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create syncthing special folder
+   file:
+     path: '{{ item.destination }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+
+ - name: SHARE - Create syncthing special folder for cluster
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create syncthing special folder for cluster on pulsemain
+   file:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/.stfolder/'
+     state: directory
+     mode: '0755'
+     owner: syncthing
+     group: syncthing
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create stignore file for downloads on main pulse
+   copy:
+     content: |
+       config
+       generate-*
+       reversessh
+       .generation_options
+     dest: /var/lib/pulse2/clients/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Create stignore file for downloads on relay
+   copy:
+     content: "reversessh"
+     dest: /var/lib/pulse2/clients/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create stignore file for bootmenus on main pulse
+   copy:
+     content: "default"
+     dest: /var/lib/pulse2/imaging/bootmenus/.stignore
+     mode: '0644'
+     owner: syncthing
+     group: syncthing
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SHARE - Define ACLs on the folders
+   acl:
+     path: '{{ item.destination }}'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+
+ - name: SHARE - Define ACLs on the folders for cluster
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders for cluster on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders for winupdates
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders for winupdates on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance
+   acl:
+     path: '{{ item.destination }}'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+
+ - name: SHARE - Define ACLs on the folders with inheritance for cluster
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance for cluster on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/'
+     etype: group
+     entity: syncthing
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance for winupdates
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Define ACLs on the folders with inheritance for winupdates on pulsemain
+   acl:
+     path: '/var/lib/pulse2/packages/sharing/winupdates/'
+     etype: group
+     entity: mysql
+     recursive: yes
+     permissions: rwx
+     default: yes
+     state: present
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Create shares on relay
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Edit shares on relay
+   command: xmlstarlet ed --inplace {{ item.type }} "{{ item.element }}" {{ item.operation }} /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ PULSEMAIN_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'device id=\"{{ LOCAL_DEVICE_ID }}\"'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'markerName' -v '.stfolder'" }
+     - { type: "-s", element: "configuration/folder[@type='sendreceive']", operation: "-t elem -n 'minDiskFree unit=\"%\"'" }
+     - { type: "-u", element: "configuration/folder[@type='sendreceive']/minDiskFree", operation: "-v '1'" }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Share all folders with ars from pulsemain
+   command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+     - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+     - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
+     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Restart service on pulsemain after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SHARE - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SHARE - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 22000
+     delay: 5
+
+##########################################################
+#                 Syncthing deployment                   #
+##########################################################
+
+ - name: SYNCTHINGDEPL - Get local device id for syncthing-depl
+   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   register: localdeviceid
+
+ - name: SYNCTHINGDEPL - Set LOCAL_DEVICE_ID for syncthing-depl
+   set_fact:
+     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
+
+ - name: SYNCTHINGDEPL/APACHE - Setup local apache for syncthing-depl
+   copy:
+     content: |
+       ProxyPass /syncthing-depl/ http://localhost:8385/
+       <Location /syncthing-depl/>
+           ProxyPassReverse http://localhost:8385/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-depl.conf'
+
+ - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-depl
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: SYNCTHINGDEPL/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+
+ - name: SYNCTHINGDEPL/APACHE - Setup pulsemain apache for relay syncthing-depl
+   copy:
+     content: |
+       ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/
+       <Location /syncthing-depl-{{ XMPP_DOMAIN }}/>
+           ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/
+           Require all granted
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/syncthing-depl-{{ XMPP_DOMAIN }}.conf'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL/APACHE - Enable syncthing configuration
+   command: a2enconf syncthing-depl-{{ XMPP_DOMAIN }}
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL/APACHE - Reload apache on pulsemain
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Find pulsemain device id
+   command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: resid
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: SYNCTHINGDEPL - Set PULSEMAIN_DEVICE_ID
+   set_fact:
+     PULSEMAIN_DEVICE_ID: '{{ resid.stdout }}'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Stop service for editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHINGDEPL - Define global announce server as pulsemain on relay syncthing-depl
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ PULSEMAIN_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Define global announce server as pulsemain on relay syncthing-depl
+   command: xmlstarlet ed --inplace -u "configuration/options/globalAnnounceServer" -v "https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: SYNCTHINGDEPL - Update syncthing parameters to disallow external connections
+   command: xmlstarlet ed --inplace -u "configuration/options/{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'relaysEnabled', value: 'false' }
+     - { field: 'natEnabled', value: 'false' }
+     - { field: 'localAnnounceEnabled', value: 'false' }
+     - { field: 'urAccepted', value: '-1' }
+     - { field: 'autoUpgradeIntervalH', value: '0' }
+     - { field: 'stunKeepaliveSeconds', value: '0' }
+     - { field: 'crashReportingEnabled', value: 'false' }
+
+ - name: SYNCTHINGDEPL - Add root user
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHINGDEPL - Set root password to ENCRYPTED_PASS
+   command: xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v {{ ENCRYPTED_PASS }} /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHINGDEPL - Define listen port to 23000
+   command: xmlstarlet ed --inplace -u "configuration/options/listenAddress" -v "tcp://0.0.0.0:23000" /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHINGDEPL - Define gui listen port to 8385
+   command: xmlstarlet ed --inplace -u "configuration/gui/address" -v "127.0.0.1:8385" /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHINGDEPL - Get api key from syncthing-depl
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   register: apikey
+
+ - name: SYNCTHINGDEPL - Set SYNCTHING_DEPL_API_KEY
+   set_fact:
+     SYNCTHING_DEPL_API_KEY: "{{ apikey.stdout }}"
+
+ - name: SYNCTHINGDEPL - Configure SYNCTHING_DEPL_API_KEY in stman
+   command: stman configure -k {{ SYNCTHING_DEPL_API_KEY }} -p 8385 -n depl
+
+ - name: SYNCTHINGDEPL - Define XMPP_DOMAIN for device name
+   command: xmlstarlet ed --inplace -u "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']/@name" -v "{{ XMPP_DOMAIN }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+
+ - name: SYNCTHINGDEPL - Delete relayserver device on pulsemain syncthing-depl
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ LOCAL_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Add relayserver device as introducer on pulsemain syncthing-depl
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='true'" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Delete pulsemain device on relay syncthing-depl
+   command: xmlstarlet ed --inplace -d "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Add pulsemain device as introducer on relay syncthing-depl
+   command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ PULSEMAIN_DEVICE_ID }}' name='pulse' introducer='true'" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Edit pulsemain device on relay syncthing-depl
+   command: xmlstarlet ed --inplace -s "configuration/device[@id='{{ PULSEMAIN_DEVICE_ID }}']" -t elem -n "{{ item.field }}" -v "{{ item.value }}" /var/lib/syncthing-depl/.config/syncthing/config.xml
+   with_items:
+     - { field: 'autoAcceptFolders', value: 'true' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Restart service after editing configuration on pulsemain
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHINGDEPL - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: SYNCTHINGDEPL - Pause for 5 to 300 seconds to enable syncthing start
+   wait_for:
+     port: 23000
+     delay: 5
+
+##########################################################
+#                   SSH server setup                     #
+##########################################################
+
+ - name: SSH - Setup alternate SSH port if defined
+   lineinfile:
+     dest: /etc/ssh/sshd_config
+     regexp: "{{ item.regex }}"
+     line: "{{ item.line }}"
+     insertafter: "{{ item.insertafter }}"
+   with_items:
+     - { regex: '^#?\s*Port 22$', line: 'Port 22', insertafter: '' }
+     - { regex: "^Port {{ REVERSE_SSH_PORT }}$", line: "Port {{ REVERSE_SSH_PORT }}", insertafter: 'Port 22' }
+     - { regex: '^#?\s*GatewayPorts .*$', line: 'GatewayPorts yes', insertafter: '' }
+   when:
+     - REVERSE_SSH_PORT != ''
+
+ - name: SSH - Setup GatewayPorts
+   lineinfile:
+     dest: /etc/ssh/sshd_config
+     regexp: '^#?\s*GatewayPorts .*$'
+     line: 'GatewayPorts yes'
+
+ - name: SSH - Restart SSH server
+   service:
+     name: sshd
+     state: restarted
+
+##########################################################
+#                     Grafana setup                      #
+##########################################################
+
+ - name: GRAFANA - Install grafana
+   yum:
+     pkg:
+       - grafana
+       - grafana-image-renderer
+     state: latest
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Install grafana
+   apt:
+     pkg:
+       - grafana
+       - grafana-image-renderer
+     state: latest
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA/APACHE - Enable apache module
+   apache2_module:
+     state: present
+     name: headers
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA/APACHE - Setup apache for grafana
+   copy:
+     content: |
+       ProxyPass /grafana/ http://localhost:3000/
+       <Location /grafana/>
+           ProxyPassReverse http://localhost:3000/
+           Require all granted
+           Header set X-Frame-Options: "SAMEORIGIN"
+       </Location>
+     dest: '{{ APACHE_CONF_PATH }}/grafana.conf'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA/APACHE - Enable grafana module
+   command: a2enconf grafana
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: GRAFANA - Stop service
+   systemd:
+     state: stopped
+     name: grafana-server
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Delete previous database
+   file:
+     path: /var/lib/grafana/grafana.db
+     state: absent
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Configure grafana
+   command: crudini --set /etc/grafana/grafana.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'server', parameter: 'root_url', value: '%(protocol)s://%(domain)s:%(http_port)s/grafana/'}
+     - { section: 'auth.anonymous', parameter: 'enabled', value: 'true'}
+     - { section: 'auth.anonymous', parameter: 'org_name', value: 'Main Org.'}
+     - { section: 'auth.anonymous', parameter: 'org_role', value: 'Viewer'}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Restart and Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     daemon_reload: yes
+     name: grafana-server
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Pause for 5 to 300 seconds to enable grafana start
+   wait_for:
+     port: 3000
+     delay: 5
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Reset admin password
+   command: grafana-cli admin reset-admin-password '{{ ROOT_PASSWORD }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Generate api key
+   uri:
+     url: "http://localhost:3000/api/auth/keys"
+     url_username: admin
+     url_password: '{{ ROOT_PASSWORD }}'
+     force_basic_auth: yes
+     method: POST
+     body_format: json
+     body:
+       name: adminkey
+       role: Admin
+   register: admin_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: GRAFANA - Get api key
+   set_fact:
+     GRAFANA_ADMIN_KEY: '{{ admin_key.json.key }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                      GLPI setup                        #
+##########################################################
+
+ - name: GLPI - Install glpi
+   yum:
+     pkg:
+       - glpi-{{ GLPI_VERSION }}.*
+       - glpi
+       - glpi-fusioninventory-{{ GLPI_VERSION }}.*
+       - php-ldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Install glpi
+   apt:
+     pkg:
+       - glpi={{ GLPI_VERSION }}.*
+       - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
+       - php-ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION != '10.0'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Install glpi 10.0
+   apt:
+     pkg:
+       - glpi={{ GLPI_VERSION }}.*
+       - fusioninventory-for-glpi={{ FUSION_VERSION }}+*
+       - php-ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
+
+ - name: ITSM-NG - Install itsm-ng
+   yum:
+     pkg:
+       - itsm-ng-{{ ITSM_NG_VERSION }}.*
+       - itsm-ng
+       - itsm-ng-fusioninventory-{{ GLPI_VERSION }}.*
+       - php-ldap
+   when:
+     - ansible_distribution == 'CentOS'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: ITSM-NG - Install itsm-ng
+   apt:
+     pkg:
+       - itsm-ng={{ ITSM_NG_VERSION }}.*
+       - fusioninventory-for-itsm-ng={{ GLPI_VERSION }}+*
+       - php-ldap
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: GLPI - Drop and recreate glpi database and user
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
+   with_items:
+     - "DROP DATABASE IF EXISTS {{ GLPI_DBNAME }}"
+     - "DROP USER IF EXISTS '{{ GLPI_DBUSER }}'"
+     - "CREATE DATABASE {{ GLPI_DBNAME }}"
+     - "CREATE USER '{{ GLPI_DBUSER }}'@'{{ GLPI_DBHOST }}' IDENTIFIED BY '{{ GLPI_DBPASSWD }}'"
+     - "GRANT ALL ON {{ GLPI_DBNAME }}.* TO '{{ GLPI_DBUSER }}'@'{{ GLPI_DBHOST }}'"
+     - "FLUSH PRIVILEGES"
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: GLPI - Initialise glpi 9.2 database on debian
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.2'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Initialise glpi 9.4 database on debian
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.4'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Initialise glpi 9.5 database on debian
+   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.5'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Initialise glpi 10.0 database on debian
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+   when:
+     - ansible_distribution == 'Debian'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '10.0'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Initialise glpi database on centos
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
+   when:
+     - ansible_distribution == 'CentOS'
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Upgrade glpi 9.2 database if needed on debian
+   command: php /usr/share/glpi/scripts/cliupdate.php
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.2'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Upgrade glpi 9.4 database if needed on debian
+   command: php /usr/share/glpi/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.4'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Upgrade glpi 9.5 database if needed on debian
+   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '9.5'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Upgrade glpi 10.0 database if needed on debian
+   command: php /usr/share/glpi/bin/console -n db:update
+   when:
+     - ansible_distribution == 'Debian'
+     - GLPI_DBHOST == 'localhost'
+     - GLPI_VERSION == '10.0'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Upgrade glpi database if needed on centos
+   command: php /usr/share/glpi/scripts/cliupdate.php
+   when:
+     - ansible_distribution == 'CentOS'
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Create view for pulse
+   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/mmc/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
+
+ - name: GLPI - Create view for pulse
+   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'Debian'
+
+ - name: GLPI - Get glpi superadmin id
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
+   register: GLPI_SUPERADMIN_ID
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Prepare glpi database for Pulse
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - DELETE FROM glpi_users WHERE name NOT LIKE '{{ ITSM_USER }}'
+     - DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'
+     - UPDATE glpi_users SET name = 'root' WHERE name = '{{ ITSM_USER }}'
+     - UPDATE glpi_users SET password = MD5('{{ ROOT_PASSWORD }}') where name = 'root'
+     - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
+     - UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0
+     - INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')
+     - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
+     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: GLPI - Enable fusioninventory plugin for glpi 9.2
+   command: php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.2'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Install fusioninventory plugin for glpi 9.5
+   command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Activate fusioninventory plugin for glpi 9.5
+   command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Install fusioninventory plugin for itsm 1.4
+   command: php /usr/share/itsm-ng/bin/console itsmng:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '9.5'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: GLPI - Activate fusioninventory plugin for itsm 1.4
+   command: php /usr/share/itsm-ng/bin/console itsmng:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
+
+ - name: GLPI - Install fusioninventory plugin for glpi 10.0
+   command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Activate fusioninventory plugin for glpi 10.0
+   command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - GLPI_VERSION == '10.0'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Configure fusioninventory
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'
+     - INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
+     - UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname'
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-')
+     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'glpi'
+
+ - name: GLPI - Set owner of /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
+   file:
+     path: /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
+     state: directory
+     recurse: yes
+     owner: '{{ APACHE_USER }}'
+   when:
+     - RESET_DB|bool
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                Main Pulse server setup                 #
+##########################################################
+
+ - name: MAINPULSE - Install pulsemain packages
+   yum:
+     state: latest
+     pkg:
+       - pulse2
+       - mmc-web-urbackup
+       - python-mmc-urbackup
+       - mmc-web-dashboard
+       - python-mmc-dashboard
+       - mmc-web-glpi
+       - python-mmc-glpi
+       - mmc-web-ppolicy
+       - python-mmc-ppolicy
+       - mmc-web-services
+       - python-mmc-services
+       - mmc-web-support
+       - python-mmc-support
+       - mmc-web-base
+       - python-mmc-xmppmaster
+       - python-mmc-guacamole
+       - pulse-xmppmaster-agentplugins
+       - pulse-xmpp-agent-relay
+       - pulse-agent-installers
+       - pulse-xmpp-master-substitute
+       - pulse2-uuid-resolver
+       - pulse-debug-tools
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Install pulsemain packages
+   apt:
+     state: latest
+     pkg:
+       - pulse2
+       - mmc-web-urbackup
+       - python-mmc-urbackup
+       - mmc-web-dashboard
+       - python-mmc-dashboard
+       - mmc-web-glpi
+       - python-mmc-glpi
+       - mmc-web-ppolicy
+       - python-mmc-ppolicy
+       - mmc-web-services
+       - python-mmc-services
+       - mmc-web-support
+       - python-mmc-support
+       - mmc-web-xmppmaster
+       - python-mmc-xmppmaster
+       - python-mmc-guacamole
+       - pulse-xmppmaster-agentplugins
+       - pulse-xmpp-agent-relay
+       - pulse-agent-installers
+       - pulse-xmpp-master-substitute
+       - pulse-update-manager
+       - pulse2-uuid-resolver
+       - pulse-debug-tools
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/APACHE - Enable pulse and mmc modules
+   command: a2enconf {{ item }}
+   with_items:
+     - pulse
+     - mmc
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/APACHE - Reload apache on Debian
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/LDAP - Import mmc schemas to ldap server
+   command: mmc-add-schema /usr/share/doc/mmc/contrib/base/mmc.schema {{ LDAP_CONFIG_PATH }}/schema/
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/PKI - Configure certificates in mmc-agent and inventory server
+   copy:
+     src: "/var/lib/pulse2/pki/{{ SERVER_FQDN }}.pem"
+     dest: "{{ item }}"
+     remote_src: yes
+   with_items:
+     - /etc/mmc/agent/keys/localcert.pem
+     - /etc/mmc/agent/keys/cacert.pem
+     - /etc/mmc/agent/keys/privkey.pem
+     - /etc/mmc/pulse2/inventory-server/keys/cacert.pem
+     - /etc/mmc/pulse2/inventory-server/keys/privkey.pem
+     - /etc/mmc/pulse2/package-server/keys/cacert.pem
+     - /etc/mmc/pulse2/package-server/keys/privkey.pem
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/EJABBERD - Register master and substitute accounts
+   command: ejabberdctl register {{ item }} {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}
+   with_items:
+     - master
+     - master_reg
+     - master_inv
+     - master_asse
+     - master_subs
+     - master_log
+     - master_depl
+     - master_reconf
+     - master_mon
+   when:
+     - (INSTALL_TYPE == 'p') and (RESET_DB|bool)
+
+ - name: MAINPULSE - Run pulse2-setup with database reset
+   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
+   when:
+     - RESET_DB|bool
+     - INSTALL_TYPE == 'p'
+     
+ - name: MAINPULSE - Run pulse2-setup without database reset
+   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
+   when:
+     - not RESET_DB|bool
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Get database password generated by pulse2-setup on centos
+   command: crudini --get /etc/mmc/plugins/msc.ini.local msc dbpasswd
+   register: mmcuser_dbpass
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
+
+ - name: MAINPULSE - Set variable for mmcuser_dbpass on centos
+   set_fact:
+     MMCUSER_DBPASS: '{{ mmcuser_dbpass.stdout }}'
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'CentOS'
+
+ - name: MAINPULSE - Get database password generated by pulse2-setup on debian
+   command: crudini --get /etc/mmc/plugins/msc.ini.local msc dbpasswd
+   register: mmcuser_dbpass
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'Debian'
+
+ - name: MAINPULSE - Set variable for mmcuser_dbpass on debian
+   set_fact:
+     MMCUSER_DBPASS: '{{ mmcuser_dbpass.stdout }}'
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_distribution == 'Debian'
+
+ - name: MAINPULSE - Configure xmppmaster
+   command: crudini --set /etc/mmc/plugins/xmppmaster.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'main', parameter: 'disable', value: '0' }
+     - { section: 'configuration_server', parameter: 'confmuc_password', value: '{{ XMPP_MUCROOM_PASSWORD }}' }
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'chatroom', parameter: 'password', value: '{{ XMPP_MUCROOM_PASSWORD }}' }
+     - { section: 'defaultconnection', parameter: 'serverip', value: '{{ IP_ADDRESS }}' }
+     - { section: 'defaultconnection', parameter: 'guacamole_baseurl', value: 'http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}' }
+     - { section: 'defaultconnection', parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+     - { section: 'syncthing', parameter: 'announce_server', value: 'https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}' }
+     - { section: 'global', parameter: 'taskdeploy', value: 'False' }
+     - { section: 'global', parameter: 'sessionwork', value: 'False' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure registration substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ GLPI_DBHOST }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ GLPI_DBPORT }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ GLPI_DBUSER }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ GLPI_DBPASSWD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ GLPI_DBNAME }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'kioskdatabase', parameter: 'kiosk_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'kioskdatabase', parameter: 'kiosk_dbport', value: '{{ DBPORT }}' }
+     - { section: 'kioskdatabase', parameter: 'kiosk_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbport', value: '{{ DBPORT }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbport', value: '{{ DBPORT }}' }
+     - { section: 'pkgsdatabase', parameter: 'pkgs_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure inventory substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_inv.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ GLPI_DBHOST }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ GLPI_DBPORT }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ GLPI_DBUSER }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ GLPI_DBPASSWD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ GLPI_DBNAME }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure assessor substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_asse.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure assessor substitute agent plugin
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local parameters {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'serverip', value: '{{ IP_ADDRESS }}' }
+     - { parameter: 'guacamole_baseurl', value: 'http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}' }
+     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+     - { parameter: 'announce_server', value: 'https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure subscription substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_subs.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Add the subscription substitute to the list of suscription agents
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO agent_subscription (name) VALUES ('master_subs@pulse')"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Configure logger substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_log.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure deployment substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_depl.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbport', value: '{{ DBPORT }}' }
+     - { section: 'mscdatabase', parameter: 'msc_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure reconfigurator substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_reconf.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure monitoring substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mon.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Configure updates substitute
+   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_upd.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
+     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbhost', value: '{{ DBHOST }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbport', value: '{{ DBPORT }}' }
+     - { section: 'admindatabase', parameter: 'admin_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Update default ARS if public ip is defined
+   command: crudini --set {{ item.conf_file }} {{ item.section }} serverip {{ PUBLIC_IP }}
+   with_items:
+     - { conf_file: '/etc/mmc/plugins/xmppmaster.ini.local', section: 'defaultconnection' }
+     - { conf_file: '/etc/mmc/plugins/assessor_agent.ini.local', section: 'parameters' }
+     - { conf_file: '/etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local', section: 'parameters' }
+   when:
+     - INSTALL_TYPE == 'p'
+     - (PUBLIC_IP is defined) and (PUBLIC_IP|length > 0)
+
+ - name: MAINPULSE - Configure xmppmaster assessor agent plugin
+   command: crudini --set /etc/mmc/plugins/assessor_agent.ini.local parameters {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'serverip', value: '{{ IP_ADDRESS }}' }
+     - { parameter: 'guacamole_baseurl', value: 'http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}' }
+     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+     - { parameter: 'announce_server', value: 'https://{{ SERVER_FQDN }}:8443/?id={{ DISCOSRV_DEVICE_ID }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: MAINPULSE - Restart mmc-agent
+   systemd:
+     enabled: yes
+     name: mmc-agent
+     state: restarted
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Pause for 10 to 300 seconds to enable mmc-agent start
+   wait_for:
+     port: 7080
+     delay: 10
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Pause for 10 to 300 seconds until master-all-RSA.key is created
+   wait_for:
+     path: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key'
+     delay: 10
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Create INFOSTMP folder for substitute agents
+   file:
+     path: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
+     state: directory
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Copy mmc agent keys to substitutes
+   copy:
+     src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
+     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/{{ item }}'
+     remote_src: yes
+   with_items:
+     - master-public-RSA.key
+     - master-all-RSA.key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Restart substitutes
+   systemd:
+     enabled: yes
+     name: pulse-xmpp-master-substitute-{{ item }}
+     state: restarted
+   with_items:
+     - registration
+     - inventory
+     - assessor
+     - subscription
+     - logger
+     - deployment
+     - reconfigurator
+     - monitoring
+     - updates
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/APACHE - Configure referer
+   lineinfile:
+     dest: '{{ APACHE_CONF_PATH }}/pulse.conf'
+     regexp: '{{ item.regexp }}'
+     line: '{{ item.line }}'
+   with_items:
+     - { regexp: 'SetEnvIf Referer .* FILEMANAGER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEMANAGER_ALLOWED'}
+     - { regexp: 'SetEnvIf Referer .* FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: MAINPULSE/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE == "p"
+
+ - name: MAINPULSE/SHARE - Enable management of shares
+   command: crudini --set /etc/mmc/plugins/pkgs.ini.local pkgs centralizedmultiplesharing True
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/SHARE - Reset shares db on main pulse
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' pkgs -e "DELETE FROM {{ item }} WHERE 1"
+   with_items:
+     - pkgs_rules_local
+     - pkgs_shares
+   ignore_errors: yes
+   when:
+     - RESET_DB|bool
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/SHARE - Set up global and cluster shares and root user on main pulse
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' pkgs -e "{{ item }}"
+   with_items:
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (2, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', 1, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
+     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (3, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 2)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', 3)
+     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/IMAGING - Associate imaging server with root entity
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' imaging -e "UPDATE ImagingServer SET associated=1 WHERE id=1"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/GLPI - Setup glpi rest url
+   command: crudini --set /etc/mmc/plugins/glpi.ini.local webservices glpi_base_url "{{ GLPI_BASEURL }}/apirest.php/"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/GRAFANA - Configure grafana data source
+   uri:
+     url: "http://localhost:3000/api/datasources"
+     headers:
+       Authorization: 'Bearer {{ GRAFANA_ADMIN_KEY }}'
+     method: POST
+     body_format: json
+     body:
+       name: xmppmaster
+       type: mysql
+       host: '{{ DBHOST }}:{{ DBPORT }}'
+       user: mmc
+       password: '{{ MMCUSER_DBPASS }}'
+       database: xmppmaster
+       access: direct
+   register: admin_key
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/GRAFANA - Add grafana parameters to xmppmaster config file
+   command: crudini --set /etc/mmc/plugins/xmppmaster.ini.local grafana_api api_key {{ GRAFANA_ADMIN_KEY }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/BACKUP - Change API password
+   lineinfile:
+     path: /etc/mmc/plugins/urbackup.ini
+     regexp: '^passwordapi=.*$'
+     line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/UPDATES - Define products to manage
+   command: crudini --set /etc/mmc/plugins/updates.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'main', parameter: 'disable', value: '0' }
+     - { section: 'database', parameter: 'dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
+     - { section: 'products', parameter: 'families', value: 'Win_Malicious, Win10' }
+     - { section: 'products', parameter: 'Win10_versions', value: 'X64_21H2' }
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+     
+ - name: MAINPULSE/UPDATES - Configure script
+   ansible.builtin.template:
+     src: medulla-generate-winupdate-packages.j2
+     dest: /usr/sbin/medulla-generate-winupdate-packages
+     mode: '0755'
+     owner: root
+
+ - name: MAINPULSE/UPDATES - Create database
+   community.mysql.mysql_db:
+     login_host: '{{ DBHOST }}'
+     login_port: '{{ DBPORT }}'
+     login_user: '{{ DBADMINUSER }}'
+     login_password: '{{ DBADMINPASSWD }}'
+     name: 'base_wsusscn2'
+     state: present
+
+ - name: MAINPULSE/UPDATES - Create database user
+   community.mysql.mysql_user:
+     login_host: '{{ DBHOST }}'
+     login_port: '{{ DBPORT }}'
+     login_user: '{{ DBADMINUSER }}'
+     login_password: '{{ DBADMINPASSWD }}'
+     name: 'mmc'
+     password: "{{ MMCUSER_DBPASS }}"
+     state: present
+     append_privs: true
+     priv:
+       'base_wsusscn2.*': 'ALL'
+   no_log: True
+
+ - name: MAINPULSE - Restart mmc-agent
+   systemd:
+     name: mmc-agent
+     state: restarted
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Pause for 30 seconds to enable mmc-agent start
+   pause:
+     seconds: 30
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE - Configure interface
+   command: crudini --set /etc/mmc/mmc.ini {{ item.section }} {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { section: 'global', parameter: 'community', value: 'no' }
+     - { section: 'global', parameter: 'maxperpage', value: '20' }
+     - { section: 'server_01', parameter: 'description', value: '{{ SERVER_FQDN }}' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                  Relay server setup                    #
+##########################################################
+
+ - name: RELAY - Install relay packages
+   yum:
+     state: latest
+     pkg:
+       - pulse-xmpp-agent-relay
+       - pulse-debug-tools
+   when:
+     - ansible_distribution == 'CentOS'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Install relay packages
+   apt:
+     state: latest
+     pkg:
+       - pulse-xmpp-agent-relay
+       - pulse-debug-tools
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Get default plugins list from relayconf.ini
+   command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini plugin pluginlist
+   register: plugin_list
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get current plugins list from pulsemain
+   command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: plugin_list
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set PLUGINS_LIST
+   set_fact:
+     PLUGINS_LIST: "{{ plugin_list.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Get connection password from pulsemain
+   command: crudini --get /etc/pulse-xmpp-agent/relayconf.ini.local connection password
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: connection_pass
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - set XMPP_MASTER_PASSWORD from pulsemain
+   set_fact:
+     XMPP_MASTER_PASSWORD: "{{ connection_pass.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/EJABBERD - Register master account
+   command: ejabberdctl register master {{ XMPP_DOMAIN }} {{ XMPP_MASTER_PASSWORD }}
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Configure relay server
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local {{ item.section }} {{ item.parameter }} "{{ item.value }}"
+   with_items:
+     - { section: 'connection', parameter: 'password', value: '"{{ XMPP_MASTER_PASSWORD }}"' }
+     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
+     - { section: 'chat', parameter: 'domain', value: '{{ XMPP_DOMAIN }}' }
+     - { section: 'jid_01', parameter: 'jidname', value: '"RS{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}"' }
+     - { section: 'global', parameter: 'allow_order', value: 'master_reg' }
+     - { section: 'type', parameter: 'geolocalisation', value: 'False' }
+     - { section: 'plugin', parameter: 'pluginlist', value: '{{ PLUGINS_LIST }}' }
+   no_log: True
+
+ - name: RELAY - Configure guacamole_baseurl parameter
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"
+   when:
+     - INSTALL_TYPE == 'p'
+   no_log: True
+
+ - name: RELAY - Configure guacamole_baseurl parameter
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type guacamole_baseurl "http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}"
+   when:
+     - INSTALL_TYPE != 'p'
+   no_log: True
+
+ - name: RELAY - Configure relay server public IP if defined
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local type {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'request_type', value: 'public'}
+     - { parameter: 'public_ip', value: '{{ PUBLIC_IP }}'}
+   when:
+     - PUBLIC_IP is defined
+
+ - name: RELAY - Configure guacamoleconf plugin
+   command: crudini --set /etc/pulse-xmpp-agent/guacamoleconf.ini.local parameters guacamole_dbpasswd '{{ ROOT_PASSWORD }}'
+
+ - name: RELAY - Add guacamoleconf to list of plugins to be loaded
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamoleconf
+
+ - name: RELAY - Configure plugins for alternate clients ssh port
+   command: crudini --set /etc/pulse-xmpp-agent/{{ item }}.ini.local parameters clients_ssh_port {{ CLIENTS_SSH_PORT }}
+   with_items:
+     - applicationdeploymentjson
+     - downloadfileexpert
+     - downloadfile
+     - guacamole
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
+
+ - name: RELAY - Add configured plugins to list of plugins to be loaded
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist {{ item }}
+   with_items:
+     - applicationdeploymentjson
+     - downloadfileexpert
+     - downloadfile
+     - guacamole
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
+
+ - name: RELAY - Configure guacamole plugin for alternate clients vnc port
+   command: crudini --set /etc/pulse-xmpp-agent/guacamole.ini.local parameters clients_vnc_port {{ CLIENTS_VNC_PORT }}
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
+
+ - name: RELAY - Add guacamole to list of plugins to be loaded
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist guacamole
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
+
+ - name: RELAY - Configure reverse_ssh_on plugin for alternate reversessh ssh port
+   command: crudini --set /etc/pulse-xmpp-agent/reverse_ssh_on.ini.local parameters reverseserver_ssh_port {{ REVERSE_SSH_PORT }}
+   when:
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|int > 0)
+
+ - name: RELAY - Add reverse_ssh_on to list of plugins to be loaded
+   command: crudini --set --list /etc/pulse-xmpp-agent/relayconf.ini.local plugin pluginlist reverse_ssh_on
+   when:
+     - (REVERSE_SSH_PORT is defined) and (REVERSE_SSH_PORT|int > 0)
+
+ - name: RELAY/SYNCTHING - Update relay config with syncthing apikey and device id
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local syncthing-deploy {{ item.parameter }} {{ item.value }}
+   with_items:
+     - { parameter: 'syncthing_gui_apikey', value: '"{{ SYNCTHING_DEPL_API_KEY }}"'}
+     - { parameter: 'syncthing_device_id', value: '"{{ LOCAL_DEVICE_ID }}"'}
+   no_log: True
+
+ - name: RELAY - Enable package watching service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: pulse-package-watching
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Add pulse to /etc/hosts
+   lineinfile:
+     dest: /etc/hosts
+     regexp: '^.* {{ XMPP_DOMAIN }}$'
+     line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
+   when:
+     - INSTALL_TYPE == 'p'
+     - ansible_hostname != 'pulse'
+
+ - name: RELAY - Update /etc/hosts
+   lineinfile:
+     line: "{{ item.line }}"
+     dest: "/etc/hosts"
+     regexp: "{{ item.regex }}"
+   with_items:
+     - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse' }
+     - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}' }
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Update /etc/hosts on pulsemain
+   lineinfile:
+     line: '{{ IP_REMOTE_SERVER }} {{ XMPP_DOMAIN }}'
+     dest: /etc/hosts
+     regexp: '^.* {{ XMPP_DOMAIN }}$'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Force relay to re-register in case of upgrade
+   copy:
+     content: ''
+     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION'
+     force: no
+
+ - name: RELAY - Restart mmc-agent service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: mmc-agent
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Enable service
+   systemd:
+     enabled: yes
+     state: restarted
+     name: pulse-xmpp-agent-relay
+
+ - name: RELAY - Update cluster for pulsemain
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "UPDATE cluster_ars set name = '{{ CLUSTER_NAME }}', description = '{{ CLUSTER_NAME }}' where id = 1"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get cluster id for relay if it exists
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id from cluster_ars where name='{{ CLUSTER_NAME }}'"
+   register: existingclusterid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set CLUSTER_ID if cluster already exists
+   set_fact:
+     CLUSTER_ID: "{{ existingclusterid.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout != ''
+
+ - name: RELAY - Get MAX_ID FROM cluster_ars when cluster does not exist
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT MAX(id) FROM cluster_ars"
+   register: maxid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout == ''
+
+ - name: RELAY - Set CLUSTER_ID for relay when cluster does not exist
+   set_fact:
+     CLUSTER_ID: "{{ maxid.stdout | int + 1 }}"
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout == ''
+
+ - name: RELAY - Create cluster for relay if it does not exist
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "INSERT INTO cluster_ars (id,name,description) VALUES ({{ CLUSTER_ID }},'{{ CLUSTER_NAME }}','{{ CLUSTER_NAME }}')"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - existingclusterid.stdout == ''
+
+ - name: RELAY - Set NEXT_ID for pulsemain
+   set_fact:
+     NEXT_ID: 1
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get MAX_ID FROM has_cluster_ars
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT MAX(id) FROM has_cluster_ars"
+   register: maxid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set NEXT_ID for relay
+   set_fact:
+     NEXT_ID: "{{ maxid.stdout | int + 1 }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for pulsemain waiting up to 5 minutes
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id FROM relayserver WHERE jid LIKE 'rspulse@pulse/%'"
+   register: relayserverid
+   until: relayserverid.stdout != ''
+   retries: 10
+   delay: 30
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: "{{ relayserverid.stdout }}"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Insert relay in its cluster for pulsemain
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "UPDATE has_cluster_ars SET id_cluster = 1 WHERE id_ars = '{{ RELAYSERVER_ID }}'"
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Get RELAYSERVER_ID FROM relayserver for relay waiting up to 5 minutes
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s xmppmaster -e "SELECT id FROM relayserver WHERE nameserver='{{ XMPP_DOMAIN }}'"
+   register: relayserverid
+   until: relayserverid.stdout != ''
+   retries: 10
+   delay: 30
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Set RELAYSERVER_ID
+   set_fact:
+     RELAYSERVER_ID: "{{ relayserverid.stdout }}"
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Relay check if id_ars is already inserted for relay
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -Ns -e "SELECT COUNT(has_cluster_ars.id_ars) as nb_ars from has_cluster_ars where has_cluster_ars.id_ars = '{{ RELAYSERVER_ID }}'"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   register: relay_is_inserted
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Insert relay in its cluster for relay
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ('{{ NEXT_ID }}', '{{ RELAYSERVER_ID }}', '{{ CLUSTER_ID }}')"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - relay_is_inserted.stdout == "0"
+
+ - name: RELAY - Insert relay in its cluster for relay
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "UPDATE has_cluster_ars SET id_cluster = '{{ CLUSTER_ID }}' WHERE id_ars = '{{ RELAYSERVER_ID }}'"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - relay_is_inserted.stdout != "0"
+
+ - name: RELAY - Create substituteconf records for pulsemain
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')"
+   with_items:
+     - { type: 'assessor', jid: 'master_asse@pulse' }
+     - { type: 'subscription', jid: 'master_subs@pulse' }
+     - { type: 'registration', jid: 'master_reg@pulse' }
+     - { type: 'inventory', jid: 'master_inv@pulse' }
+     - { type: 'logger', jid: 'master_log@pulse' }
+     - { type: 'monitoring', jid: 'master_mon@pulse' }
+     - { type: 'deployment', jid: 'master_depl@pulse' }
+     - { type: 'updates', jid: 'master_upd@pulse' }
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY - Create substituteconf records for relay
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', '{{ RELAYSERVER_ID }}')"
+   with_items:
+     - { type: 'assessor', jid: 'master_asse@pulse' }
+     - { type: 'subscription', jid: 'master_subs@pulse' }
+     - { type: 'registration', jid: 'master_reg@pulse' }
+     - { type: 'inventory', jid: 'master_inv@pulse' }
+     - { type: 'logger', jid: 'master_log@pulse' }
+     - { type: 'monitoring', jid: 'master_mon@pulse' }
+     - { type: 'deployment', jid: 'master_depl@pulse' }
+     - { type: 'updates', jid: 'master_upd@pulse' }
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Enable autoupdatebyrelay on pulsemain
+   command: "{{ item }}"
+   with_items:
+     - 'crudini --set /etc/pulse-xmpp-agent-substitute/loadautoupdate.ini parameters autoupdatebyrelay True'
+     - 'crudini --set /etc/mmc/plugins/xmppmaster.ini.local global autoupdatebyrelay True'
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/APACHE - Enable publishing of agent updates on relay
+   copy:
+     content: |
+        Alias /downloads /var/lib/pulse2/clients/
+        <Directory /var/lib/pulse2/clients/>
+          Options +Indexes
+          IndexOptions FancyIndexing VersionSort SuppressDescription FoldersFirst XHTML HTMLTable NameWidth=* IgnoreCase SuppressRules IconHeight=16 IconWidth=16
+          IndexOrderDefault Descending Date
+          IndexIgnore agent config templates vpn *.conf *.in generate* create-repos.sh artwork libs *.nsi *.sfx *.7z *.ini *.xml .??* *~ *# *.css *.html *.plist rbash runpulseagent *.buildinfo *.dsc *.changes pulse-agent-linux package Pulse2AgentsInstaller.tar pulse-service.* create-profile.ps1
+          AddIcon /downloads/win/artwork/install.ico Pulse-Agent-windows-FULL-latest.exe Pulse-Agent-windows-MINIMAL-latest.exe Pulse-Agent-mac-MINIMAL-latest.pkg.tar.gz Pulse-Agent-linux-MINIMAL-latest.sh
+          HeaderName "/downloads/HEADER.html"
+          IndexStyleSheet "/downloads/style.css"
+          AllowOverride None
+          Require all granted
+        </Directory>
+     dest: '{{ APACHE_CONF_PATH }}/pulse.conf'
+   when:
+     - INSTALL_TYPE != "p"
+
+ - name: RELAY/APACHE - Enable apache rewrite module
+   apache2_module:
+     name: rewrite
+   when:
+     - ansible_distribution == "Debian"
+     - INSTALL_TYPE != "p"
+
+ - name: RELAY/APACHE - Enable pulse module
+   command: a2enconf pulse
+   when:
+     - ansible_distribution == 'Debian'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/APACHE - Reload apache
+   systemd:
+     name: '{{ APACHE_DAEMON }}'
+     state: reloaded
+   when:
+     - INSTALL_TYPE != "p"
+
+ - name: RELAY/GLPI - Create entity in GLPI and define it as default entity for fusioninventory
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - INSERT INTO glpi_entities (id, entities_id, level, name, completename) VALUES (1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}')
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
+     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
+     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: RELAY/GLPI - Check if entity exists in glpi
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
+   register: entityexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/GLPI - Create entity in GLPI if it does not exist
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
+     - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
+     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
+     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
+     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE != 'p'
+     - entityexists.stdout == ''
+
+ - name: RELAY/SHARE - Check if cluster share exists in database
+   command: "mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} -s pkgs -e \"SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'\""
+   register: shareexists
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY/SHARE - Create cluster share in database if it did not exist
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ RELAYSERVER_ID }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
+ - name: RELAY/SHARE - Get id from pkgs_shares for the previous insert if it did not exist
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "SELECT id FROM pkgs.pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'"
+   register: shareid
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
+ - name: RELAY/SHARE - Create rw permission for root on cluster share if it did not exist
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -s pkgs -e "INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ shareid.stdout }})"
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+     - shareexists.stdout == ''
+
+ - name: RELAY - Add relay root public key to pulsetransfert authorized keys on pulsemain
+   authorized_key:
+     user: root
+     state: present
+     key: "{{ sshkey.ssh_public_key }}"
+     path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: RELAY - Disable Quick deploy
+   command: crudini --set /etc/pulse-xmpp-agent/relayconf.ini.local quick_deploy max_size_stanza_xmpp 0
+
+##########################################################
+#                     Pulse Agent                        #
+##########################################################
+
+ - name: PULSEAGENT - Add clients alternate ssh port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate ssh port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--ssh-port={{ CLIENTS_SSH_PORT }}"
+   when:
+     - (CLIENTS_SSH_PORT is defined) and (CLIENTS_SSH_PORT|int > 0)
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate vnc port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --vnc-port={{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Add clients alternate vnc port to options if defined
+   set_fact:
+     CLIENTS_OPTIONS: "--vnc-port={{ CLIENTS_VNC_PORT }}"
+   when:
+     - (CLIENTS_VNC_PORT is defined) and (CLIENTS_VNC_PORT|int > 0)
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate full agent
+   command: '{{ item }}'
+   with_items:
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} {{ CLIENTS_OPTIONS }}
+     - /var/lib/pulse2/clients/generate-agent-package
+   when:
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate minimal agent
+   command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads {{ CLIENTS_OPTIONS }}
+   ignore_errors: true
+   when:
+     - CLIENTS_OPTIONS is defined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate full agent
+   command: '{{ item }}'
+   with_items:
+     - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }}
+     - /var/lib/pulse2/clients/generate-agent-package
+   when:
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT - Generate minimal agent
+   command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads
+   ignore_errors: true
+   when:
+     - CLIENTS_OPTIONS is undefined
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Change backup server name in .ini
+   lineinfile:
+     path: /var/lib/pulse2/clients/config/updatebackupclient.ini
+     regexp: '^backup_server=.*$'
+     line: 'backup_server={{ SERVER_FQDN }}'
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Change backup server port in .ini
+   lineinfile:
+     path: /var/lib/pulse2/clients/config/updatebackupclient.ini
+     regexp: '^backup_port=.*$'
+     line: 'backup_port={{ SERVER_URBACKUP_PORT }}'
+   when:
+     - SERVER_URBACKUP_PORT != ''
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Define SERVER_URBACKUP_PORT if default port
+   set_fact:
+     SERVER_URBACKUP_PORT: 55415
+   when:
+     - SERVER_URBACKUP_PORT == ''
+     - INSTALL_TYPE == 'p'
+
+ - name: PULSEAGENT/BACKUP - Create quick action for deploying updatebackupclient.ini
+   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO `qa_custom_command` VALUES ('allusers','windows','Deploy updatebackupclient.ini file','powershell.exe \"$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ SERVER_FQDN }} {0}backup_port = {{ SERVER_URBACKUP_PORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent\"','Copy urbackup installation config file to cli')"
+   when:
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                     Final steps                        #
+##########################################################
+
+ - name: SYNCTHING - Stop service for editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: stopped
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: FINAL - Delete pending or ignored folders and devices
+   command: xmlstarlet ed --inplace -d "{{ item }}" /var/lib/syncthing/.config/syncthing/config.xml
+   with_items:
+     - configuration/device/ignoredFolder
+     - configuration/device/pendingFolder
+     - configuration/remoteIgnoredDevice
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: SYNCTHING - Restart service after editing configuration
+   systemd:
+     name: syncthing@{{ item }}
+     state: restarted
+   with_items:
+     - syncthing
+     - syncthing-depl
+
+ - name: FINAL - Get api key from syncthing on pulsemain
+   command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+   register: apikey
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: FINAL - Force synch of syncthing folders from pulsemain
+   uri:
+     url: "http://localhost:8384/rest/db/override?folder={{ item }}"
+     headers:
+       X-API-Key: '{{ apikey.stdout }}'
+     method: POST
+   with_items:
+     - pulsemaster_global
+     - pulsemaster_baseremoteagent
+     - pulsemaster_bootmenus
+     - pulsemaster_downloads
+   vars:
+     ansible_ssh_user: root
+   delegate_to: '{{ PULSEMAIN_IP }}'
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: FINAL - Pause for 30 seconds to finalize configs
+   pause:
+     seconds: 30
+
+ - name: FINAL - Restart pulse relay service
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
+   when:
+     - INSTALL_TYPE != 'p'
+
+ - name: FINAL - Download and generate updates packages
+   command: /usr/sbin/medulla-generate-winupdate-packages
+   when:
+     - INSTALL_TYPE == 'p'
+
+##########################################################
+#                        DEBUG                           #
+##########################################################
+
+# - name: DEBUG
+#   debug:
+#     msg:
+#     - "admin_key contents: {{ admin_key }}"

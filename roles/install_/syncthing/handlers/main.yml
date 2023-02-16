@@ -1,8 +1,0 @@
----
-
- - name: "enable stdiscosrv"
-   service:
-     name: "stdiscosrv"
-     enabled: "yes"
-   when:
-     ansible_distribution == "Debian"

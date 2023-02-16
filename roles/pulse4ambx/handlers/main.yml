@@ -1,0 +1,57 @@
+---
+
+ - name: APACHE - Restart apache
+   systemd:
+     name: httpd
+     state: restarted
+     daemon_reload: yes
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: APACHE - Restart apache
+   systemd:
+     name: apache2
+     state: restarted
+     daemon_reload: yes
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: APACHE - Reload apache
+   systemd:
+     name: httpd
+     state: reloaded
+     daemon_reload: yes
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: APACHE - Reload apache
+   systemd:
+     name: apache2
+     state: reloaded
+     daemon_reload: yes
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: PHP - Restart php-fpm
+   systemd:
+     name: php-fpm
+     state: restarted
+   when:
+     - ansible_distribution == 'CentOS'
+
+ - name: PHP - Restart php-fpm
+   systemd:
+     name: php7.4-fpm
+     state: restarted
+   when:
+     - ansible_distribution == 'Debian'
+
+ - name: MARIADB - Restart mariadb
+   systemd:
+     name: mariadb
+     state: restarted
+
+ - name: PULSE - Restart relay
+   systemd:
+     name: pulse-xmpp-agent-relay
+     state: restarted
