@@ -4,23 +4,13 @@ To install your Medulla infrastructure, we use Ansible, open-source solution inc
 
 To simplify documentation, passwords are in clear text. Good practice would suggest that they be encrypted. In this case please refer to the Ansible documentation : https://docs.ansible.com/ansible/latest/vault_guide/index.html
 
-## Contents :
-
-* Included in delivery
-* Included in ansible_hosts file
-* Run installation with Ansible
-* Complete installation
-* Glossary of Ansible variables
-
-## Included in delivery
-
-Repository contains :
+## Repository contains :
 ```bash
 ansible
 ├── ansible_hosts
 ├── playbook.yml
 └── roles
-    └── pulse4ambx
+    └── medulla
         ├── handlers	
         │   └── main.yml
         ├── tasks
@@ -30,77 +20,107 @@ ansible
 ```
 
 
-Given ansible_hosts file is an exemple, it will install and configure Medulla on your server.
+## Parameters
 
-## Included in ansible_hosts file
+The ansible_hosts file contains the parameters needed to configure and install your main server and the relays.
 
-Following command configure Main Medulla server :
+### [hostname]
+
+example for the main Medulla server:
 
 ```yaml
 hostname.siveo.net INSTALL_TYPE='p' PUBLIC_IP='public_ip_main_server' SERVER_FQDN='full_hostname_main_server' ENTITY='Public' XMPP_DOMAIN='pulse'
 ```
 
-Following command configure Relay Medulla server (one line or more following number of relay server you have) :
+example for relay Medulla server (one line or more following number of relay server you have) :
 
 ```yaml
 hostname-ars-1.siveo.lan INSTALL_TYPE='m' SERVER_FQDN='full_hostname_relay_server' PULSEMAIN_IP='interne_ip_main_server' PULSEMAIN_FQDN='full_hostname_main_server' ENTITY='Private'
 ```
+
+### [all:vars]
 
 All the following variables are required to install and configure Medulla :
 
 ```bash
 [all:vars]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+#Repo Medulla
 PULSE4REPO_URL='https://git.siveo.net/integration.list'
-	#Repo Medulla
+
+#Repo key Medulla
 PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'
-	#Repo key Medulla
+
+#Root Password
 ROOT_PASSWORD='siveo' 
-	#Root Password
+
+#Databse Host
 DBHOST='localhost'
-	#Databse Host
+
+#Database port
 DBPORT='3306'
-	#Database port
+
+#Database Admin User
 DBADMINUSER='root'
-	#Database Admin User
+	
+#Database Admin Password
 DBADMINPASSWD='siveo'
-	#Database Admin Password
+
+#PKI Password
 PKI_PASSWORD='siveo'
-	#PKI Password
+
+#GLPI Database Host
 GLPI_DBHOST='localhost'
-	#GLPI Database Host
+
+#GLPI Database Port
 GLPI_DBPORT='3306'
-	#GLPI Database Port
+
+#GLPI Database User
 GLPI_DBUSER='glpi'
-	#GLPI Database User
+
+#GLPI Database Password
 GLPI_DBPASSWD='siveo'
-	#GLPI Database Password
+	
+#GLPI Database Table Name
 GLPI_DBNAME='glpi'
-	#GLPI Database Table Name
+
+#GLPI Database URL
 GLPI_BASEURL='http://localhost/glpi'
-	#GLPI Database URL
+
+#Reverse SSH Port
 REVERSE_SSH_PORT=''
-	#Reverse SSH Port
+
+#SSH Port on client(if different from default)
 CLIENTS_SSH_PORT=''
-	#SSH Port on client(if different from default)
+
+#VNC Port on client(if different from défault)
 CLIENTS_VNC_PORT=''
-	#VNC Port on client(if different from défault)
+
+#Urbackup Port
 SERVER_URBACKUP_PORT=''
-	#Urbackup Port
+
+#Password for drivers
 DRIVERS_PASSWORD='secret'
-	#Password for drivers
+
+#PHP Version to install
 DEB_PHP_VERSION='7.4'
-	#PHP Version to install
+
+#GLPI Version to install
 GLPI_VERSION='9.2'
-	#GLPI Version to install
+
+#Database resetting
 RESET_DB=true
-	#Database resetting
+
+#Organisation on GLPI and generates OPENSSL certificate
 ORGANISATION='Siveo Pulse'
-	#Organisation on GLPI and generates OPENSSL certificate
+
+#API Urbackup password
 URBACKUP_ADMINPASSWD='siveo'
-	#API Urbackup password
+
+#Microsoft Database URL
 DBDUMP_DL_BASEURL='https://updates.siveo.net'
-	#Microsoft Database URL
+	
 ```
 
 ## Run installation with Ansible
