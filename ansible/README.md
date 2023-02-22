@@ -137,7 +137,10 @@ ansible-playbook playbook.yml -i ansible_hosts --limit=hostname-ars-1.siveo.lan
 
 ## Complete installation
 
-When installation is done, you can go to your server, Main and Relay.
+When the installation is done, the url to login is http://ipserver/mmc with your credential.
+
+You can find the medulla-agent here : http://ipserver/downloads
+
 
 ## Glossary of Ansible variables
 
