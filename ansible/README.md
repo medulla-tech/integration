@@ -40,8 +40,26 @@ hostname-ars-1.siveo.lan INSTALL_TYPE='m' SERVER_FQDN='full_hostname_relay_serve
 
 ### [all:vars]
 
-All the following variables are required to install and configure Medulla :
+Choose your version stable or devel (containing all new features), by filling those two paramters
 
+#### Stable
+
+```bash
+#Repo Medulla
+PULSE4REPO_URL='https://apt.siveo.net/stable.list'
+#Repo key Medulla
+PULSE4REPOKEY_URL='https://apt.siveo.net/pubkey.txt'
+```
+
+#### Devel
+```bash
+#Repo Medulla
+PULSE4REPO_URL='https://git.siveo.net/integration.list'
+#Repo key Medulla
+PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'
+```
+
+All the following variables are mandatory to install and configure Medulla :
 ```bash
 [all:vars]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
