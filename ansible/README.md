@@ -64,79 +64,88 @@ All the following variables are mandatory to install and configure Medulla :
 [all:vars]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
-#Repo Medulla
+# Repo Medulla
 PULSE4REPO_URL='https://git.siveo.net/integration.list'
 
-#Repo key Medulla
+# Repo key Medulla
 PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'
 
-#Root Password
+# Root Password
 ROOT_PASSWORD='siveo' 
 
-#Databse Host
+# Databse Host
 DBHOST='localhost'
 
-#Database port
+# Database port
 DBPORT='3306'
 
-#Database Admin User
+# Database Admin User
 DBADMINUSER='root'
 	
-#Database Admin Password
+# Database Admin Password
 DBADMINPASSWD='siveo'
 
-#PKI Password
+# PKI Password
 PKI_PASSWORD='siveo'
 
-#GLPI Database Host
+# GLPI Database Host
 GLPI_DBHOST='localhost'
 
-#GLPI Database Port
+# GLPI Database Port
 GLPI_DBPORT='3306'
 
-#GLPI Database User
+# GLPI Database User
 GLPI_DBUSER='glpi'
 
-#GLPI Database Password
+# GLPI Database Password
 GLPI_DBPASSWD='siveo'
 	
-#GLPI Database Table Name
+# GLPI Database Table Name
 GLPI_DBNAME='glpi'
 
-#GLPI Database URL
+# GLPI Database URL
 GLPI_BASEURL='http://localhost/glpi'
 
-#Reverse SSH Port
+# Reverse SSH Port
 REVERSE_SSH_PORT=''
 
-#SSH Port on client(if different from default)
+# SSH Port on client(if different from default)
 CLIENTS_SSH_PORT=''
 
-#VNC Port on client(if different from défault)
+# VNC Port on client(if different from défault)
 CLIENTS_VNC_PORT=''
 
-#Urbackup Port
+# Urbackup Port
 SERVER_URBACKUP_PORT=''
 
-#Password for drivers
+# Password for drivers
 DRIVERS_PASSWORD='secret'
 
-#PHP Version to install
+# PHP Version to install
 DEB_PHP_VERSION='7.4'
 
-#GLPI Version to install
+# GLPI Version to install
 GLPI_VERSION='9.2'
 
-#Database resetting
+# The itsm-ng version
+ITSM_NG_VERSION='1.3'
+
+# The ITSM to use ( glpi or itsmng )
+ITSM_TYPE='glpi'
+
+# The used by default by the itsm
+ITSM_USER='itsm'
+
+# Database resetting
 RESET_DB=true
 
-#Organisation on GLPI and generates OPENSSL certificate
+# Organisation on GLPI and generates OPENSSL certificate
 ORGANISATION='Siveo Pulse'
 
-#API Urbackup password
+# API Urbackup password
 URBACKUP_ADMINPASSWD='siveo'
 
-#Microsoft Database URL
+# Microsoft Database URL
 DBDUMP_DL_BASEURL='https://updates.siveo.net'
 	
 ```
