@@ -1903,133 +1903,6 @@
    command: sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
 
 ##########################################################
-#                  Install Pulse Backup                  #
-##########################################################
-
- - name: BACKUP - Configure storage path
-   debconf:
-     name: urbackup-server
-     question: urbackup/backuppath
-     vtype: string
-     value: '/media/BACKUP/urbackup'
-   when:
-     - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == "p"
-     
- - name: BACKUP - Install backup-server
-   apt:
-     update_cache: yes
-     state: latest
-     pkg:
-       - urbackup-server
-   when:
-     - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == "p"
-     
- - name: BACKUP - Install backup-server
-   yum:
-     update_cache: yes
-     state: latest
-     pkg:
-       - urbackup-server
-   when:
-     - ansible_distribution == 'CentOS'
-     - INSTALL_TYPE == "p"
-
- - name: BACKUP - Create admin user
-   command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ ROOT_PASSWORD }}
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Create API user
-   command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ BACKUP_API_PASSWORD }}
-   when:
-     - INSTALL_TYPE == 'p'
-     
- - name: BACKUP/APACHE - Configure apache for pulse backup
-   copy:
-     content: |
-          Alias /urbackup /usr/share/urbackup/www 
-          ProxyPass "/urbackup/x" "fcgi://localhost:55413"
-     dest: '{{ APACHE_CONF_PATH }}/urbackup.conf'
-   when:
-     - INSTALL_TYPE == "p"
-
- - name: BACKUP/APACHE - Enable pulse backup configuration
-   command: a2enconf urbackup
-   when:
-     - ansible_distribution == 'Debian'
-     - INSTALL_TYPE == "p"
-
- - name: BACKUP/APACHE - Reload apache
-   systemd:
-     name: '{{ APACHE_DAEMON }}'
-     state: reloaded
-   when:
-     - INSTALL_TYPE == "p"
-
- - name: BACKUP - Generate session key
-   uri:
-     url: http://{{ SERVER_FQDN }}/urbackup/x?a=login
-     method: POST
-     body_format: form-urlencoded
-     return_content: true
-     headers:
-       Accept: application/json
-     body:
-       username: admin
-       password: '{{ URBACKUP_ADMINPASSWD }}'
-       plainpw: 1
-   register: session_key
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Get session key
-   set_fact:
-     URBACKUP_SESSION: '{{ session_key.json.session }}'
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Configure backup server internet settings
-   uri:
-     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
-     method: POST
-     body_format: form-urlencoded
-     return_content: true
-     headers:
-       Accept: application/json
-     body:
-       sa: general_save
-       internet_mode_enabled: 'true'
-       internet_server: '{{ SERVER_FQDN }}'
-       no_images: 'true'
-       allow_tray_exit: 'false'
-       allow_starting_full_image_backups: 'false'
-       allow_starting_incr_image_backups: 'false'
-       allow_overwrite: 'false'
-       update_freq_image_incr: -5184000
-       internet_full_file_backups: 'true'
-       ses: '{{ URBACKUP_SESSION }}'
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: BACKUP - Configure backup server port setting
-   uri:
-     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
-     method: POST
-     body_format: form-urlencoded
-     return_content: true
-     headers:
-       Accept: application/json
-     body:
-       sa: general_save
-       ses: '{{ URBACKUP_SESSION }}'
-       internet_server_port: '{{ SERVER_URBACKUP_PORT }}'
-   when:
-     - SERVER_URBACKUP_PORT != ''
-     - INSTALL_TYPE == 'p'
-
-##########################################################
 #                      Install Samba                     #
 ##########################################################
 
@@ -2628,7 +2501,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -2680,7 +2552,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    ignore_errors: yes
    when:
      - INSTALL_TYPE != 'p'
@@ -2705,7 +2576,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
      - DELETE_PACKAGES is defined and DELETE_PACKAGES|bool == true
@@ -2721,7 +2591,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2735,7 +2604,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Create folder named after the cluster
    file:
@@ -2767,7 +2635,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Create syncthing special folder for cluster
    file:
@@ -2840,7 +2707,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Define ACLs on the folders for cluster
    acl:
@@ -2867,31 +2733,6 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Define ACLs on the folders for winupdates
-   acl:
-     path: '/var/lib/pulse2/packages/sharing/winupdates/'
-     etype: group
-     entity: mysql
-     recursive: yes
-     permissions: rwx
-     state: present
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SHARE - Define ACLs on the folders for winupdates on pulsemain
-   acl:
-     path: '/var/lib/pulse2/packages/sharing/winupdates/'
-     etype: group
-     entity: mysql
-     recursive: yes
-     permissions: rwx
-     state: present
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
  - name: SHARE - Define ACLs on the folders with inheritance
    acl:
      path: '{{ item.destination }}'
@@ -2907,7 +2748,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
 
  - name: SHARE - Define ACLs on the folders with inheritance for cluster
    acl:
@@ -2936,33 +2776,6 @@
    when:
      - INSTALL_TYPE != 'p'
 
- - name: SHARE - Define ACLs on the folders with inheritance for winupdates
-   acl:
-     path: '/var/lib/pulse2/packages/sharing/winupdates/'
-     etype: group
-     entity: mysql
-     recursive: yes
-     permissions: rwx
-     default: yes
-     state: present
-   when:
-     - INSTALL_TYPE != 'p'
-
- - name: SHARE - Define ACLs on the folders with inheritance for winupdates on pulsemain
-   acl:
-     path: '/var/lib/pulse2/packages/sharing/winupdates/'
-     etype: group
-     entity: mysql
-     recursive: yes
-     permissions: rwx
-     default: yes
-     state: present
-   vars:
-     ansible_ssh_user: root
-   delegate_to: '{{ PULSEMAIN_IP }}'
-   when:
-     - INSTALL_TYPE != 'p'
-
  - name: SHARE - Create shares on relay
    command: xmlstarlet ed --inplace -s "configuration" -t elem -n 'folder id="{{ item.share_id }}" label="{{ item.syncthing_folder }}" path="{{ item.destination }}" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" autoNormalize="true"' /var/lib/syncthing/.config/syncthing/config.xml
    with_items:
@@ -2971,7 +2784,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    when:
      - INSTALL_TYPE != 'p'
 
@@ -2994,7 +2806,6 @@
      - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
      - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
      - { share_id: 'pulsemaster_{{ CLUSTER_NAME }}', syncthing_folder: '{{ CLUSTER_NAME }}', destination: '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}/' }
-     - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -3706,8 +3517,6 @@
      state: latest
      pkg:
        - pulse2
-       - mmc-web-urbackup
-       - python-mmc-urbackup
        - mmc-web-dashboard
        - python-mmc-dashboard
        - mmc-web-glpi
@@ -3736,8 +3545,6 @@
      state: latest
      pkg:
        - pulse2
-       - mmc-web-urbackup
-       - python-mmc-urbackup
        - mmc-web-dashboard
        - python-mmc-dashboard
        - mmc-web-glpi
@@ -4007,21 +3814,6 @@
      - INSTALL_TYPE == 'p'
    no_log: True
 
- - name: MAINPULSE - Configure updates substitute
-   command: crudini --set /etc/pulse-xmpp-agent-substitute/agent_master_substitute_upd.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
-   with_items:
-     - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
-     - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
-     - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
-     - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
-     - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
-     - { section: 'admindatabase', parameter: 'admin_dbhost', value: '{{ DBHOST }}' }
-     - { section: 'admindatabase', parameter: 'admin_dbport', value: '{{ DBPORT }}' }
-     - { section: 'admindatabase', parameter: 'admin_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
-   when:
-     - INSTALL_TYPE == 'p'
-   no_log: True
-
  - name: MAINPULSE - Update default ARS if public ip is defined
    command: crudini --set {{ item.conf_file }} {{ item.section }} serverip {{ PUBLIC_IP }}
    with_items:
@@ -4097,7 +3889,6 @@
      - deployment
      - reconfigurator
      - monitoring
-     - updates
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4139,10 +3930,8 @@
    with_items:
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
      - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (2, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', 1, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
-     - INSERT INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (3, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 2)
-     - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', 3)
      - INSERT INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
    when:
      - INSTALL_TYPE == 'p'
@@ -4180,55 +3969,6 @@
    command: crudini --set /etc/mmc/plugins/xmppmaster.ini.local grafana_api api_key {{ GRAFANA_ADMIN_KEY }}
    when:
      - INSTALL_TYPE == 'p'
-
- - name: MAINPULSE/BACKUP - Change API password
-   lineinfile:
-     path: /etc/mmc/plugins/urbackup.ini
-     regexp: '^passwordapi=.*$'
-     line: 'passwordapi={{ BACKUP_API_PASSWORD }}'
-   when:
-     - INSTALL_TYPE == 'p'
-
- - name: MAINPULSE/UPDATES - Define products to manage
-   command: crudini --set /etc/mmc/plugins/updates.ini.local {{ item.section }} {{ item.parameter }} {{ item.value }}
-   with_items:
-     - { section: 'main', parameter: 'disable', value: '0' }
-     - { section: 'database', parameter: 'dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
-     - { section: 'products', parameter: 'families', value: 'Win_Malicious, Win10' }
-     - { section: 'products', parameter: 'Win10_versions', value: 'X64_21H2' }
-   when:
-     - INSTALL_TYPE == 'p'
-   no_log: True
-     
- - name: MAINPULSE/UPDATES - Configure script
-   ansible.builtin.template:
-     src: medulla-generate-winupdate-packages.j2
-     dest: /usr/sbin/medulla-generate-winupdate-packages
-     mode: '0755'
-     owner: root
-
- - name: MAINPULSE/UPDATES - Create database
-   community.mysql.mysql_db:
-     login_host: '{{ DBHOST }}'
-     login_port: '{{ DBPORT }}'
-     login_user: '{{ DBADMINUSER }}'
-     login_password: '{{ DBADMINPASSWD }}'
-     name: 'base_wsusscn2'
-     state: present
-
- - name: MAINPULSE/UPDATES - Create database user
-   community.mysql.mysql_user:
-     login_host: '{{ DBHOST }}'
-     login_port: '{{ DBPORT }}'
-     login_user: '{{ DBADMINUSER }}'
-     login_password: '{{ DBADMINPASSWD }}'
-     name: 'mmc'
-     password: "{{ MMCUSER_DBPASS }}"
-     state: present
-     append_privs: true
-     priv:
-       'base_wsusscn2.*': 'ALL'
-   no_log: True
 
  - name: MAINPULSE - Restart mmc-agent
    systemd:
@@ -4610,7 +4350,6 @@
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
      - { type: 'deployment', jid: 'master_depl@pulse' }
-     - { type: 'updates', jid: 'master_upd@pulse' }
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4624,7 +4363,6 @@
      - { type: 'logger', jid: 'master_log@pulse' }
      - { type: 'monitoring', jid: 'master_mon@pulse' }
      - { type: 'deployment', jid: 'master_depl@pulse' }
-     - { type: 'updates', jid: 'master_upd@pulse' }
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
@@ -4641,25 +4379,6 @@
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
      - INSTALL_TYPE != 'p'
-
- - name: RELAY/APACHE - Enable publishing of agent updates on relay
-   copy:
-     content: |
-        Alias /downloads /var/lib/pulse2/clients/
-        <Directory /var/lib/pulse2/clients/>
-          Options +Indexes
-          IndexOptions FancyIndexing VersionSort SuppressDescription FoldersFirst XHTML HTMLTable NameWidth=* IgnoreCase SuppressRules IconHeight=16 IconWidth=16
-          IndexOrderDefault Descending Date
-          IndexIgnore agent config templates vpn *.conf *.in generate* create-repos.sh artwork libs *.nsi *.sfx *.7z *.ini *.xml .??* *~ *# *.css *.html *.plist rbash runpulseagent *.buildinfo *.dsc *.changes pulse-agent-linux package Pulse2AgentsInstaller.tar pulse-service.* create-profile.ps1
-          AddIcon /downloads/win/artwork/install.ico Pulse-Agent-windows-FULL-latest.exe Pulse-Agent-windows-MINIMAL-latest.exe Pulse-Agent-mac-MINIMAL-latest.pkg.tar.gz Pulse-Agent-linux-MINIMAL-latest.sh
-          HeaderName "/downloads/HEADER.html"
-          IndexStyleSheet "/downloads/style.css"
-          AllowOverride None
-          Require all granted
-        </Directory>
-     dest: '{{ APACHE_CONF_PATH }}/pulse.conf'
-   when:
-     - INSTALL_TYPE != "p"
 
  - name: RELAY/APACHE - Enable apache rewrite module
    apache2_module:
@@ -4862,11 +4581,6 @@
      - SERVER_URBACKUP_PORT == ''
      - INSTALL_TYPE == 'p'
 
- - name: PULSEAGENT/BACKUP - Create quick action for deploying updatebackupclient.ini
-   command: mysql -h {{ DBHOST }} -P {{ DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' xmppmaster -e "INSERT INTO `qa_custom_command` VALUES ('allusers','windows','Deploy updatebackupclient.ini file','powershell.exe \"$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ SERVER_FQDN }} {0}backup_port = {{ SERVER_URBACKUP_PORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent\"','Copy urbackup installation config file to cli')"
-   when:
-     - INSTALL_TYPE == 'p'
-
 ##########################################################
 #                     Final steps                        #
 ##########################################################
@@ -4932,11 +4646,6 @@
      state: restarted
    when:
      - INSTALL_TYPE != 'p'
-
- - name: FINAL - Download and generate updates packages
-   command: /usr/sbin/medulla-generate-winupdate-packages
-   when:
-     - INSTALL_TYPE == 'p'
 
 ##########################################################
 #                        DEBUG                           #
