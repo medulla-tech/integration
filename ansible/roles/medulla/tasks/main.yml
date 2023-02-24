@@ -3390,7 +3390,7 @@
      - INSTALL_TYPE == 'p'
      - ansible_distribution == 'Debian'
 
- - name: GLPI - Get ISTM superadmin id
+ - name: GLPI - Get ITSM superadmin id
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = '{{ ITSM_USER }}'"
    register: GLPI_SUPERADMIN_ID
    when:
@@ -3507,6 +3507,15 @@
      - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
+
+ - name: ITSM - Change All computer ITSM name
+   lineinfile:
+     path: /etc/mmc/mmc.ini
+     regexp: '^glpidisplayname ='
+     line: glpidisplayname = ITSM-NG
+   when:
+     - ITSM_TYPE == 'itsm-ng'
+
 
 ##########################################################
 #                Main Pulse server setup                 #
