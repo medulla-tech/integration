@@ -54,7 +54,7 @@ PULSE4REPOKEY_URL='https://apt.siveo.net/pubkey.txt'
 #### Devel
 ```bash
 #Repo Medulla
-PULSE4REPO_URL='https://git.siveo.net/integration.list'
+PULSE4REPO_URL='https://git.siveo.net/xmppmaster.list'
 #Repo key Medulla
 PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'
 ```
