@@ -3390,8 +3390,8 @@
      - INSTALL_TYPE == 'p'
      - ansible_distribution == 'Debian'
 
- - name: GLPI - Get glpi superadmin id
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = 'glpi'"
+ - name: GLPI - Get ISTM superadmin id
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = '{{ ITSM_USER }}'"
    register: GLPI_SUPERADMIN_ID
    when:
      - RESET_DB|bool
