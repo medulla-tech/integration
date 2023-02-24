@@ -4,7 +4,7 @@ hostname-ars-1.siveo.lan INSTALL_TYPE='m' SERVER_FQDN='full_hostname_relay_serve
 
 [all:vars]
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-PULSE4REPO_URL='https://git.siveo.net/integration.list'
+PULSE4REPO_URL='https://git.siveo.net/xmppmaster.list'
 PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'
 ROOT_PASSWORD='siveo'
 DBHOST='localhost'
