@@ -3508,14 +3508,6 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
- - name: ITSM - Change All computer ITSM name
-   lineinfile:
-     path: /etc/mmc/mmc.ini
-     regexp: '^glpidisplayname ='
-     line: glpidisplayname = ITSM-NG
-   when:
-     - ITSM_TYPE == 'itsm-ng'
-
 ##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
@@ -3641,6 +3633,14 @@
    when:
      - not RESET_DB|bool
      - INSTALL_TYPE == 'p'
+
+ - name: ITSM - Change All computer ITSM name
+   lineinfile:
+     path: /etc/mmc/mmc.ini
+     regexp: '^glpidisplayname ='
+     line: glpidisplayname = ITSM-NG
+   when:
+     - ITSM_TYPE == 'itsm-ng'
 
  - name: ITSM - Change glpi_computer_uri to use the good itsm type.
    lineinfile:
