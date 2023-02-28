@@ -3508,6 +3508,20 @@
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
+ - name: ITSM - Remove install.php file, not needed after the itsm configuration.
+   ansible.builtin.file:
+     path: /usr/share/{{ ITSM_TYPE }}/install/install.php
+     state: absent
+
+ - name: ITSM-NG - Change file ownership, group and permissions
+   ansible.builtin.file:
+     path: /usr/share/itsm-ng/files/_log/php-errors.log
+     owner: www-data
+     group: www-data
+     mode: '0644'
+   when:
+     - ITSM_TYPE == 'itsm-ng'
+
 ##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
