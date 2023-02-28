@@ -3520,6 +3520,7 @@
      group: www-data
      mode: '0644'
    when:
+     - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
 ##########################################################
