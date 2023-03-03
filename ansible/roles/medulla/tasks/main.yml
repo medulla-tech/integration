@@ -3306,6 +3306,9 @@
      - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi 9.5 database on debian
+   become: yes
+   become_method: sudo
+   become_user: www-data
    command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
    when:
      - ansible_distribution == 'Debian'
