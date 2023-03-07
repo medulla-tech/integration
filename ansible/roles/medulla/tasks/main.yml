@@ -3155,7 +3155,7 @@
    with_items:
      - { section: 'server', parameter: 'root_url', value: '%(protocol)s://%(domain)s:%(http_port)s/grafana/'}
      - { section: 'auth.anonymous', parameter: 'enabled', value: 'true'}
-     - { section: 'auth.anonymous', parameter: 'org_name', value: 'Main Org.'}
+     - { section: 'auth.anonymous', parameter: 'org_name', value: '"Main Org."'}
      - { section: 'auth.anonymous', parameter: 'org_role', value: 'Viewer'}
    when:
      - INSTALL_TYPE == 'p'
