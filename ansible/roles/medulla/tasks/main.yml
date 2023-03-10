@@ -3669,14 +3669,6 @@
    when:
      - INSTALL_TYPE == 'p'
 
- - name: ITSM - Change glpi_base_url to use the good itsm type.
-   lineinfile:
-     path: /etc/mmc/plugins/glpi.ini.local
-     regexp: '^glpi_base_url ='
-     line: glpi_base_url = http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}/apirest.php/ 
-   when:
-     - INSTALL_TYPE == 'p'
-
  - name: ITSM - Change baseurl to use the good itsm type.
    lineinfile:
      path: /etc/mmc/plugins/glpi.ini.local
