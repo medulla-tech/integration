@@ -3526,6 +3526,18 @@
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
+ - name: ITSM-NG - Change file ownership, group and permissions
+   ansible.builtin.file:
+     path: /usr/share/itsm-ng/files/_log/cache/
+     state: directory
+     recurse: true
+     owner: www-data
+     group: www-data
+     mode: '0644'
+   when:
+     - INSTALL_TYPE == 'p'
+     - ITSM_TYPE == 'itsm-ng'
+
 ##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
