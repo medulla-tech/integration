@@ -3538,6 +3538,15 @@
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
+ - name: ITSM GLPI/ITSM-NG - Set url_base and url_base_api
+   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   with_items:
+     - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}' WHERE name = 'url_base'
+     - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}/api' WHERE name = 'url_base_api'
+   when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
 ##########################################################
 #                Main Pulse server setup                 #
 ##########################################################
