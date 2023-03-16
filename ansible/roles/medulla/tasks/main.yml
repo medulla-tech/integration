@@ -3215,7 +3215,7 @@
        - php-ldap
    when:
      - ansible_distribution == 'CentOS'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
@@ -3227,7 +3227,7 @@
        - php-ldap
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION != '10.0'
      - ITSM_TYPE == 'glpi'
@@ -3240,7 +3240,7 @@
        - php-ldap
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
      - ITSM_TYPE == 'glpi'
@@ -3254,7 +3254,7 @@
        - php-ldap
    when:
      - ansible_distribution == 'CentOS'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
@@ -3266,41 +3266,41 @@
        - php-ldap
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
  - name: GLPI - Drop and recreate glpi database and user
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' -e "{{ item }}"
    with_items:
-     - "DROP DATABASE IF EXISTS {{ GLPI_DBNAME }}"
-     - "DROP USER IF EXISTS '{{ GLPI_DBUSER }}'"
-     - "CREATE DATABASE {{ GLPI_DBNAME }}"
-     - "CREATE USER '{{ GLPI_DBUSER }}'@'{{ GLPI_DBHOST }}' IDENTIFIED BY '{{ GLPI_DBPASSWD }}'"
-     - "GRANT ALL ON {{ GLPI_DBNAME }}.* TO '{{ GLPI_DBUSER }}'@'{{ GLPI_DBHOST }}'"
+     - "DROP DATABASE IF EXISTS {{ ITSM_DBNAME }}"
+     - "DROP USER IF EXISTS '{{ ITSM_DBUSER }}'"
+     - "CREATE DATABASE {{ ITSM_DBNAME }}"
+     - "CREATE USER '{{ ITSM_DBUSER }}'@'{{ ITSM_DBHOST }}' IDENTIFIED BY '{{ ITSM_DBPASSWD }}'"
+     - "GRANT ALL ON {{ ITSM_DBNAME }}.* TO '{{ ITSM_DBUSER }}'@'{{ ITSM_DBHOST }}'"
      - "FLUSH PRIVILEGES"
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
    no_log: True
 
  - name: GLPI - Initialise glpi 9.2 database on debian
-   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ ITSM_DBHOST }} --db={{ ITSM_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi 9.4 database on debian
-   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ ITSM_DBHOST }} --db-port={{ ITSM_DBPORT }} --db-name {{ ITSM_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
@@ -3309,30 +3309,30 @@
    become: yes
    become_method: sudo
    become_user: www-data
-   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+   command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:install --db-host={{ ITSM_DBHOST }} --db-port={{ ITSM_DBPORT }} --db-name {{ ITSM_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.5'
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Initialise glpi 10.0 database on debian
-   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+   command: php /usr/share/glpi/bin/console -n db:install --db-host={{ ITSM_DBHOST }} --db-port={{ ITSM_DBPORT }} --db-name {{ ITSM_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
    when:
      - ansible_distribution == 'Debian'
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '10.0'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Initialise glpi database on centos
-   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ GLPI_DBHOST }} --db={{ GLPI_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
+   command: php /usr/share/glpi/scripts/cliinstall.php --host={{ ITSM_DBHOST }} --db={{ ITSM_DBNAME }} --user={{ DBADMINUSER }} --pass='{{ DBADMINPASSWD }}' --lang=fr_FR --force
    when:
      - ansible_distribution == 'CentOS'
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
@@ -3340,7 +3340,7 @@
    command: php /usr/share/glpi/scripts/cliupdate.php
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.2'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
@@ -3349,7 +3349,7 @@
    command: php /usr/share/glpi/bin/console -n db:update
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.4'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
@@ -3358,7 +3358,7 @@
    command: php /usr/share/{{ ITSM_TYPE }}/bin/console -n db:update
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '9.5'
      - INSTALL_TYPE == 'p'
 
@@ -3366,7 +3366,7 @@
    command: php /usr/share/glpi/bin/console -n db:update
    when:
      - ansible_distribution == 'Debian'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - GLPI_VERSION == '10.0'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
@@ -3375,34 +3375,34 @@
    command: php /usr/share/glpi/scripts/cliupdate.php
    when:
      - ansible_distribution == 'CentOS'
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Create view for pulse
-   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/mmc/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/mmc/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ansible_distribution == 'CentOS'
 
  - name: GLPI - Create view for pulse
-   shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+   shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < /usr/share/doc/pulse2-common/contrib/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ansible_distribution == 'Debian'
 
  - name: GLPI - Get ITSM superadmin id
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' -s {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_users where name = '{{ ITSM_USER }}'"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' -s {{ ITSM_DBNAME }} -e "SELECT id FROM glpi_users where name = '{{ ITSM_USER }}'"
    register: GLPI_SUPERADMIN_ID
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Prepare glpi database for Pulse
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
    with_items:
      - DELETE FROM glpi_users WHERE name NOT LIKE '{{ ITSM_USER }}'
      - DELETE FROM glpi_profiles_users WHERE id NOT LIKE '{{ GLPI_SUPERADMIN_ID.stdout }}'
@@ -3417,7 +3417,7 @@
      - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
    no_log: True
 
@@ -3425,7 +3425,7 @@
    command: php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php --as-user root
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.2'
      - ITSM_TYPE == 'glpi'
@@ -3434,7 +3434,7 @@
    command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.5'
      - ITSM_TYPE == 'glpi'
@@ -3443,7 +3443,7 @@
    command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.5'
      - ITSM_TYPE == 'glpi'
@@ -3452,7 +3452,7 @@
    command: php /usr/share/itsm-ng/bin/console itsmng:plugin:install --username=root fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '9.5'
      - ITSM_TYPE == 'itsm-ng'
@@ -3461,7 +3461,7 @@
    command: php /usr/share/itsm-ng/bin/console itsmng:plugin:activate fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'itsm-ng'
 
@@ -3469,7 +3469,7 @@
    command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
      - ITSM_TYPE == 'glpi'
@@ -3478,13 +3478,13 @@
    command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - GLPI_VERSION == '10.0'
      - ITSM_TYPE == 'glpi'
 
  - name: GLPI - Configure fusioninventory
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
    with_items:
      - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'
      - INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
@@ -3496,7 +3496,7 @@
      - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
@@ -3506,12 +3506,12 @@
      state: absent
 
  - name: ITSM GLPI/ITSM-NG - Set url_base and url_base_api
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
    with_items:
      - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}' WHERE name = 'url_base'
      - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}/api' WHERE name = 'url_base_api'
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
  - name: GLPI - Set owner of /var/lib/{{ ITSM_TYPE }}/files/{{ item }}
@@ -3526,7 +3526,7 @@
      - _log
    when:
      - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
 ##########################################################
@@ -3644,13 +3644,13 @@
      - (INSTALL_TYPE == 'p') and (RESET_DB|bool)
 
  - name: MAINPULSE - Run pulse2-setup with database reset
-   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
+   command: pulse2-setup -b -R --reset-db --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ ITSM_BASEURL }} --glpi-dbhost={{ ITSM_DBHOST }} --glpi-dbport={{ ITSM_DBPORT }} --glpi-dbname={{ ITSM_DBNAME }} --glpi-dbuser={{ ITSM_DBUSER }} --glpi-dbpasswd='{{ ITSM_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
    when:
      - RESET_DB|bool
      - INSTALL_TYPE == 'p'
      
  - name: MAINPULSE - Run pulse2-setup without database reset
-   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ GLPI_BASEURL }} --glpi-dbhost={{ GLPI_DBHOST }} --glpi-dbport={{ GLPI_DBPORT }} --glpi-dbname={{ GLPI_DBNAME }} --glpi-dbuser={{ GLPI_DBUSER }} --glpi-dbpasswd='{{ GLPI_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
+   command: pulse2-setup -b -R --mysql-host={{ DBHOST }} --mysql-port={{ DBPORT }} --mysql-user={{ DBADMINUSER }} --mysql-passwd='{{ DBADMINPASSWD }}' --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd='{{ ROOT_PASSWORD }}' --glpi-url={{ ITSM_BASEURL }} --glpi-dbhost={{ ITSM_DBHOST }} --glpi-dbport={{ ITSM_DBPORT }} --glpi-dbname={{ ITSM_DBNAME }} --glpi-dbuser={{ ITSM_DBUSER }} --glpi-dbpasswd='{{ ITSM_DBPASSWD }}' --external-ip-address={{ IP_ADDRESS }} --ldap-basedn={{ LDAP_BASEDN }} --ldap-admindn='cn=admin,{{ LDAP_BASEDN }}' --ldap-passwd='{{ ROOT_PASSWORD }}'
    when:
      - not RESET_DB|bool
      - INSTALL_TYPE == 'p'
@@ -3736,11 +3736,11 @@
    with_items:
      - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
      - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ GLPI_DBHOST }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ GLPI_DBPORT }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ GLPI_DBUSER }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ GLPI_DBPASSWD }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ GLPI_DBNAME }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ ITSM_DBHOST }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ ITSM_DBPORT }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ ITSM_DBUSER }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ ITSM_DBPASSWD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ ITSM_DBNAME }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
@@ -3762,11 +3762,11 @@
    with_items:
      - { section: 'connection', parameter: 'server', value: '{{ IP_ADDRESS }}' }
      - { section: 'connection', parameter: 'password', value: '{{ XMPP_MASTER_PASSWORD }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ GLPI_DBHOST }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ GLPI_DBPORT }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ GLPI_DBUSER }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ GLPI_DBPASSWD }}' }
-     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ GLPI_DBNAME }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbhost', value: '{{ ITSM_DBHOST }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbport', value: '{{ ITSM_DBPORT }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbuser', value: '{{ ITSM_DBUSER }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbpasswd', value: '{{ ITSM_DBPASSWD }}' }
+     - { section: 'glpidatabase', parameter: 'glpi_dbname', value: '{{ ITSM_DBNAME }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbhost', value: '{{ DBHOST }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbport', value: '{{ DBPORT }}' }
      - { section: 'xmppdatabase', parameter: 'xmpp_dbpasswd', value: '{{ MMCUSER_DBPASS }}' }
@@ -3993,7 +3993,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: MAINPULSE/GLPI - Setup glpi rest url
-   command: crudini --set /etc/mmc/plugins/glpi.ini.local webservices glpi_base_url "{{ GLPI_BASEURL }}/apirest.php/"
+   command: crudini --set /etc/mmc/plugins/glpi.ini.local webservices glpi_base_url "{{ ITSM_BASEURL }}/apirest.php/"
    when:
      - INSTALL_TYPE == 'p'
 
@@ -4452,28 +4452,28 @@
      - INSTALL_TYPE != "p"
 
  - name: RELAY/GLPI - Create entity in GLPI and define it as default entity for fusioninventory
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
    with_items:
      - INSERT INTO glpi_entities (id, entities_id, level, name, completename) VALUES (1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}')
      - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
      - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
      - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
  - name: RELAY/GLPI - Check if entity exists in glpi
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "SELECT id FROM glpi_entities WHERE completename = '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'"
    register: entityexists
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE != 'p'
 
  - name: RELAY/GLPI - Create entity in GLPI if it does not exist
-   command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
+   command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
    with_items:
      - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
      - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
@@ -4484,7 +4484,7 @@
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
    when:
-     - GLPI_DBHOST == 'localhost'
+     - ITSM_DBHOST == 'localhost'
      - INSTALL_TYPE != 'p'
      - entityexists.stdout == ''
 
