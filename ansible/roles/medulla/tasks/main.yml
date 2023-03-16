@@ -3500,43 +3500,10 @@
      - INSTALL_TYPE == 'p'
      - ITSM_TYPE == 'glpi'
 
- - name: GLPI - Set owner of /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
-   file:
-     path: /var/lib/{{ ITSM_TYPE }}/files/_plugins/fusioninventory
-     state: directory
-     recurse: yes
-     owner: '{{ APACHE_USER }}'
-   when:
-     - RESET_DB|bool
-     - GLPI_DBHOST == 'localhost'
-     - INSTALL_TYPE == 'p'
-
  - name: ITSM - Remove install.php file, not needed after the itsm configuration.
    ansible.builtin.file:
      path: /usr/share/{{ ITSM_TYPE }}/install/install.php
      state: absent
-
- - name: ITSM-NG - Change file ownership, group and permissions
-   ansible.builtin.file:
-     path: /usr/share/itsm-ng/files/_log/php-errors.log
-     owner: www-data
-     group: www-data
-     mode: '0644'
-   when:
-     - INSTALL_TYPE == 'p'
-     - ITSM_TYPE == 'itsm-ng'
-
- - name: ITSM-NG - Change file ownership, group and permissions
-   ansible.builtin.file:
-     path: /usr/share/itsm-ng/files/_log/cache/
-     state: directory
-     recurse: true
-     owner: www-data
-     group: www-data
-     mode: '0644'
-   when:
-     - INSTALL_TYPE == 'p'
-     - ITSM_TYPE == 'itsm-ng'
 
  - name: ITSM GLPI/ITSM-NG - Set url_base and url_base_api
    command: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ GLPI_DBUSER }} -p'{{ GLPI_DBPASSWD }}' {{ GLPI_DBNAME }} -e "{{ item }}"
@@ -3544,6 +3511,21 @@
      - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}' WHERE name = 'url_base'
      - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}/api' WHERE name = 'url_base_api'
    when:
+     - GLPI_DBHOST == 'localhost'
+     - INSTALL_TYPE == 'p'
+
+ - name: GLPI - Set owner of /var/lib/{{ ITSM_TYPE }}/files/{{ item }}
+   file:
+     path: /var/lib/{{ ITSM_TYPE }}/files/{{ item }}
+     state: directory
+     recurse: yes
+     owner: '{{ APACHE_USER }}'
+   with_items:
+     - _cache
+     - _plugins
+     - _log
+   when:
+     - RESET_DB|bool
      - GLPI_DBHOST == 'localhost'
      - INSTALL_TYPE == 'p'
 
