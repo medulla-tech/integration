@@ -3997,6 +3997,16 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: MAINPULSE/GLPI - Setup glpi rest user
+   command: crudini --set /etc/mmc/plugins/glpi.ini.local webservices glpi_username {{ ITSM_API_USER  }}
+   when:
+     - INSTALL_TYPE == 'p'
+
+ - name: MAINPULSE/GLPI - Setup glpi rest password
+   command: crudini --set /etc/mmc/plugins/glpi.ini.local webservices glpi_password {{ ITSM_API_PASSWORD }}
+   when:
+     - INSTALL_TYPE == 'p'
+
  - name: MAINPULSE/GRAFANA - Configure grafana data source
    uri:
      url: "http://localhost:3000/api/datasources"
