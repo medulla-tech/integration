@@ -3684,7 +3684,7 @@
      - INSTALL_TYPE == 'p'
 
  - name: ITSM - Change url_to_forward to use the good itsm type.
-   command: crudini --set /etc/mmc/pulse2/inventory-server/inventory-server.ini.local main url_to_forward http://localhost/{{ ITSM_TYPE }}/plugins/fusioninventory/front/plugin_fusioninventory.communication.php
+   command: crudini --set /etc/mmc/pulse2/inventory-server/inventory-server.ini.local main url_to_forward {{ ITSM_BASEURL }}/plugins/fusioninventory/front/plugin_fusioninventory.communication.php
    when:
      - INSTALL_TYPE == 'p'
 
