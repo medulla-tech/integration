@@ -1676,6 +1676,7 @@
        - clonezilla
        - pulse2-davos-client
        - udpcast
+       - ipxe-siveo
      state: latest
    when:
      - ansible_distribution == 'CentOS'
@@ -1698,6 +1699,7 @@
        - pulse2-davos-client
        - clonezilla
        - udpcast
+       - ipxe-siveo
    when:
      - ansible_distribution == 'Debian'
 
