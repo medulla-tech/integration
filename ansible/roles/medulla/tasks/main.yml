@@ -3510,8 +3510,8 @@
      - name: ITSM GLPI/ITSM-NG - Set url_base and url_base_api
        command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
        with_items:
-         - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}' WHERE name = 'url_base'
-         - UPDATE glpi SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}/api' WHERE name = 'url_base_api'
+         - UPDATE glpi_configs SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}' WHERE name = 'url_base'
+         - UPDATE glpi_configs SET value = 'http:/{{ SERVER_FQDN }}/{{ ITSM_TYPE  }}/api' WHERE name = 'url_base_api'
        when:
          - ITSM_DBHOST == 'localhost'
          - INSTALL_TYPE == 'p'
