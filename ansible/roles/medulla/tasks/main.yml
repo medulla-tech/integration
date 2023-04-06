@@ -3236,7 +3236,7 @@
          - GLPI_VERSION != '10.0'
          - ITSM_TYPE == 'glpi'
     
-     - name: GLPI - Install glpi 10.0
+     - name: GLPI - Install glpi 10.0 with Fusion Inventory
        apt:
          pkg:
            - glpi={{ GLPI_VERSION }}.*
@@ -3248,6 +3248,22 @@
          - INSTALL_TYPE == 'p'
          - GLPI_VERSION == '10.0'
          - ITSM_TYPE == 'glpi'
+         - ITSM_PLUGIN = 'fusioninventory'
+
+     - name: GLPI - Install glpi 10.0 with GLPI Inventory
+       apt:
+         pkg:
+           - glpi={{ GLPI_VERSION }}.*
+           - glpi-inventory-plugin
+           - php-ldap
+       when:
+         - ansible_distribution == 'Debian'
+         - ITSM_DBHOST == 'localhost'
+         - INSTALL_TYPE == 'p'
+         - GLPI_VERSION == '10.0'
+         - ITSM_TYPE == 'glpi'
+         - ITSM_PLUGIN = 'glpiinventory'
+
     
      - name: ITSM-NG - Install itsm-ng
        yum:
@@ -3477,7 +3493,18 @@
          - INSTALL_TYPE == 'p'
          - GLPI_VERSION == '10.0'
          - ITSM_TYPE == 'glpi'
+         - ITSM_PLUGIN = 'fusioninventory'
     
+     - name: GLPI - Install glpiinventory plugin for glpi 10.0
+       command: php /usr/share/glpi/bin/console glpi:plugin:install --username=root glpiinventory
+       when:
+         - RESET_DB|bool
+         - ITSM_DBHOST == 'localhost'
+         - INSTALL_TYPE == 'p'
+         - GLPI_VERSION == '10.0'
+         - ITSM_TYPE == 'glpi'
+         - ITSM_PLUGIN = 'glpiinventory'
+
      - name: GLPI - Activate fusioninventory plugin for glpi 10.0
        command: php /usr/share/glpi/bin/console glpi:plugin:activate fusioninventory
        when:
@@ -3486,7 +3513,18 @@
          - INSTALL_TYPE == 'p'
          - GLPI_VERSION == '10.0'
          - ITSM_TYPE == 'glpi'
-    
+         - ITSM_PLUGIN = 'fusioninventory'
+
+     - name: GLPI - Activate glpiinventory plugin for glpi 10.0
+       command: php /usr/share/glpi/bin/console glpi:plugin:activate glpiinventory
+       when:
+         - RESET_DB|bool
+         - ITSM_DBHOST == 'localhost'
+         - INSTALL_TYPE == 'p'
+         - GLPI_VERSION == '10.0'
+         - ITSM_TYPE == 'glpi'
+         - ITSM_PLUGIN = 'glpiinventory'
+
      - name: GLPI - Configure fusioninventory
        command: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBUSER }} -p'{{ ITSM_DBPASSWD }}' {{ ITSM_DBNAME }} -e "{{ item }}"
        with_items:
