@@ -4559,6 +4559,11 @@
 #                     Pulse Agent                        #
 ##########################################################
 
+ - name: PULSEAGENT - Enable GLPI-Agent
+   command: crudini --set /var/lib/pulse2/clients/config/inventory.ini parameters agent glpiagent
+   when:
+     - ITSM_PLUGIN == 'glpiinventory'
+
  - name: PULSEAGENT - Add clients alternate ssh port to options if defined
    set_fact:
      CLIENTS_OPTIONS: "{{ CLIENTS_OPTIONS }} --ssh-port={{ CLIENTS_SSH_PORT }}"
