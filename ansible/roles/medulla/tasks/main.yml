@@ -3248,7 +3248,7 @@
          - INSTALL_TYPE == 'p'
          - GLPI_VERSION == '10.0'
          - ITSM_TYPE == 'glpi'
-         - ITSM_PLUGIN = 'fusioninventory'
+         - ITSM_PLUGIN == 'fusioninventory'
 
      - name: GLPI - Install glpi 10.0 with GLPI Inventory
        apt:
