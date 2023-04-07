@@ -3262,7 +3262,7 @@
          - INSTALL_TYPE == 'p'
          - GLPI_VERSION == '10.0'
          - ITSM_TYPE == 'glpi'
-         - ITSM_PLUGIN = 'glpiinventory'
+         - ITSM_PLUGIN == 'glpiinventory'
 
     
      - name: ITSM-NG - Install itsm-ng
