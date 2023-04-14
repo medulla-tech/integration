@@ -1932,15 +1932,21 @@
      remote_src: yes
 
  - name: SAMBA - Define Samba root password
-   command: echo -ne "{{ ROOT_PASSWORD }}\n{{ ROOT_PASSWORD }}\n" | smbpasswd -a -s root
+   shell: >
+     (pdbedit --user=root 2>&1 > /dev/null)
+     || (echo '{{ ROOT_PASSWORD }}'; echo '{{ ROOT_PASSWORD }}')
+     | smbpasswd -s -a root
 
  - name: SAMBA - Create user drivers with no home and group
    user:
      name: drivers
      shell: /bin/false
 
- - name: SAMBA - Define Samba drivers Password
-   command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
+ - name: SAMBA - Define Samba drivers password
+   shell: >
+     (pdbedit --user=drivers 2>&1 > /dev/null)
+     || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+     | smbpasswd -s -a drivers
 
  - name: SAMBA - Set samba service name for CentOS
    set_fact:
