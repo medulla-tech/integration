@@ -1,0 +1,2 @@
+GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
+TOMCAT_DAEMON: tomcat10
