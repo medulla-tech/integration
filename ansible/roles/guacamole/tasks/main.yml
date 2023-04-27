@@ -62,7 +62,7 @@
       - guacamole-tomcat
     state: latest
   when:
-    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: GUACAMOLE - Install guacamole
   ansible.builtin.apt:

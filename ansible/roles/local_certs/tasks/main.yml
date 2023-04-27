@@ -36,7 +36,7 @@
       - ca-certificates
       - python3-openssl
   when:
-    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: CERT - Fetch ca-chain.cert.pem from pki server
   ansible.builtin.fetch:

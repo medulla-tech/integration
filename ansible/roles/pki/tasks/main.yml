@@ -37,7 +37,7 @@
       - ca-certificates
       - python3-openssl
   when:
-    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: PKI - Create pki folder tree
   ansible.builtin.file:
