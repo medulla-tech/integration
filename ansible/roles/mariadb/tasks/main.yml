@@ -51,7 +51,7 @@
       - mariadb-client
       - mariadb-server
   when:
-    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: MARIADB - Ensure datadir exists
   ansible.builtin.file:
