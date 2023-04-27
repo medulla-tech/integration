@@ -1,2 +1,8 @@
-GLPI_VERSION: '9.5'
+GLPI_VERSION: '10.0'
+ITSM_TYPE: 'glpi'
+ITSM_USER: 'glpi'
+FUSION_VERSION: '10.0.6'
+ITSM_API_USER: 'glpi'
+ITSM_API_PASSWORD: 'glpi'
+ITSM_PLUGIN: 'fusioninventory'
 APACHE_USER: www-data

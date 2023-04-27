@@ -29,7 +29,7 @@
   ansible.builtin.apt:
     pkg:
       - glpi={{ GLPI_VERSION }}.*
-      - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
+      - fusioninventory-for-glpi={{ FUSION_VERSION }}+*
       - php-ldap
       - php-xml
       - php-gd
