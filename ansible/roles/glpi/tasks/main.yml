@@ -25,7 +25,7 @@
   when:
     - ansible_distribution == 'CentOS'
 
-- name: GLPI - Install glpi
+- name: GLPI - Install glpi with Fusion Inventory
   ansible.builtin.apt:
     pkg:
       - glpi={{ GLPI_VERSION }}.*
@@ -39,6 +39,23 @@
       - php-intl
   when:
     - ansible_distribution == 'Debian'
+    - ITSM_PLUGIN == 'fusioninventory'
+
+- name: GLPI - Install glpi with Glpi Inventory
+  ansible.builtin.apt:
+    pkg:
+      - glpi={{ GLPI_VERSION }}.*
+      - glpi-inventory-plugin
+      - php-ldap
+      - php-xml
+      - php-gd
+      - php-zip
+      - php-xmlrpc
+      - php-mbstring
+      - php-intl
+  when:
+    - ansible_distribution == 'Debian'
+    - ITSM_PLUGIN == 'glpiinventory'
 
 - name: GLPI - Create glpi database
   community.mysql.mysql_db:
@@ -134,7 +151,7 @@
   no_log: True
 
 - name: GLPI - Enable fusioninventory plugin after glpi db init
-  ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} fusioninventory
+  ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} {{ ITSM_PLUGIN }}
   with_items:
     - 'glpi:plugin:install --username=root'
     - 'glpi:plugin:activate'
@@ -159,6 +176,24 @@
     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
   when:
     - GLPI_CHANGED | bool
+    - ITSM_PLUGIN == 'fusioninventory'
+
+
+- name: GLPI - Configure glpiinventory after glpi db init
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - UPDATE glpi_entities SET agent_base_url = 'http://127.0.0.1/glpi' WHERE id='1'
+    - INSERT INTO glpi_plugin_{{ ITSM_PLUGIN }}_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
+    - UPDATE glpi_plugin_{{ ITSM_PLUGIN }}_configs SET value='0' WHERE type='manage_osname'
+    - UPDATE glpi_configs SET value='1' WHERE name='enabled_inventory'
+  when:
+    - GLPI_CHANGED | bool
+    - ITSM_PLUGIN == 'glpiinventory'
 
 - name: GLPI - Set owner of /var/lib/glpi/files/_plugins/fusioninventory
   ansible.builtin.file:
