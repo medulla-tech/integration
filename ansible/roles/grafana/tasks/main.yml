@@ -13,6 +13,7 @@
     pkg:
       - grafana
       - grafana-image-renderer
+      - python3-jmespath
     state: latest
   when:
     - ansible_distribution == 'CentOS'
