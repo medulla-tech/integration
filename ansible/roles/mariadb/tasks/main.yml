@@ -85,7 +85,6 @@
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    login_host: localhost
     name: ''
     host_all: yes
     state: absent
