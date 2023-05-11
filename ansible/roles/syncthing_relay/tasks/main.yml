@@ -2,7 +2,7 @@
 #                 Syncthing Relay Server                 #
 ##########################################################
 
-- name: STRELAYSRV - Install syncthing discovery server
+- name: STRELAYSRV - Install syncthing relay server
   ansible.builtin.apt:
     pkg:
       - syncthing-relaysrv
