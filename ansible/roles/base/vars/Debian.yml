@@ -1,4 +1,2 @@
-PULSE4REPO_URL: https://git.siveo.net/py3.list
 PULSE4REPO_DEST: /etc/apt/sources.list.d/pulse4.list
-PULSE4REPOKEY_URL: https://git.siveo.net/pubkey.txt
 NTP_DAEMON: ntp

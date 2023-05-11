@@ -11,6 +11,10 @@ spo:
       SERVER_FQDN: medulla-ars-2.medulla-tech.lan
       PULSEMAIN_IP: 10.10.0.10 
       PULSEMAIN_FQDN: medulla-main.medulla-tech.io
+  vars:
+    PULSE4REPO_URL: https://git.siveo.net/integration.list
+    PULSE4REPOKEY_URL: https://git.siveo.net/pubkey.txt
+    #PULSE4REPO_URL: https://git.siveo.net/centos7-py3.repo
 
 mmc:
   hosts:
