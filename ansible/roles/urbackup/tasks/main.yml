@@ -62,7 +62,7 @@
   ansible.builtin.uri:
     url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
     method: POST
-    body_format: form-urlencode
+    body_format: form-urlencoded
     return_content: true
     headers:
       Accept: application/json
