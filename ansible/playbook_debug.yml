@@ -4,6 +4,11 @@
   remote_user: root
   serial: 1
   tasks:
+    - name: Display all variables/facts known for a host
+      debug:
+        var: hostvars[inventory_hostname]
+      tags: debug_info
+
     - name: SUBSTITUTE_AGENT - Find out name of substitute
       mysql_query:
         login_host: localhost
