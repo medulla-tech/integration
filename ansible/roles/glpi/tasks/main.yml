@@ -13,8 +13,6 @@
     pkg:
       - glpi-{{ GLPI_VERSION }}.*
       - glpi
-      - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}*
-      - glpi-plugin-fusioninventory
       - php-ldap
       - php-xml
       - php-gd
@@ -25,11 +23,10 @@
   when:
     - ansible_distribution == 'CentOS'
 
-- name: GLPI - Install glpi with Fusion Inventory
+- name: GLPI - Install glpi
   ansible.builtin.apt:
     pkg:
       - glpi={{ GLPI_VERSION }}
-      - fusioninventory-for-glpi={{ FUSION_VERSION }}+*
       - php-ldap
       - php-xml
       - php-gd
@@ -39,25 +36,33 @@
       - php-intl
   when:
     - ansible_distribution == 'Debian'
-    - ITSM_PLUGIN == 'fusioninventory'
 
-- name: GLPI - Install glpi with Glpi Inventory
+- name: GLPI - Install Fusion Inventory
+  ansible.builtin.yum:
+    pkg:
+      - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}*
+      - glpi-plugin-fusioninventory
+  when:
+    - ansible_distribution == 'CentOS'
+    - GLPI_PLUGIN == 'fusioninventory'
+
+- name: GLPI - Install Fusion Inventory
   ansible.builtin.apt:
     pkg:
-      - glpi={{ GLPI_VERSION }}.*
-      - glpi-inventory-plugin
-      - php-ldap
-      - php-xml
-      - php-gd
-      - php-zip
-      - php-xmlrpc
-      - php-mbstring
-      - php-intl
+      - fusioninventory-for-glpi={{ GLPI_VERSION }}+*
   when:
     - ansible_distribution == 'Debian'
-    - ITSM_PLUGIN == 'glpiinventory'
+    - GLPI_PLUGIN == 'fusioninventory'
 
-- name: GLPI - Create glpi database
+- name: GLPI - Install Glpi Inventory
+  ansible.builtin.apt:
+    pkg:
+      - glpi-inventory-plugin
+  when:
+    - ansible_distribution == 'Debian'
+    - GLPI_PLUGIN == 'glpiinventory'
+
+- name: GLPI - Create database
   community.mysql.mysql_db:
     login_host: '{{ GLPI_DBHOST }}'
     login_port: '{{ GLPI_DBPORT }}'
@@ -66,7 +71,7 @@
     name: '{{ GLPI_DBNAME }}'
     state: present
 
-- name: GLPI - Create glpi database user
+- name: GLPI - Create database user
   community.mysql.mysql_user:
     login_host: '{{ GLPI_DBHOST }}'
     login_port: '{{ GLPI_DBPORT }}'
@@ -94,7 +99,7 @@
   when:
     - resdbinitialised.stat.exists
 
-- name: GLPI - Initialise glpi database
+- name: GLPI - Initialise database
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
     - GLPI_DBINITIALISED is not defined
@@ -113,10 +118,10 @@
   when:
     - GLPI_CHANGED | bool
 
-- name: GLPI - Upgrade glpi database if needed
+- name: GLPI - Upgrade database if needed
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:update
 
-- name: GLPI - Initialise glpi database for Pulse
+- name: GLPI - Initialise database for Pulse
   community.mysql.mysql_query:
     login_host: '{{ GLPI_DBHOST }}'
     login_port: '{{ GLPI_DBPORT }}'
@@ -150,15 +155,15 @@
     single_transaction: yes
   no_log: True
 
-- name: GLPI - Enable fusioninventory plugin after glpi db init
-  ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} {{ ITSM_PLUGIN }}
+- name: GLPI - Enable {{ GLPI_PLUGIN }} plugin after db init
+  ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} {{ GLPI_PLUGIN }}
   with_items:
     - 'glpi:plugin:install --username=root'
     - 'glpi:plugin:activate'
   when:
     - GLPI_CHANGED | bool
 
-- name: GLPI - Configure fusioninventory after glpi db init
+- name: GLPI - Configure fusioninventory after db init
   community.mysql.mysql_query:
     login_host: '{{ GLPI_DBHOST }}'
     login_port: '{{ GLPI_DBPORT }}'
@@ -176,8 +181,7 @@
     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
   when:
     - GLPI_CHANGED | bool
-    - ITSM_PLUGIN == 'fusioninventory'
-
+    - GLPI_PLUGIN == 'fusioninventory'
 
 - name: GLPI - Configure glpiinventory after glpi db init
   community.mysql.mysql_query:
@@ -188,12 +192,12 @@
     login_db: '{{ GLPI_DBNAME }}'
     query:
     - UPDATE glpi_entities SET agent_base_url = 'http://127.0.0.1/glpi' WHERE id='1'
-    - INSERT INTO glpi_plugin_{{ ITSM_PLUGIN }}_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
-    - UPDATE glpi_plugin_{{ ITSM_PLUGIN }}_configs SET value='0' WHERE type='manage_osname'
+    - INSERT INTO glpi_plugin_{{ GLPI_PLUGIN }}_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
+    - UPDATE glpi_plugin_{{ GLPI_PLUGIN }}_configs SET value='0' WHERE type='manage_osname'
     - UPDATE glpi_configs SET value='1' WHERE name='enabled_inventory'
   when:
     - GLPI_CHANGED | bool
-    - ITSM_PLUGIN == 'glpiinventory'
+    - GLPI_PLUGIN == 'glpiinventory'
 
 - name: GLPI - Set owner of /var/lib/glpi/files/_plugins/fusioninventory
   ansible.builtin.file:
@@ -201,8 +205,15 @@
     state: directory
     recurse: yes
     owner: '{{ APACHE_USER }}'
+  when:
+    - GLPI_PLUGIN == 'fusioninventory'
 
 - name: GLPI - Make log file writable for all
   ansible.builtin.file:
     path: /usr/share/glpi/files/_log/php-errors.log
     mode: '0666'
+
+- name: GLPI - Remove install.php file, not needed after the configuration.
+  ansible.builtin.file:
+    path: /usr/share/glpi/install/install.php
+    state: absent

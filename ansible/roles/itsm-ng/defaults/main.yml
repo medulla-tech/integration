@@ -1,0 +1,12 @@
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+ITSM_DBHOST: localhost
+ITSM_DBPORT: 3306
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '{{ ROOT_PASSWORD }}'
+ITSM_DBNAME: glpi
+ITSM_PLUGIN: fusioninventory
+ITSM_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
+ITSM_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+ORGANISATION: Siveo Pulse
+LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
