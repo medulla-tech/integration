@@ -78,7 +78,10 @@
     state: restarted
 
 - name: MARIADB - Define root password
-  ansible.builtin.command: mysqladmin -u {{ DBADMINUSER }} password '{{ DBADMINPASSWD }}'
+  ansible.builtin.command: mysqladmin '{{ item }}'
+  with_items:
+  - '-u {{ DBADMINUSER }} password {{ DBADMINPASSWD }}'
+  - '-u {{ DBADMINUSER }} reload'
   ignore_errors: true
 
 - name: MARIADB - Removes all anonymous user accounts and make sure admin user can connect
