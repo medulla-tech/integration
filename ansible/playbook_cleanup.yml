@@ -38,6 +38,7 @@
     - ejabberd_cleanup
     - syncthing_cleanup
     - glpi_cleanup
+    - itsm-ng_cleanup
     - grafana_cleanup
     - mmc_cleanup
     - mariadb_cleanup
