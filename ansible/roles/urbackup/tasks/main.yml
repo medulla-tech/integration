@@ -52,6 +52,9 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: BACKUP - Force restart of service to use new config files
+  ansible.builtin.meta: flush_handlers
+
 - name: BACKUP - Create admin user
   ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
 
