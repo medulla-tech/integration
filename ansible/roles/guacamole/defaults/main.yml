@@ -5,3 +5,4 @@ GUACDBPASSWD: '{{ ROOT_PASSWORD }}'
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+GUACAMOLE_VERSION: 1.4

@@ -126,6 +126,22 @@
     single_transaction: yes
     named_args:
       guac_root_pw: '{{ GUACAMOLE_ROOT_PASSWORD }}'
+  when:
+    - GUACAMOLE_VERSION == 1.5
+
+- name: GUACAMOLE - Define guacamole root user password in database
+  community.mysql.mysql_query:
+    login_db: guacamole
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    query: 
+    - SET @salt = UNHEX(SHA2(UUID(), 256))
+    - UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT(%(guac_root_pw)s, HEX(@salt)), 256)) WHERE user_id=1
+    single_transaction: yes
+    named_args:
+      guac_root_pw: '{{ GUACAMOLE_ROOT_PASSWORD }}'
+  when:
+    - GUACAMOLE_VERSION == 1.4
 
 - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
   ansible.builtin.copy:
