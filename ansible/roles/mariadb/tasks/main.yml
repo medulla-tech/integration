@@ -77,11 +77,18 @@
     name: mariadb
     state: restarted
 
+- name: MARIADB - Change the authentication plugin of MySQL root user to mysql_native_password
+  ansible.builtin.command: mysql -u root -e '{{ item }}'
+  with_items:
+  - 'UPDATE mysql.user SET plugin="mysql_native_password" WHERE user="root" AND host="localhost"'
+  - 'FLUSH PRIVILEGES'
+  ignore_errors: True
+
 - name: MARIADB - Define root password
   community.mysql.mysql_user:
+    check_implicit_admin: True
     name: '{{ DBADMINUSER }}'
     password: '{{ DBADMINPASSWD }}'
-    check_implicit_admin: True
 
 - name: MARIADB - Create .my.cnf
   ansible.builtin.template:
