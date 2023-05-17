@@ -80,7 +80,7 @@
 - name: MARIADB - Change the authentication plugin of MySQL root user to mysql_native_password
   ansible.builtin.command: mysql -u root -e '{{ item }}'
   with_items:
-  - 'UPDATE mysql.user SET plugin="mysql_native_password" WHERE user="root" AND host="localhost"'
+  - 'ALTER USER "root"@"localhost" IDENTIFIED VIA mysql_native_password'
   - 'FLUSH PRIVILEGES'
   ignore_errors: True
 
