@@ -1,4 +1,5 @@
 PKI_PATH: /var/lib/pulse2/pki
+PKI_SERVER: localhost
 SERVER_FQDN: '{{ ansible_fqdn }}'
 XMPP_DOMAIN: pulse
 XMPP_MASTER_PASSWORD: '' # 12 character string. Must be vaulted

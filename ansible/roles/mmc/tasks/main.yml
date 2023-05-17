@@ -281,6 +281,29 @@
       access: direct
     status_code: [200, 409]
 
+- name: CERT - Fetch ca-chain.cert.pem from pki server
+  ansible.builtin.fetch:
+    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
+    dest: /tmp/medulla-ca-chain.cert.pem
+    flat: yes
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Copy medulla-ca-chain.cert.pem to clients folder
+  ansible.builtin.copy:
+    src: /tmp/medulla-ca-chain.cert.pem
+    dest: /var/lib/pulse2/clients/medulla-ca-chain.cert.pem
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Copy medulla-ca-chain.cert.pem to clients folder
+  ansible.builtin.copy:
+    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
+    dest: /var/lib/pulse2/clients/medulla-ca-chain.cert.pem
+  when:
+    - PKI_SERVER == 'localhost'
+
 - name: MMC - Generate pulse agent in minimal for debian
   ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --linux-distros=debian-buster,debian-stretch
 
