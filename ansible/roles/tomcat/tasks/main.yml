@@ -20,7 +20,7 @@
   ansible.builtin.apt:
     state: latest
     pkg:
-      - tomcat9
+      - tomcat{{ DEB_TOMCAT_VERSION }}
   when:
     - ansible_distribution == 'Debian'
 
