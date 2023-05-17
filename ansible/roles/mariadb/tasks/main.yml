@@ -78,11 +78,18 @@
     state: restarted
 
 - name: MARIADB - Define root password
-  ansible.builtin.command: mysqladmin '{{ item }}'
-  with_items:
-  - '-u {{ DBADMINUSER }} password {{ DBADMINPASSWD }}'
-  - '-u {{ DBADMINUSER }} reload'
-  ignore_errors: true
+  community.mysql.mysql_user:
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+    check_implicit_admin: True
+
+- name: MARIADB - Create .my.cnf
+  ansible.builtin.template:
+    src: "client.my.cnf.j2"
+    dest: "/root/.my.cnf"
+    owner: root
+    group: root
+    mode: 0600
 
 - name: MARIADB - Removes all anonymous user accounts and make sure admin user can connect
   community.mysql.mysql_user:
