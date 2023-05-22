@@ -110,7 +110,7 @@
     - ansible_distribution == 'Debian'
 
 - name: MMC/LDAP - Import mmc schemas to ldap server
-  ansible.builtin.command: mmc-add-schema {{ CONTRIB_PATH }}/base/mmc.schema {{ LDAP_CONFIG_PATH }}/schema/
+  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
 
 - name: MMC/PKI - Configure certificates in mmc-agent and inventory server
   ansible.builtin.copy:
