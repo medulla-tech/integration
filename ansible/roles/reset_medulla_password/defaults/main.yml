@@ -1,3 +1,5 @@
+OLD_ROOT_PASSWORD: '' # Must be vaulted and inserted in the playbook named playbook_resetpasswd.yml
+ROOT_PASSWORD: '' # Must be vaulted and inserted in the playbook named playbook_resetpasswd.yml
 RESET_LDAP_ADMINPASS: True
 LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
@@ -11,8 +13,8 @@ RESET_ITSM_ADMINPASS: True
 ITSM_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
 ITSM_DBHOST: localhost
 ITSM_DBPORT: 3306
-ITSM_DBUSER: root
-ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSM_DBUSER: '{{ DBADMINUSER }}'
+ITSM_DBPASSWD: '{{ DBADMINPASSWD }}'
 ITSM_DBNAME: glpi
 RESET_URBACKUP_ADMINPASS: True
 URBACKUP_ADMINPASSWD: '{{ ROOT_PASSWORD }}'

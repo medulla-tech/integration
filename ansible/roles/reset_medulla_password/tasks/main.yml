@@ -24,6 +24,8 @@
 
 - name: RESET MEDULLA ROOT PASSWORD - Reset LDAP admin user password
   community.general.ldap_passwd:
+    bind_dn: cn=admin,{{ LDAP_BASEDN }}
+    bind_pw: "{{ OLD_ROOT_PASSWORD }}"
     dn: cn=admin,{{ LDAP_BASEDN }}
     passwd: "{{ LDAPADMINPASSWD }}"
   when:
