@@ -3,7 +3,7 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 GLPI_DBHOST: localhost
 GLPI_DBPORT: 3306
 GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
 GLPI_DBNAME: glpi
 GLPI_PLUGIN: glpiinventory
 GLPI_ADMINPASSWD: '{{ ROOT_PASSWORD }}'

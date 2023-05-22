@@ -3,7 +3,7 @@ PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
 GLPI_DBHOST: '{{ PULSEMAIN_IP }}'
 GLPI_DBPORT: 3306
 GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
 GLPI_DBNAME: glpi
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'

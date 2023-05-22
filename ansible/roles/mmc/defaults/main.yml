@@ -34,7 +34,7 @@ GLPI_DBHOST: localhost
 GLPI_DBPORT: 3306
 GLPI_DBNAME: glpi
 GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
 GLPI_BASEURL: 'http://{{ SERVER_FQDN }}/glpi'
 ITSM_API_USER: 'itsm-ng'
 ITSM_API_PASSWORD: '{{ GLPI_ADMINPASSWD }}'
