@@ -1,0 +1,20 @@
+- name: RESET MEDULLA ROOT PASSWORD - Restart mmc-agent
+  ansible.builtin.systemd:
+    name: 'mmc-agent'
+    state: restarted
+    daemon_reload: yes
+
+- name: RESET MEDULLA ROOT PASSWORD - Restart syncthing
+  ansible.builtin.systemd:
+    name: syncthing@{{ item }}
+    state: restarted
+    daemon_reload: yes
+  with_items:
+    - syncthing
+    - syncthing-depl
+
+- name: RESET MEDULLA ROOT PASSWORD - Restart pulse-xmpp-agent-relay
+  ansible.builtin.systemd:
+    name: 'pulse-xmpp-agent-relay'
+    state: restarted
+    daemon_reload: yes

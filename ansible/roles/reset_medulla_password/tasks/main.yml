@@ -1,0 +1,131 @@
+##########################################################
+#              Reset Medulla root password               #
+##########################################################
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset LDAP admin user password
+  community.general.ldap_passwd:
+    dn: cn=admin,{{ LDAP_BASEDN }}
+    passwd: "{{ LDAPADMINPASSWD }}"
+  when:
+    - RESET_LDAP_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Update base.ini.local
+  community.general.ini_file:
+    path: /etc/mmc/plugins/base.ini.local
+    section: ldap
+    option: password
+    value: "{{ LDAPADMINPASSWD }}"
+    backup: yes
+  notify:
+    - RESET MEDULLA ROOT PASSWORD - Restart mmc-agent
+  when:
+    - RESET_LDAP_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset Mariadb root user password
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+  when:
+    - RESET_MARIADB_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Recreate .my.cnf
+  ansible.builtin.template:
+    src: "client.my.cnf.j2"
+    dest: "/root/.my.cnf"
+    owner: root
+    group: root
+    mode: 0600
+    backup: yes
+  when:
+    - RESET_MARIADB_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset Ejabberd root user password
+  community.general.ejabberd_user:
+    username: root
+    host: '{{ XMPP_DOMAIN }}'
+    password: '{{ EJABBERDADMINPASSWD }}'
+  when:
+    - RESET_EJABBERD_ADMINPASS
+    
+- name: RESET MEDULLA ROOT PASSWORD - Reset ITSM root user password
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+    - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
+  when:
+    - RESET_ITSM_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Update glpi.ini.local
+  community.general.ini_file:
+    path: /etc/mmc/plugins/glpi.ini.local
+    section: webservices
+    option: glpi_password
+    value: "{{ ITSM_ADMINPASSWD }}"
+    backup: yes
+  notify:
+    - RESET MEDULLA ROOT PASSWORD - Restart mmc-agent
+  when:
+    - RESET_ITSM_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset UrBackup admin password
+  ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
+  when:
+    - RESET_URBACKUP_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Update urbackup.ini.local
+  community.general.ini_file:
+    path: /etc/mmc/plugins/urbackup.ini.local
+    section: urbackup
+    option: password
+    value: "{{ URBACKUP_ADMINPASSWD }}"
+    backup: yes
+  notify:
+    - RESET MEDULLA ROOT PASSWORD - Restart mmc-agent
+  when:
+    - RESET_URBACKUP_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset Grafana admin password
+  ansible.builtin.command: grafana-cli admin reset-admin-password '{{ GRAFANAADMINPASSWD }}'
+  when:
+    - RESET_GRAFANA_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset Samba root password
+  ansible.builtin.command: '{{ item }}'
+  with_items:
+    - smbpasswd -x root
+    - echo -ne "{{ SMBADMINPASSWD }}\n{{ SMBADMINPASSWD }}\n" | smbpasswd -a -s root
+  when:
+    - RESET_SAMBA_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Stop ARS before editing Syncthing configuration
+  ansible.builtin.systemd:
+    name: pulse-xmpp-agent-relay
+    state: stopped
+  when:
+    - RESET_SYNCTHING_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Stop Syncthing services for editing configuration
+  ansible.builtin.systemd:
+    name: syncthing@{{ item }}
+    state: stopped
+  with_items:
+    - syncthing
+    - syncthing-depl
+  when:
+    - RESET_SYNCTHING_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Reset Syncthing root password
+  ansible.builtin.command: xmlstarlet ed --inplace -u "/configuration/gui/password" -v "{{ STROOTPASSWD_HASHED }}" /var/lib/syncthing/.config/syncthing/config.xml
+  notify:
+    - RESET MEDULLA ROOT PASSWORD - Restart syncthing
+    - RESET MEDULLA ROOT PASSWORD - Restart pulse-xmpp-agent-relay
+  when:
+    - RESET_SYNCTHING_ADMINPASS
+
+- name: SYNCTHING - Force restart of service to use new config files
+  ansible.builtin.meta: flush_handlers
