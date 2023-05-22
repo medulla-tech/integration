@@ -83,6 +83,8 @@
   - 'ALTER USER "root"@"localhost" IDENTIFIED VIA mysql_native_password'
   - 'FLUSH PRIVILEGES'
   ignore_errors: True
+  when: 
+    - lsdatadir.stdout | length == 0
 
 - name: MARIADB - Define root password
   community.mysql.mysql_user:
