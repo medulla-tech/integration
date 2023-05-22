@@ -6,7 +6,7 @@ GLPI_DBUSER: glpi
 GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
 GLPI_DBNAME: glpi
 GLPI_PLUGIN: glpiinventory
-ITSM_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
+GLPI_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
 GLPI_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
 ORGANISATION: Siveo Pulse
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'

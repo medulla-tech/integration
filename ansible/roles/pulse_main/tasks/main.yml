@@ -27,18 +27,18 @@
 
 - name: PULSE/GLPI - Initialise session to API
   ansible.builtin.uri:
-    url: "http://localhost/glpi/apirest.php/initSession"
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
     url_username: root
     url_password: '{{ ITSM_ADMINPASSWD }}'
     force_basic_auth: yes
     method: GET
   register: json_session
   when:
-    - GLPI_DBHOST == 'localhost'
+    - ITSM_DBHOST == 'localhost'
 
 - name: PULSE/GLPI - Create entity in GLPI
   ansible.builtin.uri:
-    url: "http://localhost/glpi/apirest.php/Entity/"
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
     url_username: root
     url_password: '{{ ITSM_ADMINPASSWD }}'
     force_basic_auth: yes
@@ -53,21 +53,21 @@
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
   when:
-    - GLPI_DBHOST == 'localhost'
+    - ITSM_DBHOST == 'localhost'
     
 - name: PULSE/GLPI - Define created entity as default entity for fusioninventory
   community.mysql.mysql_query:
-    login_host: '{{ GLPI_DBHOST }}'
-    login_port: '{{ GLPI_DBPORT }}'
-    login_user: '{{ GLPI_DBUSER }}'
-    login_password: '{{ GLPI_DBPASSWD }}'
-    login_db: '{{ GLPI_DBNAME }}'
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
     query:
     - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ CLUSTER_NAME }}', 'AND')
     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
   when:
-    - GLPI_DBHOST == 'localhost'
+    - ITSM_DBHOST == 'localhost'
     - result.status == 201
 
 - name: PULSE/AGENT - Configure the agent updatebackupclient plugin

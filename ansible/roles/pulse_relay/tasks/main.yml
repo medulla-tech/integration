@@ -53,11 +53,11 @@
 - name: PULSE/GLPI - Allow user to connect to glpi db from relay
   community.mysql.mysql_user:
     login_host: 'localhost'
-    login_port: '{{ GLPI_DBPORT }}'
+    login_port: '{{ ITSM_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ GLPI_DBUSER }}'
-    password: '{{ GLPI_DBPASSWD }}'
+    name: '{{ ITSM_DBUSER }}'
+    password: '{{ ITSM_DBPASSWD }}'
     host: '{{ IP_ADDRESS }}'
     state: present
     append_privs: true
@@ -68,31 +68,31 @@
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
-    - GLPI_DBHOST == PULSEMAIN_IP
+    - ITSM_DBHOST == PULSEMAIN_IP
   no_log: True
 
 - name: PULSE/GLPI - Check if entity exists in glpi
   community.mysql.mysql_query:
-    login_host: '{{ GLPI_DBHOST }}'
-    login_port: '{{ GLPI_DBPORT }}'
-    login_user: '{{ GLPI_DBUSER }}'
-    login_password: '{{ GLPI_DBPASSWD }}'
-    login_db: '{{ GLPI_DBNAME }}'
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
     query:
       - SELECT id FROM glpi_entities WHERE completename = %(completename)s
     named_args:
       completename: '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'
   register: res_query
   when:
-    - GLPI_DBHOST == PULSEMAIN_IP
+    - ITSM_DBHOST == PULSEMAIN_IP
 
 - name: PULSE/GLPI - Create entity in GLPI if it does not exist
   community.mysql.mysql_query:
-    login_host: '{{ GLPI_DBHOST }}'
-    login_port: '{{ GLPI_DBPORT }}'
-    login_user: '{{ GLPI_DBUSER }}'
-    login_password: '{{ GLPI_DBPASSWD }}'
-    login_db: '{{ GLPI_DBNAME }}'
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
     query:
       - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
       - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
@@ -100,7 +100,7 @@
       - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
       - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ CLUSTER_NAME }}'))
   when:
-    - GLPI_DBHOST == PULSEMAIN_IP
+    - ITSM_DBHOST == PULSEMAIN_IP
     - res_query.rowcount[0] == 0
 
 - name: PULSE/SHARE - Allow user to connect to db from relay
@@ -227,11 +227,11 @@
 
 - name: PULSE/IMAGING - Find Entity from GLPI
   community.mysql.mysql_query:
-    login_host: '{{ GLPI_DBHOST }}'
-    login_port: '{{ GLPI_DBPORT }}'
-    login_user: '{{ GLPI_DBUSER }}'
-    login_password: '{{ GLPI_DBPASSWD }}'
-    login_db: '{{ GLPI_DBNAME }}'
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
     query:
       - SELECT id FROM glpi_entities WHERE completename = %(completename)s
     named_args:
@@ -345,10 +345,10 @@
 - name: PULSE/GLPI - Remove user connection to glpi db from relay
   community.mysql.mysql_user:
     login_host: 'localhost'
-    login_port: '{{ GLPI_DBPORT }}'
+    login_port: '{{ ITSM_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ GLPI_DBUSER }}'
+    name: '{{ ITSM_DBUSER }}'
     host: '{{ IP_ADDRESS }}'
     state: absent
   vars:
@@ -357,7 +357,7 @@
   register: res_queryclusterid
   when:
     - PULSEMAIN_IP != ''
-    - GLPI_DBHOST == PULSEMAIN_IP
+    - ITSM_DBHOST == PULSEMAIN_IP
   no_log: True
 
 - name: PULSE/SHARE - Remove user connection to db from relay

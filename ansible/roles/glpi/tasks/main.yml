@@ -147,7 +147,7 @@
     login_db: '{{ GLPI_DBNAME }}'
     query:
     - UPDATE glpi_users SET name = 'root' WHERE name = 'glpi'
-    - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
+    - UPDATE glpi_users SET password = MD5('{{ GLPI_ADMINPASSWD }}') where name = 'root'
     - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'

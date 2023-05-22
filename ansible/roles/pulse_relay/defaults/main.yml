@@ -1,10 +1,10 @@
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
-GLPI_DBHOST: '{{ PULSEMAIN_IP }}'
-GLPI_DBPORT: 3306
-GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
-GLPI_DBNAME: glpi
+ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
+ITSM_DBPORT: 3306
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSM_DBNAME: glpi
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'
 ORGANISATION: Siveo Pulse

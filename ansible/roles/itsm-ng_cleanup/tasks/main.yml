@@ -1,20 +1,20 @@
 - name: ITSM-NG - Delete database user
   community.mysql.mysql_user:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBUSER }}'
+    name: '{{ ITSMNG_DBUSER }}'
     host_all: yes
     state: absent
 
 - name: ITSM-NG - Delete database
   community.mysql.mysql_db:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBNAME }}'
+    name: '{{ ITSMNG_DBNAME }}'
     state: absent
 
 - name: ITSM-NG - Delete previous config file

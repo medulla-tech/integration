@@ -1,12 +1,12 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
-ITSM_DBHOST: localhost
-ITSM_DBPORT: 3306
-ITSM_DBUSER: glpi
-ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
-ITSM_DBNAME: glpi
-ITSM_PLUGIN: fusioninventory
-ITSM_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
-ITSM_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+ITSMNG_DBHOST: localhost
+ITSMNG_DBPORT: 3306
+ITSMNG_DBUSER: glpi
+ITSMNG_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSMNG_DBNAME: glpi
+ITSMNG_PLUGIN: fusioninventory
+ITSMNG_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
+ITSMNG_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
 ORGANISATION: Siveo Pulse
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'

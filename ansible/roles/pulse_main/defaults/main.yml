@@ -1,11 +1,12 @@
 SERVER_FQDN: '{{ ansible_fqdn }}'
 DRIVERS_PASSWORD: '' # 12 character string. Must be vaulted
 DRIVERS_FOLDER: /var/lib/pulse2/imaging/postinst/sysprep/drivers
-GLPI_DBHOST: localhost
-GLPI_DBPORT: 3306
-GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
-GLPI_DBNAME: glpi
+ITSM_TYPE: glpi # can be itsm-ng
+ITSM_DBHOST: localhost
+ITSM_DBPORT: 3306
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSM_DBNAME: glpi
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'
 ORGANISATION: Siveo Pulse

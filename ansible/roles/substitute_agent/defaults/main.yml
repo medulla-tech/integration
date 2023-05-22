@@ -13,12 +13,12 @@ DBHOST: localhost
 DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
-# For using glpi on another server, redefine following GLPI_* variables. The following defaults are for local glpi.
-GLPI_DBHOST: localhost
-GLPI_DBPORT: 3306
-GLPI_DBNAME: glpi
-GLPI_DBUSER: glpi
-GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
+# For using glpi on another server, redefine following ITSM_* variables. The following defaults are for local glpi.
+ITSM_DBHOST: localhost
+ITSM_DBPORT: 3306
+ITSM_DBNAME: glpi
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 SUBS_LONG_TYPE: '' # can be assessor, registration, inventory, subscription, logger, monitoring, reconfigurator, updates. master substitute is managed by mmc role
 # SUBS_NAME can be forced by defining the variable. Else it is calculated
 SUBS_NAME: '' #eg registration3

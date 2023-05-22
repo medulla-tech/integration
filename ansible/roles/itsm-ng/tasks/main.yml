@@ -11,7 +11,7 @@
 - name: ITSM-NG - Install itsm-ng
   ansible.builtin.yum:
     pkg:
-      - itsm-ng-{{ ITSM_NG_VERSION }}.*
+      - itsm-ng-{{ ITSMNG_VERSION }}.*
       - itsm-ng
       - php-ldap
       - php-xml
@@ -26,7 +26,7 @@
 - name: ITSM-NG - Install itsm-ng
   ansible.builtin.apt:
     pkg:
-      - itsm-ng={{ ITSM_NG_VERSION }}.*
+      - itsm-ng={{ ITSMNG_VERSION }}.*
       - php-ldap
       - php-xml
       - php-gd
@@ -40,65 +40,65 @@
 - name: ITSM-NG - Install Fusion Inventory
   ansible.builtin.yum:
     pkg:
-      - itsm-ng-fusioninventory-{{ ITSM_NG_VERSION }}.*
+      - itsm-ng-fusioninventory-{{ ITSMNG_VERSION }}.*
   when:
     - ansible_distribution == 'CentOS'
-    - ITSM_PLUGIN == 'fusioninventory'
+    - ITSMNG_PLUGIN == 'fusioninventory'
 
 - name: ITSM-NG - Install Fusion Inventory
   ansible.builtin.apt:
     pkg:
-      - fusioninventory-for-itsm-ng={{ ITSM_NG_VERSION }}+*
+      - fusioninventory-for-itsm-ng={{ ITSMNG_VERSION }}+*
   when:
     - ansible_distribution == 'Debian'
-    - ITSM_PLUGIN == 'fusioninventory'
+    - ITSMNG_PLUGIN == 'fusioninventory'
 
 - name: ITSM-NG - Create database
   community.mysql.mysql_db:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBNAME }}'
+    name: '{{ ITSMNG_DBNAME }}'
     state: present
 
 - name: ITSM-NG - Create database user
   community.mysql.mysql_user:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBUSER }}'
-    password: '{{ ITSM_DBPASSWD }}'
+    name: '{{ ITSMNG_DBUSER }}'
+    password: '{{ ITSMNG_DBPASSWD }}'
     state: present
     priv:
-      '{{ ITSM_DBNAME }}.*:ALL'
+      '{{ ITSMNG_DBNAME }}.*:ALL'
   no_log: True
 
-- name: ITSM-NG - Reset ITSM_CHANGED variable
+- name: ITSM-NG - Reset ITSMNG_CHANGED variable
   ansible.builtin.set_fact:
-    ITSM_CHANGED: False
+    ITSMNG_CHANGED: False
 
 - name: ITSM-NG - Check if .dbinitialised is present
   ansible.builtin.stat:
     path: /var/lib/itsm-ng/.dbinitialised
   register: resdbinitialised
 
-- name: ITSM-NG - Set ITSM_DBINITIALISED if .dbinitialised is present
+- name: ITSM-NG - Set ITSMNG_DBINITIALISED if .dbinitialised is present
   ansible.builtin.set_fact:
-    ITSM_DBINITIALISED: True
+    ITSMNG_DBINITIALISED: True
   when:
     - resdbinitialised.stat.exists
 
 - name: ITSM-NG - Initialise database
-  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSM_DBHOST }} --db-port={{ ITSM_DBPORT }} --db-name {{ ITSM_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSMNG_DBHOST }} --db-port={{ ITSMNG_DBPORT }} --db-name {{ ITSMNG_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
-    - ITSM_DBINITIALISED is not defined
+    - ITSMNG_DBINITIALISED is not defined
   register: itsm_init
 
-- name: ITSM-NG - Register ITSM_CHANGED variable
+- name: ITSM-NG - Register ITSMNG_CHANGED variable
   ansible.builtin.set_fact:
-    ITSM_CHANGED: '{{ itsm_init.changed }}'
+    ITSMNG_CHANGED: '{{ itsm_init.changed }}'
   when:
     itsm_init.changed
 
@@ -107,18 +107,18 @@
     path: /var/lib/itsm-ng/.dbinitialised
     state: touch
   when:
-    - ITSM_CHANGED | bool
+    - ITSMNG_CHANGED | bool
 
 - name: ITSM-NG - Upgrade database if needed
   ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:update
 
 - name: ITSM-NG - Initialise database for Pulse
   community.mysql.mysql_query:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ ITSM_DBUSER }}'
-    login_password: '{{ ITSM_DBPASSWD }}'
-    login_db: '{{ ITSM_DBNAME }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
     query:
     - DELETE FROM glpi_users WHERE name NOT LIKE 'itsm-ng'
     - DELETE FROM glpi_profiles_users WHERE id NOT LIKE (SELECT id FROM glpi_users where name = 'itsm-ng')
@@ -127,42 +127,42 @@
     - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
     single_transaction: yes
   when:
-    - ITSM_CHANGED | bool
+    - ITSMNG_CHANGED | bool
     
 - name: ITSM-NG - Define password and enable token for root user
   community.mysql.mysql_query:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ ITSM_DBUSER }}'
-    login_password: '{{ ITSM_DBPASSWD }}'
-    login_db: '{{ ITSM_DBNAME }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
     query:
     - UPDATE glpi_users SET name = 'root' WHERE name = 'itsm-ng'
-    - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
-    - UPDATE glpi_users SET api_token = '{{ ITSM_ROOTUSER_APITOKEN }}' where name = 'root'
+    - UPDATE glpi_users SET password = MD5('{{ ITSMNG_ADMINPASSWD }}') where name = 'root'
+    - UPDATE glpi_users SET api_token = '{{ ITSMNG_ROOTUSER_APITOKEN }}' where name = 'root'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
     single_transaction: yes
   no_log: True
 
-- name: ITSM-NG - Enable {{ ITSM_PLUGIN }} plugin after db init
-  ansible.builtin.command: php /usr/share/itsm-ng/bin/console {{ item }} {{ ITSM_PLUGIN }}
+- name: ITSM-NG - Enable {{ ITSMNG_PLUGIN }} plugin after db init
+  ansible.builtin.command: php /usr/share/itsm-ng/bin/console {{ item }} {{ ITSMNG_PLUGIN }}
   with_items:
     - 'itsmng:plugin:install --username=root'
     - 'itsmng:plugin:activate'
   when:
-    - ITSM_CHANGED | bool
+    - ITSMNG_CHANGED | bool
 
 - name: ITSM-NG - Configure fusioninventory after db init
   community.mysql.mysql_query:
-    login_host: '{{ ITSM_DBHOST }}'
-    login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ ITSM_DBUSER }}'
-    login_password: '{{ ITSM_DBPASSWD }}'
-    login_db: '{{ ITSM_DBNAME }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
     query:
-    - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/glpi', transfers_id_auto = '1' WHERE id='1'
+    - UPDATE glpi_plugin_fusioninventory_entities SET agent_base_url = 'http://127.0.0.1/itsm-ng', transfers_id_auto = '1' WHERE id='1'
     - INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories')
     - UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname'
     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009')
@@ -171,8 +171,8 @@
     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-')
     - INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.')
   when:
-    - ITSM_CHANGED | bool
-    - ITSM_PLUGIN == 'fusioninventory'
+    - ITSMNG_CHANGED | bool
+    - ITSMNG_PLUGIN == 'fusioninventory'
 
 - name: ITSM-NG - Set owner of /var/lib/itsm-ng/files/_plugins/fusioninventory
   ansible.builtin.file:
@@ -181,7 +181,7 @@
     recurse: yes
     owner: '{{ APACHE_USER }}'
   when:
-    - ITSM_PLUGIN == 'fusioninventory'
+    - ITSMNG_PLUGIN == 'fusioninventory'
 
 - name: ITSM-NG - Make log file writable for all
   ansible.builtin.file:

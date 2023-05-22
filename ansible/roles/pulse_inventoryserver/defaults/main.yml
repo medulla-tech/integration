@@ -1,5 +1,6 @@
 SERVER_FQDN: '{{ ansible_fqdn }}'
-GLPI_BASEURL: 'http://{{ SERVER_FQDN }}/glpi'
+ITSM_TYPE: glpi # can be itsm-gn
+ITSM_BASEURL: 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}'
 # For using database on another server, define DBHOST
 DBHOST: localhost
 DBPORT: 3306

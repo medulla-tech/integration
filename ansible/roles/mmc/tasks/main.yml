@@ -250,9 +250,9 @@
     state: directory
 
 - name: MMC/GLPI - Create view for pulse
-  ansible.builtin.shell: mysql -h {{ GLPI_DBHOST }} -P {{ GLPI_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ CONTRIB_PATH }}/glpi-{{ GLPI_VERSION.split(".") | join("") }}.sql
+  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ CONTRIB_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
   when:
-    - GLPI_DBHOST == 'localhost'
+    - ITSM_DBHOST == 'localhost'
 
 - name: MMC - Configure referer
   ansible.builtin.lineinfile:
