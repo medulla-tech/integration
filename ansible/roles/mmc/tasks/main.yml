@@ -65,7 +65,7 @@
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
-    - PYTHON_VERSION == 2
+    - PYTHON_VERSION == "2"
 
 - name: MMC - Install mmc packages
   ansible.builtin.apt:
@@ -97,7 +97,7 @@
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
-    - PYTHON_VERSION == 3
+    - PYTHON_VERSION == "3"
 
 - name: MMC/APACHE - Enable pulse and mmc modules
   ansible.builtin.command: a2enconf {{ item }}
