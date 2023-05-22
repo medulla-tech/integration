@@ -88,9 +88,11 @@
 
 - name: MARIADB - Define root password
   community.mysql.mysql_user:
-    check_implicit_admin: True
+    login_unix_socket: /var/run/mysqld/mysqld.sock
     name: '{{ DBADMINUSER }}'
     password: '{{ DBADMINPASSWD }}'
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: MARIADB - Create .my.cnf
   ansible.builtin.template:
