@@ -29,7 +29,7 @@
   ansible.builtin.uri:
     url: "http://localhost/glpi/apirest.php/initSession"
     url_username: root
-    url_password: '{{ GLPI_ADMINPASSWD }}'
+    url_password: '{{ ITSM_ADMINPASSWD }}'
     force_basic_auth: yes
     method: GET
   register: json_session
@@ -40,7 +40,7 @@
   ansible.builtin.uri:
     url: "http://localhost/glpi/apirest.php/Entity/"
     url_username: root
-    url_password: '{{ GLPI_ADMINPASSWD }}'
+    url_password: '{{ ITSM_ADMINPASSWD }}'
     force_basic_auth: yes
     headers:
       Session-Token: '{{ json_session.json.session_token }}'
