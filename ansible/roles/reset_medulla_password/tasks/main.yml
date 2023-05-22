@@ -2,6 +2,26 @@
 #              Reset Medulla root password               #
 ##########################################################
 
+- name: RESET MEDULLA ROOT PASSWORD - Install required tools
+  ansible.builtin.yum:
+    pkg:
+      - python3-ldap
+      - python3-PyMySQL
+      - xmlstarlet
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: RESET MEDULLA ROOT PASSWORD - Install required tools
+  ansible.builtin.apt:
+    pkg:
+      - python3-pyldap
+      - python3-pymysql
+      - xmlstarlet
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: RESET MEDULLA ROOT PASSWORD - Reset LDAP admin user password
   community.general.ldap_passwd:
     dn: cn=admin,{{ LDAP_BASEDN }}
