@@ -6,7 +6,7 @@ IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 # Define PUBLIC_IP if main pulse server also has a public relay. TODO: Maybe this needs to go in another task
 PUBLIC_IP: ''
 GUACAMOLE_ROOT_PASSWORD: '' # GUACAMOLE_ROOT_PASSWORD comes from guacamole role
-GUACDBPASSWD: '{{ ROOT_PASSWORD }}'
+GUACDBPASSWD: '' # 12 character string. Must be vaulted
 CLIENTS_SSH_PORT: 22
 CLIENTS_VNC_PORT: 5900
 REVERSE_SSH_PORT: 22
