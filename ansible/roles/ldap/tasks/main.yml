@@ -7,6 +7,7 @@
   with_first_found:
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
+  ignore_errors: true
 
 - name: LDAP - Define parameters for debian
   ansible.builtin.debconf:
