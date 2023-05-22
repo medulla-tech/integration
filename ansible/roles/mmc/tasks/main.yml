@@ -38,34 +38,34 @@
   when:
     - ansible_distribution == 'CentOS'
 
- - name: MAINPULSE - Install mmc packages
-   apt:
-     state: latest
-     pkg:
-       - pulse2
-       - mmc-web-dashboard
-       - python-mmc-dashboard
-       - mmc-web-glpi
-       - python-mmc-glpi
-       - mmc-web-ppolicy
-       - python-mmc-ppolicy
-       - mmc-web-services
-       - python-mmc-services
-       - mmc-web-support
-       - python-mmc-support
-       - mmc-web-xmppmaster
-       - python-mmc-xmppmaster
-       - python-mmc-guacamole
-       - pulse-xmppmaster-agentplugins
-       - pulse-xmpp-agent-relay
-       - pulse-agent-installers
-       - pulse-xmpp-master-substitute
-       - pulse-update-manager
-       - pulse2-uuid-resolver
-       - pulse-debug-tools
-   when:
-     - ansible_distribution == 'Debian'
-     - PYTHON_VERSION == 2
+- name: MMC - Install mmc packages
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - pulse2
+      - mmc-web-dashboard
+      - python-mmc-dashboard
+      - mmc-web-glpi
+      - python-mmc-glpi
+      - mmc-web-ppolicy
+      - python-mmc-ppolicy
+      - mmc-web-services
+      - python-mmc-services
+      - mmc-web-support
+      - python-mmc-support
+      - mmc-web-xmppmaster
+      - python-mmc-xmppmaster
+      - python-mmc-guacamole
+      - pulse-xmppmaster-agentplugins
+      - pulse-xmpp-agent-relay
+      - pulse-agent-installers
+      - pulse-xmpp-master-substitute
+      - pulse-update-manager
+      - pulse2-uuid-resolver
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'Debian'
+    - PYTHON_VERSION == 2
 
 - name: MMC - Install mmc packages
   ansible.builtin.apt:
@@ -97,7 +97,7 @@
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
-     - PYTHON_VERSION == 3
+    - PYTHON_VERSION == 3
 
 - name: MMC/APACHE - Enable pulse and mmc modules
   ansible.builtin.command: a2enconf {{ item }}
