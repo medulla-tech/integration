@@ -7,7 +7,8 @@
     state: latest
     pkg:
       - curl
-      - crudini>=0.9
+      - crudini
+      - python3-mysql
   when:
     - ansible_distribution == 'CentOS'
 
@@ -16,7 +17,7 @@
     state: latest
     pkg:
       - curl
-      - crudini>=0.9
+      - crudini
       - python3-mysqldb
   when:
     - ansible_distribution == 'Debian'
