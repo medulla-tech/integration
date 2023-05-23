@@ -109,8 +109,15 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: MMC/LDAP - Check if mmc schema is already present in directory
+  ansible.builtin.command: "ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config -LLL '(&(objectclass=olcSchemaConfig)(cn=*mmc))'"
+  register: res_ldapsearch
+  ignore_errors: true
+
 - name: MMC/LDAP - Import mmc schemas to ldap server
   ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
+  when:
+    - res_ldapsearch.stdout | length == 0
 
 - name: MMC/PKI - Configure certificates in mmc-agent and inventory server
   ansible.builtin.copy:
