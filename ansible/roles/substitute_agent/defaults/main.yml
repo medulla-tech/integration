@@ -1,3 +1,4 @@
+PULSEMAIN_IP: ''
 XMPP_DOMAIN: '{{ ansible_hostname }}'
 XMPP_MASTER_PASSWORD: '' # 12 character string. Must be vaulted
 SERVER_FQDN: '{{ ansible_fqdn }}'
