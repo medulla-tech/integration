@@ -69,10 +69,9 @@
     - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Force relay to re-register in case of upgrade
-  ansible.builtin.copy:
-    content: ''
+  ansible.builtin.file:
     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION'
-    force: no
+    state: touch
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
