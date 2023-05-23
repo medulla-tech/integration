@@ -92,8 +92,8 @@
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
     query:
-     - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ res_querymaxshareid.query_result[0][0].id + 1 }}, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
-     - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', {{ res_querymaxshareid.query_result[0][0].id + 1 }})
+      - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ res_querymaxshareid.query_result[0][0].id + 1 }}, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', {{ res_querymaxshareid.query_result[0][0].id + 1 }})
   when: 
     - res_queryshareid.rowcount[0] == 0
 

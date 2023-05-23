@@ -325,9 +325,9 @@
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
     query:
-     - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
-     - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
-     - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
+      - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
 
 - name: MMC/GRAFANA - Configure grafana data source
   ansible.builtin.uri:
