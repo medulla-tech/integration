@@ -10,8 +10,8 @@
     - ldap
     - mariadb
     - ejabberd
-    - syncthing_discosrv
-    - syncthing_relay
+    #- syncthing_discosrv
+    #- syncthing_relay
     - syncthing
     - urbackup
     - ssh
