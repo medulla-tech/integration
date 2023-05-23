@@ -350,8 +350,9 @@
 
 - name: CERT - Copy medulla-ca-chain.cert.pem to clients folder
   ansible.builtin.copy:
-    remote_src: '{{ PKI_PATH }}/ca-chain.cert.pem'
+    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
     dest: /var/lib/pulse2/clients/medulla-ca-chain.cert.pem
+    remote_src: true
   when:
     - PKI_SERVER == 'localhost'
 
