@@ -133,6 +133,16 @@
     - /etc/mmc/pulse2/package-server/keys/cacert.pem
     - /etc/mmc/pulse2/package-server/keys/privkey.pem
 
+- name: MMC/EJABBERD - Register master account for mmc-agent
+  community.general.ejabberd_user:
+    username: master
+    host: '{{ XMPP_DOMAIN }}'
+    password: '{{ XMPP_MASTER_PASSWORD }}'
+  notify:
+    - MMC - Restart mmc-agent
+  when:
+    - PYTHON_VERSION == 2
+
 - name: MMC/EJABBERD - Register master account for master substitute
   community.general.ejabberd_user:
     username: master
@@ -140,6 +150,8 @@
     password: '{{ XMPP_MASTER_PASSWORD }}'
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
+  when:
+    - PYTHON_VERSION == 3
 
 - name: MMC - Reset PULSEDB_CHANGED variable
   ansible.builtin.set_fact:
@@ -280,6 +292,8 @@
     backup: yes
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
+  when:
+    - PYTHON_VERSION == 3
 
 - name: MMC - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
@@ -357,3 +371,5 @@
     state: started
     enabled: yes
     masked: no
+  when:
+    - PYTHON_VERSION == 3

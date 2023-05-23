@@ -192,6 +192,7 @@
     state: restarted
   when:
     - XMPP_DOMAIN == 'pulse'
+    - PYTHON_VERSION == 3
     
 - name: SUBSTITUTE_AGENT - Ensure service is running
   ansible.builtin.systemd:
