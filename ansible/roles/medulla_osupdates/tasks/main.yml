@@ -79,7 +79,7 @@
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
     query:
-     - SELECT MAX(id) as id FROM cluster_ars
+     - SELECT MAX(id) as id FROM pkgs_shares
   register: res_querymaxshareid
   when: 
     - res_queryshareid.rowcount[0] == 0
