@@ -163,7 +163,7 @@
 - name: SUBSTITUTE_AGENT - Copy mmc agent keys to substitutes folder
   ansible.builtin.copy:
     src: /tmp/{{ item }}
-    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/{{ item }}'
+    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
   with_items:
     - master-public-RSA.key
     - master-all-RSA.key
@@ -173,7 +173,7 @@
 - name: SUBSTITUTE_AGENT - Copy mmc agent keys to substitutes folder
   ansible.builtin.copy:
     src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
-    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/{{ item }}'
+    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
     remote_src: true
   with_items:
     - master-public-RSA.key

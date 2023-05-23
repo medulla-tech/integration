@@ -50,7 +50,7 @@
 - name: CERT - Copy pulse-ca-chain.cert.pem to add to ca certs
   ansible.builtin.copy:
     src: /tmp/pulse-ca-chain.cert.pem
-    dest: '{{ CACERTS_PATH }}'
+    dest: '{{ CACERTS_PATH }}/'
   when:
     - PKI_SERVER != 'localhost'
 

@@ -1,1 +1,1 @@
-CACERTS_PATH: /etc/pki/ca-trust/source/anchors/
+CACERTS_PATH: /etc/pki/ca-trust/source/anchors
