@@ -7,7 +7,7 @@
     state: latest
     pkg:
       - curl
-      - python3-mysql
+      - crudini>=0.9
   when:
     - ansible_distribution == 'CentOS'
 
@@ -16,19 +16,8 @@
     state: latest
     pkg:
       - curl
+      - crudini>=0.9
       - python3-mysqldb
-  when:
-    - ansible_distribution == 'Debian'
-
-- name: MEDULLA_OSUPDATES - Install crudini >= 0.9
-  ansible.builtin.yum:
-    pkg: crudini>=0.9
-  when:
-    - ansible_distribution == 'CentOS'
-
-- name: MEDULLA_OSUPDATES - Install crudini >= 0.9
-  ansible.builtin.apt:
-    pkg: crudini>=0.9
   when:
     - ansible_distribution == 'Debian'
 
