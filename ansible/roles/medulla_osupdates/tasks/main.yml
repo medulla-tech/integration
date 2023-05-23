@@ -9,6 +9,7 @@
       - curl
       - crudini
       - python3-mysql
+      - at
   when:
     - ansible_distribution == 'CentOS'
 
@@ -19,6 +20,7 @@
       - curl
       - crudini
       - python3-mysqldb
+      - at
   when:
     - ansible_distribution == 'Debian'
 
@@ -112,6 +114,9 @@
     user: root
     job: "/usr/sbin/medulla-generate-winupdate-packages 2>&1 | tee -a /tmp/medulla-generate-winupdate-packages.log"
 
-- name: MEDULLA_OSUPDATES - Generate the update packages
-  ansible.builtin.shell:
-    cmd: /usr/sbin/medulla-generate-winupdate-packages 2>&1 | tee -a /tmp/medulla-generate-winupdate-packages.log
+- name: MEDULLA_OSUPDATES - Schedule the generation of the update packages in 30 minutes
+  ansible.posix.at:
+    command: /usr/sbin/medulla-generate-winupdate-packages 2>&1 | tee -a /tmp/medulla-generate-winupdate-packages.log
+    count: 30
+    units: minutes
+    unique: true
