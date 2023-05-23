@@ -250,7 +250,7 @@
     state: directory
 
 - name: MMC/GLPI - Create view for pulse
-  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ CONTRIB_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
+  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ ITSM_VIEW_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
   when:
     - ITSM_DBHOST == 'localhost'
 
