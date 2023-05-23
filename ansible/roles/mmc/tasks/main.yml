@@ -227,6 +227,20 @@
   when:
     - PULSEDB_CHANGED | bool
 
+- name: MMC - Update database schemas
+  ansible.builtin.command: 'pulse2-dbupdate --user={{ DBADMINUSER }} --password={{ DBADMINPASSWD }} --host={{ DBHOST }} --port={{ DBPORT }} --db={{ item }}'
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+    - urbackup
+    - updates
+
 - name: MMC - Check if already configured
   ansible.builtin.stat: 
     path: /etc/mmc/plugins/base.ini.local
