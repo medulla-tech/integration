@@ -23,3 +23,4 @@ ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 SUBS_LONG_TYPE: '' # can be assessor, registration, inventory, subscription, logger, monitoring, reconfigurator, updates. master substitute is managed by mmc role
 # SUBS_NAME can be forced by defining the variable. Else it is calculated
 SUBS_NAME: '' #eg registration3
+PYTHON_VERSION: 3

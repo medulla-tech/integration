@@ -148,7 +148,7 @@
   when:
     - SUBS_LONG_TYPE == 'updates' or SUBS_NAME.startswith('updates')
 
-- name: SUBSTITUTE_AGENT - Fetch mmc agent keys from mmc
+- name: SUBSTITUTE_AGENT - Fetch master agent keys from mmc
   ansible.builtin.fetch:
     src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
     dest: /tmp/{{ item }}
@@ -159,8 +159,9 @@
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 2
 
-- name: SUBSTITUTE_AGENT - Copy mmc agent keys to substitutes folder
+- name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
   ansible.builtin.copy:
     src: /tmp/{{ item }}
     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
@@ -169,8 +170,9 @@
     - master-all-RSA.key
   when:
     - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 2
 
-- name: SUBSTITUTE_AGENT - Copy mmc agent keys to substitutes folder
+- name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
   ansible.builtin.copy:
     src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
@@ -180,6 +182,7 @@
     - master-all-RSA.key
   when:
     - PULSEMAIN_IP == ''
+    - PYTHON_VERSION == 2
     
 - name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account
   community.general.ejabberd_user:
