@@ -151,6 +151,21 @@
     - { src: bootmenus_stignore, dest: /var/lib/pulse2/imaging/bootmenus/.stignore }
     - { src: downloads_stignore, dest: /var/lib/pulse2/clients/.stignore }
 
+- name: SYNCTHING - Reset STCONF_CHANGED variable
+  ansible.builtin.set_fact:
+    STCONF_CHANGED: False
+
+- name: SYNCTHING - Check if .confinitialised is present
+  ansible.builtin.stat:
+    path: /var/lib/syncthing/.confinitialised
+  register: resconfinitialised
+
+- name: SYNCTHING - Set SYNCTHING_CONFINITIALISED if .confinitialised is present
+  ansible.builtin.set_fact:
+    SYNCTHING_CONFINITIALISED: True
+  when:
+    - resconfinitialised.stat.exists
+
 - name: SYNCTHING - Configure syncthing
   ansible.builtin.template:
     src: '{{ item.src }}'
@@ -161,8 +176,24 @@
   with_items:
     - { src: config.xml.j2, inst: syncthing }
     - { src: config-depl.xml.j2, inst: syncthing-depl }
+  when:
+    - SYNCTHING_CONFINITIALISED is not defined
+  register: conf_init
   notify:
     - SYNCTHING - Restart syncthing
+
+- name: SYNCTHING - Register STCONF_CHANGED variable
+  ansible.builtin.set_fact:
+    STCONF_CHANGED: '{{ conf_init.changed }}'
+  when:
+    conf_init.changed
+
+- name: SYNCTHING - Set marker for syncthing initialisation
+  ansible.builtin.file:
+    path: /var/lib/syncthing/.confinitialised
+    state: touch
+  when:
+    - STCONF_CHANGED | bool
 
 - name: SYNCTHING - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
