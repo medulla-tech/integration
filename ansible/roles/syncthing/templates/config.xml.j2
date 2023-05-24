@@ -143,6 +143,37 @@
         <disableFsync>false</disableFsync>
         <blockPullOrder>standard</blockPullOrder>
     </folder>
+{% if PULSEMAIN_DEVICE_ID != '' %}
+    <folder id="pulsemaster_winupdates" label="winupdates" path="/var/lib/pulse2/packages/sharing/winupdates/" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
+{% else %}
+    <folder id="pulsemaster_winupdates" label="winupdates" path="/var/lib/pulse2/packages/sharing/winupdates/" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
+{% endif %}
+        <filesystemType>basic</filesystemType>
+        <device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""></device>
+{% if PULSEMAIN_DEVICE_ID != '' %}
+        <device id="{{ PULSEMAIN_DEVICE_ID }}" introducedBy=""></device>
+{% endif %}
+        <minDiskFree unit="%">1</minDiskFree>
+        <versioning></versioning>
+        <copiers>0</copiers>
+        <pullerMaxPendingKiB>0</pullerMaxPendingKiB>
+        <hashers>0</hashers>
+        <order>random</order>
+        <ignoreDelete>false</ignoreDelete>
+        <scanProgressIntervalS>0</scanProgressIntervalS>
+        <pullerPauseS>0</pullerPauseS>
+        <maxConflicts>0</maxConflicts>
+        <disableSparseFiles>false</disableSparseFiles>
+        <disableTempIndexes>false</disableTempIndexes>
+        <paused>false</paused>
+        <weakHashThresholdPct>25</weakHashThresholdPct>
+        <markerName>.stfolder</markerName>
+        <copyOwnershipFromParent>false</copyOwnershipFromParent>
+        <modTimeWindowS>0</modTimeWindowS>
+        <maxConcurrentWrites>0</maxConcurrentWrites>
+        <disableFsync>false</disableFsync>
+        <blockPullOrder>standard</blockPullOrder>
+    </folder>
     <gui enabled="true" tls="false" debugging="false">
         <address>127.0.0.1:8384</address>
         <apikey>{{ STAPIKEY }}</apikey>
