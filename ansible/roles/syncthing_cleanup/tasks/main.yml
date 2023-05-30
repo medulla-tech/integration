@@ -8,6 +8,12 @@
     - syncthing-depl
   ignore_errors: true
 
+- name: SYNCTHING - Stop medulla relay service for deleting any previous configuration
+  ansible.builtin.systemd:
+    name: pulse-xmpp-agent-relay
+    state: stopped
+  ignore_errors: true
+
 - name: SYNCTHING - Reset syncthing
   ansible.builtin.file:
     path: '{{ item }}'
