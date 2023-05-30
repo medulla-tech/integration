@@ -17,3 +17,8 @@
     - '/var/lib/syncthing/Sync'
     - '/var/lib/syncthing-depl/.config'
     - '/var/lib/syncthing-depl/Sync'
+
+- name: SYNCTHING - Delete configuration initialisation marker
+  ansible.builtin.file:
+    path: /var/lib/syncthing/.confinitialised
+    state: absent
