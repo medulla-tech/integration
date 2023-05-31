@@ -1,7 +1,8 @@
 SERVER_FQDN: '{{ ansible_fqdn }}'
 DRIVERS_PASSWORD: '' # 12 character string. Must be vaulted
 DRIVERS_FOLDER: /var/lib/pulse2/imaging/postinst/sysprep/drivers
-ITSM_TYPE: glpi # can be itsm-ng
+ITSM_TYPE: glpi # can be glpi or itsm-ng
+GLPI_PLUGIN: glpiinventory # can be glpiinventory or fusioninventory
 ITSM_DBHOST: localhost
 ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi

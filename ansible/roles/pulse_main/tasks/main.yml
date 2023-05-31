@@ -72,10 +72,13 @@
 
 - name: PULSE/AGENT - Configure the agent updatebackupclient plugin
   ansible.builtin.template:
-    src: updatebackupclient.ini.j2
-    dest: /var/lib/pulse2/clients/config/updatebackupclient.ini
+    src: '{{ item }}.ini.j2'
+    dest: '/var/lib/pulse2/clients/config/{{ item }}.ini'
     mode: '0644'
     backup: yes
+  with_items:
+    - updatebackupclient
+    - inventory
 
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
