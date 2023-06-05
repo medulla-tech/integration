@@ -1,0 +1,62 @@
+##########################################################
+#          Specific settings for SIVEO dev team          #
+##########################################################
+
+- name: SIVEODEV - Install a few interesting tools
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - vim
+      - htop
+      - less
+      - open-vm-tools
+      - curl
+      - wget
+    update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SIVEODEV - Set timezone to Europe\Paris
+  community.general.timezone:
+    name: Europe/Paris
+
+- name: SIVEODEV - Add all users ssh keys to root account
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: '{{ item }}'
+  with_file:
+    - support@argo.pub
+    - jfk@jfk-ThinkPad-T530.pub
+    - noel@MacBook-Air.pub
+    - noel@orchestra.pub
+    - neoclust@localhost.pub
+    - spointu@macbook.pub
+    - yvan@sparkle.pub
+    - yvan@falaou.pub
+    - yvan@rider.pub
+    - William@LAPTOP-76SPQQ11.pub
+    - root@WILLIAMSIVEO.pub
+    - lucas@nblucas.pub
+    - xdrien@nbadrien.pub
+
+- name: SIVEODEV - Set permissions for Workbench
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    host_all: true
+    append_privs: true
+    priv: '*.*:ALL'
+  no_log: True
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: SIVEODEV - Install python modules needed for deploy_pulse_files_from_git.py
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pip
+      - python3-git
+  when:
+    - ansible_distribution == 'Debian'

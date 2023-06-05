@@ -38,6 +38,7 @@
     - medulla_osupdates
     - pulse_main
     - security
+    - siveodev
 
   # tasks:
   #   - name: SUBSTITUTE_AGENT - Find out name of substitute
