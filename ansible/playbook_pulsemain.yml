@@ -37,6 +37,7 @@
     - pulse_imaging
     - medulla_osupdates
     - pulse_main
+    - security
 
   # tasks:
   #   - name: SUBSTITUTE_AGENT - Find out name of substitute
