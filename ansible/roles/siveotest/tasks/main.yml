@@ -1,0 +1,67 @@
+##########################################################
+#          Specific settings for SIVEO test env          #
+##########################################################
+
+- name: SIVEOTEST/SUBSTITUTE_AGENT - Find current number of substitutes
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT COUNT( DISTINCT jidsubtitute ) AS nb_subs FROM substituteconf  WHERE type = 'assessor'
+  register: res_query
+  when:
+    - XMPP_DOMAIN == 'pulse'
+
+- name: SIVEOTEST/SUBSTITUTE_AGENT - Create a second set of substitutes
+  ansible.builtin.include_role:
+    name: substitute_agent
+  with_items:
+    - subscription
+    - assessor
+    - inventory
+    - registration
+    - logger
+    - deployment
+    - monitoring
+    - reconfigurator
+    - updates
+  vars:
+    SUBS_LONG_TYPE: '{{ item }}'
+  when:
+    - res_query.query_result[0][0].nb_subs == '1'
+
+- name: SIVEOTEST/TEAMS_USERS - Create teams and users
+  ansible.builtin.include_role:
+    name: create_teams
+  with_items:
+    - { team: 'MainAdmins', user: 'spo' }
+    - { team: 'MainAdmins', user: 'nle' }
+    - { team: 'RelayAdmins', user: 'wva' }
+    - { team: 'RelayAdmins', user: 'kno' }
+  vars:
+    TEAM_NAME: '{{ item.team }}'
+    USER_REGEX: '{{ item.user }}'
+  when:
+    - XMPP_DOMAIN == 'pulse'
+
+- name: SIVEOTEST/TEAMS_USERS - Authenticate user to baseldap
+  ansible.builtin.command: crudini --set --list --list-sep=  /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ item.team }}-{{ item.user }}'
+  with_items:
+    - { team: 'MainAdmins', user: 'spo' }
+    - { team: 'MainAdmins', user: 'nle' }
+    - { team: 'RelayAdmins', user: 'wva' }
+    - { team: 'RelayAdmins', user: 'kno' }
+
+- name: SIVEOTEST/TEAMS_USERS - Exlude user from externalldap authentication
+  ansible.builtin.command: crudini --set --list --list-sep=  /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ item.team }}-{{ item.user }}'
+  with_items:
+    - { team: 'MainAdmins', user: 'spo' }
+    - { team: 'MainAdmins', user: 'nle' }
+    - { team: 'RelayAdmins', user: 'wva' }
+    - { team: 'RelayAdmins', user: 'kno' }
+
+- name: SIVEOTEST/TEAMS_USERS - Define ACL for Technician profile
+  ansible.builtin.command: crudini --set /etc/mmc/plugins/glpi.ini.local provisioning_glpi profile_acl_Technician '{{ TECHNICIAN_ACL }}'
