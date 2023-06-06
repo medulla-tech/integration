@@ -58,7 +58,7 @@
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ ITSM_DBUSER }}'
     password: '{{ ITSM_DBPASSWD }}'
-    host: '{{ IP_ADDRESS }}'
+    host: '{{ XMPP_DOMAIN }}'
     state: present
     append_privs: true
     priv:
@@ -111,7 +111,7 @@
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ DBUSER }}'
     password: "{{ DBPASSWORD }}"
-    host: '{{ IP_ADDRESS }}'
+    host: '{{ XMPP_DOMAIN }}'
     state: present
     append_privs: true
     priv:
@@ -349,7 +349,7 @@
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ ITSM_DBUSER }}'
-    host: '{{ IP_ADDRESS }}'
+    host: '{{ XMPP_DOMAIN }}'
     state: absent
   vars:
     ansible_ssh_user: root
@@ -367,7 +367,7 @@
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ DBUSER }}'
-    host: '{{ IP_ADDRESS }}'
+    host: '{{ XMPP_DOMAIN }}'
     state: absent
   vars:
     ansible_ssh_user: root
