@@ -1470,14 +1470,17 @@
      - ansible_distribution == 'CentOS'
 
  - name: GUACAMOLE - Define guacamole root user password in database
-   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
-   when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '11'
-
- - name: GUACAMOLE - Define guacamole root user password in database
-   command: mysql -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' guacamole -e "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('{{ GUACAMOLE_ROOT_PASSWORD }}', HEX(@salt)), 256)) WHERE user_id=1"
-   when:
-     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+   community.mysql.mysql_query:
+     login_db: guacamole
+     login_user: '{{ DBADMINUSER }}'
+     login_password: '{{ DBADMINPASSWD }}'
+     query:
+     - UPDATE guacamole_entity SET name = 'root' WHERE entity_id = 1
+     - SET @salt = UNHEX(SHA2(UUID(), 256))
+     - UPDATE guacamole_user SET password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT(%(guac_root_pw)s, HEX(@salt)), 256)) WHERE user_id=1
+     single_transaction: yes
+     named_args:
+       guac_root_pw: '{{ GUACAMOLE_ROOT_PASSWORD }}'
 
  - name: GUACAMOLE - Create /etc/guacamole/lib/
    file:
