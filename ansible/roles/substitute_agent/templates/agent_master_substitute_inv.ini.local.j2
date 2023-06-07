@@ -2,6 +2,10 @@
 server = {{ IP_ADDRESS }}
 password = {{ XMPP_MASTER_PASSWORD }}
 
+[glpi]
+enable_forward = True
+url_to_forward = {{ ITSM_BASEURL }}/plugins/{{ GLPI_PLUGIN }}/front/plugin_fusioninventory.communication.php
+
 [glpidatabase]
 glpi_dbhost = {{ ITSM_DBHOST }}
 glpi_dbport = {{ ITSM_DBPORT }}
