@@ -37,6 +37,14 @@
   when:
     - ansible_distribution == 'CentOS'
 
+- name: BACKUP - Do not broadcast on local network
+  ansible.builtin.lineinfile:
+    dest: /etc/default/{{ URBACKUP_DAEMON }}
+    line: INTERNET_ONLY=true
+    regexp: '^INTERNET_ONLY=.*$'
+  notify:
+    - BACKUP - Restart urbackup
+
 - name: BACKUP - Configure apache for pulse backup
   ansible.builtin.copy:
     src: urbackup.conf
