@@ -8,10 +8,6 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
-- name: GUACAMOLE - Generate GUACAMOLE_ROOT_PASSWORD
-  ansible.builtin.set_fact:
-    GUACAMOLE_ROOT_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
-
 - name: GUACAMOLE - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
