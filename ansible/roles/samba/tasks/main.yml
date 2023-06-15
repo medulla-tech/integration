@@ -41,23 +41,11 @@
   notify:
     - SAMBA - Restart samba
 
- - name: SAMBA - Define Samba root password
-   shell: >
-     (pdbedit --user=root 2>&1 > /dev/null)
-     || (echo '{{ ROOT_PASSWORD }}'; echo '{{ ROOT_PASSWORD }}')
-     | smbpasswd -s -a root
-
- - name: SAMBA - Create user drivers with no home and group
-   user:
-     name: drivers
-     shell: /bin/false
-
- - name: SAMBA - Define Samba drivers password
-   shell: >
-     (pdbedit --user=drivers 2>&1 > /dev/null)
-     || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
-     | smbpasswd -s -a drivers
-
+- name: SAMBA - Define Samba root password
+  shell: >
+    (pdbedit --user=root 2>&1 > /dev/null)
+    || (echo '{{ ROOT_PASSWORD }}'; echo '{{ ROOT_PASSWORD }}')
+    | smbpasswd -s -a root
 
 - name: SAMBA - Ensure samba is running
   ansible.builtin.systemd:
