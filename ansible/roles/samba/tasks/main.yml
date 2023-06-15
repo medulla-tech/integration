@@ -42,7 +42,7 @@
     - SAMBA - Restart samba
 
 - name: SAMBA - Define Samba root password
-  shell: >
+  ansible.builtin.shell: >
     (pdbedit --user=root 2>&1 > /dev/null)
     || (echo '{{ ROOT_PASSWORD }}'; echo '{{ ROOT_PASSWORD }}')
     | smbpasswd -s -a root
