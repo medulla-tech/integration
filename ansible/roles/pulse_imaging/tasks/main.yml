@@ -150,3 +150,14 @@
     dest: /etc/drbl/drbl-ocs.conf
     line: udp_sender_extra_opt_default="--log /tmp/udp-sender.log -b 1024"
     regexp: '^udp_sender_extra_opt_default=.*$'
+
+- name: PULSE_IMAGING - Create user drivers with no home and group
+  user:
+    name: drivers
+    shell: /bin/false
+
+- name: PULSE_IMAGING - Define Samba drivers password
+  shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
