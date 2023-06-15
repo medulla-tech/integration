@@ -141,8 +141,16 @@
   notify:
     - PULSE - Restart samba
 
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+
 - name: PULSE/IMAGING - Define Samba drivers Password
-  ansible.builtin.command: echo -ne "{{ DRIVERS_PASSWORD }}\n{{ DRIVERS_PASSWORD }}\n" | smbpasswd -a -s drivers
+  ansible.builtin.shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
 
 - name: PULSE/IMAGING - Update entity in Imaging
   community.mysql.mysql_query:
