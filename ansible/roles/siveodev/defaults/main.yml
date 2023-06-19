@@ -1,3 +1,4 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PULSEMAIN_IP: ''
+DB_ALLOWED_IPS: [{'name': 'BuildNew', 'ip': '10.10.0.105'}]
