@@ -59,7 +59,7 @@
   with_items:
     - "{{ ansible_interfaces }}"
 
-- name: SECURITY/IPTABLES - Allow inbound established,related traffic on public interface
+- name: SECURITY/IPTABLES - Allow inbound tcp established,related traffic on public interface
   ansible.builtin.iptables:
     chain: INPUT
     protocol: tcp
@@ -70,7 +70,7 @@
     - PUBLIC_INTERFACE_NAME is defined
     - PUBLIC_INTERFACE_NAME != '' 
 
-- name: SECURITY/IPTABLES - Allow outbound established,related traffic on public interface
+- name: SECURITY/IPTABLES - Allow outbound tcp established,related traffic on public interface
   ansible.builtin.iptables:
     chain: OUTPUT
     protocol: tcp
@@ -81,7 +81,7 @@
     - PUBLIC_INTERFACE_NAME is defined
     - PUBLIC_INTERFACE_NAME != '' 
 
-- name: SECURITY/IPTABLES - Allow specific ports in on public interface
+- name: SECURITY/IPTABLES - Allow specific tcp ports in on public interface
   ansible.builtin.iptables:
     chain: INPUT
     protocol: tcp
@@ -99,7 +99,7 @@
     - PUBLIC_INTERFACE_NAME is defined
     - PUBLIC_INTERFACE_NAME != '' 
 
-- name: SECURITY/IPTABLES - Allow specific ports out on public interface
+- name: SECURITY/IPTABLES - Allow specific tcp ports out on public interface
   ansible.builtin.iptables:
     chain: OUTPUT
     protocol: tcp
@@ -116,6 +116,19 @@
     - '3306'
     - '5269'
     - '9999'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Allow specific udp ports out on public interface
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: udp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items:
+    - '123'
   when:
     - PUBLIC_INTERFACE_NAME is defined
     - PUBLIC_INTERFACE_NAME != '' 
