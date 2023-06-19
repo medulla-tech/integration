@@ -250,6 +250,7 @@
     - { type: 'logger', jid: 'master_log@pulse' }
     - { type: 'monitoring', jid: 'master_mon@pulse' }
     - { type: 'deployment', jid: 'master_depl@pulse' }
+    - { type: 'updates', jid: 'master_upd@pulse' }
 
 - name: RELAY_AGENT - Remove user connection to db from relay
   community.mysql.mysql_user:
