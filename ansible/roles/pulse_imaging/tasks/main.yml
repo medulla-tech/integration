@@ -138,15 +138,28 @@
   when:
     - ansible_distribution == 'Debian'
 
-- name: PULSE_IMAGING - Link /home/partimag to masters folder
-  ansible.builtin.file:
-    src: /var/lib/pulse2/imaging/masters
-    dest: /home/partimag
-    state: link
-    force: yes
-
 - name: PULSE_IMAGING - Configure UDP Sender
   ansible.builtin.lineinfile:
     dest: /etc/drbl/drbl-ocs.conf
     line: udp_sender_extra_opt_default="--log /tmp/udp-sender.log -b 1024"
     regexp: '^udp_sender_extra_opt_default=.*$'
+
+- name: PULSE_IMAGING - Create isc-dhcp-server file to trick Clonezilla
+  ansible.builtin.template:
+    src: isc-dhcp-server.j2
+    dest: /etc/default/isc-dhcp-server
+    mode: '0644'
+    backup: yes
+
+- name: PULSE_IMAGING - Create files and folders needed to trick Clonezilla
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: '{{ item.state }}'
+    mode: '{{ item.mode }}'
+    src: '{{ item.src }}'
+    backup: yes
+  with_items:
+    - { path: '/etc/dhcp/dhcpd.conf', state: 'touch', mode: '0644', src: '' }
+    - { path: '/tftpboot/nodes/127.0.0.1', state: 'directory', mode: '0755', src: '' }
+    - { path: '/tftpboot/nbi_img', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/bootloader' }
+    - { path: '/home/partimag', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/masters' }
