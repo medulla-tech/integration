@@ -155,16 +155,16 @@
   ansible.builtin.set_fact:
     STCONF_CHANGED: False
 
-- name: SYNCTHING - Check if .confinitialised is present
+- name: SYNCTHING - Check if .dbinitialised is present
   ansible.builtin.stat:
-    path: /var/lib/syncthing/.confinitialised
-  register: resconfinitialised
+    path: /var/lib/syncthing/.dbinitialised
+  register: resdbinitialised
 
-- name: SYNCTHING - Set SYNCTHING_CONFINITIALISED if .confinitialised is present
+- name: SYNCTHING - Set SYNCTHING_DBINITIALISED if .dbinitialised is present
   ansible.builtin.set_fact:
-    SYNCTHING_CONFINITIALISED: True
+    SYNCTHING_DBINITIALISED: True
   when:
-    - resconfinitialised.stat.exists
+    - resdbinitialised.stat.exists
 
 - name: SYNCTHING - Configure syncthing
   ansible.builtin.template:
@@ -177,7 +177,7 @@
     - { src: config.xml.j2, inst: syncthing }
     - { src: config-depl.xml.j2, inst: syncthing-depl }
   when:
-    - SYNCTHING_CONFINITIALISED is not defined
+    - SYNCTHING_DBINITIALISED is not defined
   register: conf_init
   notify:
     - SYNCTHING - Restart syncthing
@@ -190,7 +190,7 @@
 
 - name: SYNCTHING - Set marker for syncthing initialisation
   ansible.builtin.file:
-    path: /var/lib/syncthing/.confinitialised
+    path: /var/lib/syncthing/.dbinitialised
     state: touch
   when:
     - STCONF_CHANGED | bool

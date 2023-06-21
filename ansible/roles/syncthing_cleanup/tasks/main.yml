@@ -26,5 +26,5 @@
 
 - name: SYNCTHING - Delete configuration initialisation marker
   ansible.builtin.file:
-    path: /var/lib/syncthing/.confinitialised
+    path: /var/lib/syncthing/.dbinitialised
     state: absent
