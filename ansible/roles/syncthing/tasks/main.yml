@@ -139,6 +139,7 @@
     - /var/lib/pulse2/xmpp_baseremoteagent
     - /var/lib/pulse2/packages/sharing/global
     - /var/lib/pulse2/packages/sharing/winupdates
+    - /var/lib/pulse2/imaging/postinst
 
 - name: SYNCTHING - Create stignore files
   ansible.builtin.copy:
