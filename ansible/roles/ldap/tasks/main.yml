@@ -30,6 +30,7 @@
     state: latest
     pkg:
       - ldap-server
+      - python3-pyldap
   when:
     - ansible_distribution == 'Debian'
 
