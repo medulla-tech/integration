@@ -48,7 +48,7 @@
     - XMPP_DOMAIN == 'pulse'
 
 - name: SIVEOTEST/TEAMS_USERS - Authenticate user to baseldap
-  ansible.builtin.command: crudini --set --list --list-sep=  /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ item.team }}-{{ item.user }}'
+  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ item.team }}-{{ item.user }}'
   with_items:
     - { team: 'MainAdmins', user: 'spo' }
     - { team: 'MainAdmins', user: 'nle' }
@@ -56,7 +56,7 @@
     - { team: 'RelayAdmins', user: 'kno' }
 
 - name: SIVEOTEST/TEAMS_USERS - Exlude user from externalldap authentication
-  ansible.builtin.command: crudini --set --list --list-sep=  /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ item.team }}-{{ item.user }}'
+  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ item.team }}-{{ item.user }}'
   with_items:
     - { team: 'MainAdmins', user: 'spo' }
     - { team: 'MainAdmins', user: 'nle' }
