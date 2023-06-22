@@ -31,7 +31,6 @@
       - pulse2-package-server
       - pulse2-common
       - ipxe-siveo # TDB: to be replaced by pulse-ipxe-config
-      - pulse-imaging-scripts
       - pulse2-davos-client
       - clonezilla
       - udpcast

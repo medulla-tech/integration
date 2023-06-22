@@ -109,6 +109,22 @@
   notify:
     - PULSE - Restart samba
 
+- name: PULSE/IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.yum:
+    pkg:
+      - pulse-imaging-scripts
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE/IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.apt:
+    pkg:
+      - pulse-imaging-scripts
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: PULSE/IMAGING - Create user drivers with no home and group
   ansible.builtin.user:
     name: drivers
