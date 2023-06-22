@@ -119,17 +119,17 @@
   when:
     - res_ldapsearch.stdout | length == 0
 
-- name: MMC/LDAP - Add Medulla Users group to local LDAP directory
+- name: MMC/LDAP - Add MedullaUsers group to local LDAP directory
   community.general.ldap_entry:
-    dn: cn=Medulla Users,ou=Groups,{{ LDAP_BASEDN }}
+    dn: '{{ item.dn }},{{ LDAP_BASEDN }}'
     server_uri: ldap://localhost/
     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
     bind_pw: '{{ LDAPADMINPASSWD }}'
-    objectClass:
-      - posixGroup
-    attributes:
-      cn: Medulla Users
-      description: Can be deleted once other groups have been created
+    objectClass: '{{ item.class }}'
+    attributes: '{{ item.attr }}'
+  with_items:
+    - {dn: 'ou=Groups', class: 'organizationalUnit', attr: {'ou': Groups}}
+    - {dn: 'cn=MedullaUsers,ou=Groups', class: 'posixGroup', attr: {'cn': MedullaUsers, 'gidNumber': 10001, 'description': Can be deleted once other groups have been created}}
 
 - name: MMC/PKI - Configure certificates in mmc-agent and inventory server
   ansible.builtin.copy:
