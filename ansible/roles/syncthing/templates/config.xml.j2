@@ -65,11 +65,7 @@
             <maxTotalSize>4096</maxTotalSize>
         </xattrFilter>
     </folder>
-{% if PULSEMAIN_DEVICE_ID != '' %}
     <folder id="pulsemaster_bootmenus" label="bootmenus" path="/var/lib/pulse2/imaging/bootmenus/" type="sendreceive" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
-{% else %}
-    <folder id="pulsemaster_bootmenus" label="bootmenus" path="/var/lib/pulse2/imaging/bootmenus/" type="sendonly" rescanIntervalS="3600" fsWatcherEnabled="true" fsWatcherDelayS="10" ignorePerms="false" autoNormalize="true">
-{% endif %}
         <filesystemType>basic</filesystemType>
         <device id="{{ LOCAL_DEVICE_ID }}" introducedBy=""></device>
 {% if PULSEMAIN_DEVICE_ID != '' %}
