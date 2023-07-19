@@ -298,36 +298,9 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ PUBLIC_IP }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
-  when:
-    - res_query.rowcount[0] == 0
-    - PUBLIC_IP != ''
-
-- name: PULSE/IMAGING - Insert imaging server in database if not registered
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
       - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ IP_ADDRESS }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
   when:
     - res_query.rowcount[0] == 0
-    - PUBLIC_IP == ''
-
-- name: PULSE/IMAGING - Update imaging server in database if registered
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ PUBLIC_IP }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
-  when:
-    - res_query.rowcount[0] == 0
-    - PUBLIC_IP != ''
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
   community.mysql.mysql_query:
@@ -339,8 +312,7 @@
     query:
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ IP_ADDRESS }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
-    - res_query.rowcount[0] == 0
-    - PUBLIC_IP == ''
+    - res_query.rowcount[0] != 0
 
 - name: PULSE/GLPI - Remove user connection to glpi db from relay
   community.mysql.mysql_user:
