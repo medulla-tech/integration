@@ -168,17 +168,16 @@
     || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
     | smbpasswd -s -a drivers
 
-- name: PULSE/IMAGING - Update entity in Imaging
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}' WHERE id = 1
+- name: PULSE/IMAGING - Load config file to find Package Server UUID
+  ansible.builtin.slurp:
+    src: /etc/mmc/pulse2/package-server/package-server.ini.local
+  register: psinifile
 
-- name: PULSE/IMAGING - Associate imaging server with root entity
+- name: PULSE/IMAGING - Find Package Server UUID
+  ansible.builtin.set_fact:
+    ps_uuid: "{{ psinifile['content'] | b64decode | regex_search('uuid = (.+)', '\\1') | first }}"
+
+- name: PULSE/IMAGING - Check if imaging server is registered
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -186,4 +185,69 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - UPDATE ImagingServer SET associated = 1, name = '{{ IMAGING_SERVER_NAME }}' WHERE id = 1
+      - SELECT id FROM ImagingServer WHERE packageserver_uuid = %(packageserver_uuid)s
+    named_args:
+      packageserver_uuid: '{{ ps_uuid }}'
+  register: res_query
+
+- name: PULSE/IMAGING - Find Entity from GLPI
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT id FROM glpi_entities WHERE completename = %(completename)s
+    named_args:
+      completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+  register: res_queryentityglpi
+
+- name: PULSE/IMAGING - Update entity in Imaging if it already exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = 1
+
+- name: PULSE/IMAGING - Find Entity from Imaging
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Entity WHERE uuid = %(uuid)s
+    named_args:
+      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
+  register: res_queryentityimaging
+  when:
+    - res_queryentityglpi.rowcount[0] != 0
+
+- name: PULSE/IMAGING - Insert imaging server in database if not registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ IP_ADDRESS }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
+  when:
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Update imaging server in database if registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ IP_ADDRESS }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+  when:
+    - res_query.rowcount[0] != 0

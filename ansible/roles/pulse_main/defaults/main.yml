@@ -12,6 +12,7 @@ ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'
 ORGANISATION: Siveo Pulse
 IMAGING_SERVER_NAME: '{{ ENTITY }}'
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
 NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
 CLIENTS_SSH_PORT: 22
 CLIENTS_VNC_PORT: 5900
