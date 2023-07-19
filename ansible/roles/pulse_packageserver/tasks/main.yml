@@ -29,6 +29,17 @@
   notify:
     - PULSE_PACKAGESERVER - Restart package server
 
+- name: PULSE_PACKAGESERVER/PKI - Configure certificates
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: "{{ item }}"
+    remote_src: yes
+  with_items:
+    - /etc/mmc/pulse2/package-server/keys/cacert.pem
+    - /etc/mmc/pulse2/package-server/keys/privkey.pem
+  notify:
+    - PULSE_PACKAGESERVER - Restart package server
+
 - name: PULSE_PACKAGESERVER - Ensure package server is running
   ansible.builtin.systemd:
     name: pulse2-package-server

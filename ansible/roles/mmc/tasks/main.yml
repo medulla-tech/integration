@@ -139,7 +139,7 @@
     - {dn: 'ou=Groups', class: 'organizationalUnit', attr: {'ou': Groups}}
     - {dn: 'cn=MedullaUsers,ou=Groups', class: 'posixGroup', attr: {'cn': MedullaUsers, 'gidNumber': 10001, 'description': Can be deleted once other groups have been created}}
 
-- name: MMC/PKI - Configure certificates in mmc-agent and inventory server
+- name: MMC/PKI - Configure certificates
   ansible.builtin.copy:
     src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
     dest: "{{ item }}"
@@ -148,10 +148,8 @@
     - /etc/mmc/agent/keys/localcert.pem
     - /etc/mmc/agent/keys/cacert.pem
     - /etc/mmc/agent/keys/privkey.pem
-    - /etc/mmc/pulse2/inventory-server/keys/cacert.pem
-    - /etc/mmc/pulse2/inventory-server/keys/privkey.pem
-    - /etc/mmc/pulse2/package-server/keys/cacert.pem
-    - /etc/mmc/pulse2/package-server/keys/privkey.pem
+  notify:
+    - MMC - Restart mmc-agent
 
 - name: MMC/EJABBERD - Register master account for mmc-agent
   community.general.ejabberd_user:

@@ -27,6 +27,17 @@
   notify:
     - PULSE_INVENTORYSERVER - Restart inventory server
 
+- name: PULSE_INVENTORYSERVER/PKI - Configure certificates
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: "{{ item }}"
+    remote_src: yes
+  with_items:
+    - /etc/mmc/pulse2/inventory-server/keys/cacert.pem
+    - /etc/mmc/pulse2/inventory-server/keys/privkey.pem
+  notify:
+    - PULSE_INVENTORYSERVER - Restart inventory server
+
 - name: PULSE_INVENTORYSERVER - Ensure inventory server is running
   ansible.builtin.systemd:
     name: pulse2-inventory-server
