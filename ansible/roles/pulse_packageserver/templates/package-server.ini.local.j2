@@ -1,6 +1,9 @@
-{% if PUBLIC_IP != '' %}
 [main]
+{% if PUBLIC_IP != '' %}
 public_ip = {{ PUBLIC_IP }}
+{% else %}
+public_ip = {{ IP_ADDRESS }}
+public_mask = {{ NETMASK }}
 {% endif %}
 
 [imaging_api]

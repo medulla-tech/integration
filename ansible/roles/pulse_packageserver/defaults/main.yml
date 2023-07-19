@@ -1,3 +1,6 @@
 IMAGING_UUID: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') | to_uuid }}"
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+NETMASK: "{{ vars['ansible_'~INTERFACE].ipv4.netmask }}"
 PUBLIC_IP: ''
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set if package server is installed on a separate server
