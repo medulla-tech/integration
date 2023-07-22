@@ -21,6 +21,7 @@
       - crudini
       - python3-mysqldb
       - at
+      - cron
   when:
     - ansible_distribution == 'Debian'
 
