@@ -189,6 +189,14 @@
     username: master_{{ subs_short_name }}
     host: '{{ XMPP_DOMAIN }}'
     password: '{{ XMPP_MASTER_PASSWORD }}'
+
+- name: SUBSTITUTE_AGENT - Create initial config file if needed
+  ansible.builtin.copy:
+    src: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_{{ subs_short_type }}.ini
+    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_{{ subs_short_name }}.ini
+    remote_src: yes
+  when:
+    - subs_number != ''
     
 - name: SUBSTITUTE_AGENT - Configure substitute
   ansible.builtin.template:
