@@ -70,9 +70,13 @@
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ ITSMNG_DBUSER }}'
     password: '{{ ITSMNG_DBPASSWD }}'
+    host: '{{ item }}'
     state: present
     priv:
       '{{ ITSMNG_DBNAME }}.*:ALL'
+  with_items:
+    - localhost
+    - '{{ IP_ADDRESS }}'
   no_log: True
 
 - name: ITSM-NG - Reset ITSMNG_CHANGED variable

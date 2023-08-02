@@ -50,27 +50,6 @@
   when:
     - ansible_distribution == 'Debian'
 
-- name: PULSE/GLPI - Allow user to connect to glpi db from relay
-  community.mysql.mysql_user:
-    login_host: 'localhost'
-    login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBUSER }}'
-    password: '{{ ITSM_DBPASSWD }}'
-    host: '{{ XMPP_DOMAIN }}'
-    state: present
-    append_privs: true
-    priv:
-      'glpi.*': 'ALL'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
-    - ITSM_DBHOST == PULSEMAIN_IP
-  no_log: True
-
 - name: PULSE/GLPI - Check if entity exists in glpi
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
@@ -83,6 +62,9 @@
     named_args:
       completename: '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'
   register: res_query
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - ITSM_DBHOST == PULSEMAIN_IP
 
@@ -99,6 +81,9 @@
       - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ CLUSTER_NAME }}', 'AND')
       - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
       - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ CLUSTER_NAME }}'))
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - ITSM_DBHOST == PULSEMAIN_IP
     - res_query.rowcount[0] == 0
@@ -318,24 +303,6 @@
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ IP_ADDRESS }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
     - res_query.rowcount[0] != 0
-
-- name: PULSE/GLPI - Remove user connection to glpi db from relay
-  community.mysql.mysql_user:
-    login_host: 'localhost'
-    login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    name: '{{ ITSM_DBUSER }}'
-    host: '{{ XMPP_DOMAIN }}'
-    state: absent
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  register: res_queryclusterid
-  when:
-    - PULSEMAIN_IP != ''
-    - ITSM_DBHOST == PULSEMAIN_IP
-  no_log: True
 
 - name: PULSE/SHARE - Remove user connection to db from relay
   community.mysql.mysql_user:
