@@ -137,6 +137,11 @@
   notify:
     - MARIADB - Restart mariadb
 
+- name: MARIADB - Load time zone tables into mariadb
+  ansible.builtin.shell: mysql_tzinfo_to_sql tz_file tz_name | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql
+  notify:
+    - MARIADB - Restart mariadb
+
 - name: MARIADB - Ensure mariadb is running
   ansible.builtin.systemd:
     name: mariadb
