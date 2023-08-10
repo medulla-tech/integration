@@ -136,6 +136,11 @@
     mode: '0644'
   notify:
     - MARIADB - Restart mariadb
+    
+- name: MARIADB - Load time zone tables into mariadb
+  ansible.builtin.shell: mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql
+  notify:
+    - MARIADB - Restart mariadb
 
 - name: MARIADB - Define time zone
   community.general.ini_file:
