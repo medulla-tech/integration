@@ -140,7 +140,7 @@
 - name: MARIADB - Define time zone
   community.general.ini_file:
     path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
-    section: mysqld
+    section: mariadb
     option: default_time_zone
     value: "'Europe/Paris'"
     backup: yes
