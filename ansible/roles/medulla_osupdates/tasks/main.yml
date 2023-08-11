@@ -32,10 +32,13 @@
     mode: '0755'
     owner: root
 
-- name: MEDULLA_OSUPDATES - Create /var/lib/pulse2/downloads/
+- name: MEDULLA_OSUPDATES - Create folders needed to generate the update packages
   ansible.builtin.file:
     state: directory
-    path: /var/lib/pulse2/downloads/
+    path: '{{ item }}'
+  with_items:
+    - /var/lib/pulse2/downloads/
+    - /var/lib/pulse2/base_update_package/
 
 - name: MEDULLA_OSUPDATES - Create database
   community.mysql.mysql_db:
