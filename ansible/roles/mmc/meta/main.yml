@@ -8,3 +8,4 @@ dependencies:
   - { role: itsm-ng, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'itsm-ng') }
   - role: ejabberd
   - role: grafana
+  - { role: substitute_agent, SUBS_LONG_TYPE: 'master', when: (PYTHON_VERSION == 3) }

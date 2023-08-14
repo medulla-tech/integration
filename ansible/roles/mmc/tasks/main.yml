@@ -59,7 +59,6 @@
       - pulse-xmppmaster-agentplugins
       - pulse-xmpp-agent-relay
       - pulse-agent-installers
-      - pulse-xmpp-master-substitute
       - pulse-update-manager
       - pulse2-uuid-resolver
       - pulse-debug-tools
@@ -93,7 +92,6 @@
       - pulse-agent-installers
       - medulla-update-manager
       - pulse2-uuid-resolver
-      - pulse-xmpp-master-substitute
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
@@ -160,16 +158,6 @@
     - MMC - Restart mmc-agent
   when:
     - PYTHON_VERSION == 2
-
-- name: MMC/EJABBERD - Register master account for master substitute
-  community.general.ejabberd_user:
-    username: master
-    host: '{{ XMPP_DOMAIN }}'
-    password: '{{ XMPP_MASTER_PASSWORD }}'
-  notify:
-    - MMC - Restart pulse-xmpp-master-substitute-master
-  when:
-    - PYTHON_VERSION == 3
 
 - name: MMC - Reset PULSEDB_CHANGED variable
   ansible.builtin.set_fact:
@@ -315,17 +303,6 @@
     - { regexp: 'SetEnvIf Referer .* FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
   notify:
     - MMC - Restart apache
-    
-- name: MMC - Configure master substitute
-  ansible.builtin.template:
-    src: 'agent_master_substitute_mast.ini.local.j2'
-    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mast.ini.local
-    mode: '0644'
-    backup: yes
-  notify:
-    - MMC - Restart pulse-xmpp-master-substitute-master
-  when:
-    - PYTHON_VERSION == 3
 
 - name: MMC - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
@@ -397,12 +374,3 @@
     state: started
     enabled: yes
     masked: no
-
-- name: MMC - Ensure pulse-xmpp-master-substitute-master service is running
-  ansible.builtin.systemd:
-    name: pulse-xmpp-master-substitute-master
-    state: started
-    enabled: yes
-    masked: no
-  when:
-    - PYTHON_VERSION == 3
