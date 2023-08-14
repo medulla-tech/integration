@@ -221,3 +221,22 @@
   ansible.builtin.file:
     path: /usr/share/glpi/install/install.php
     state: absent
+
+- name: GLPI - Prevent glpi from begin automatically upgraded
+  ansible.builtin.dpkg_selections:
+    name: glpi
+    selection: hold
+
+- name: GLPI - Prevent fusioninventory-for-glpi from begin automatically upgraded
+  ansible.builtin.dpkg_selections:
+    name: fusioninventory-for-glpi
+    selection: hold
+  when:
+    - GLPI_PLUGIN == 'fusioninventory'
+
+- name: GLPI - Prevent glpi-inventory-plugin from begin automatically upgraded
+  ansible.builtin.dpkg_selections:
+    name: glpi-inventory-plugin
+    selection: hold
+  when:
+    - GLPI_PLUGIN == 'glpiinventory'

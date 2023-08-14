@@ -196,3 +196,13 @@
   ansible.builtin.file:
     path: /usr/share/itsm-ng/install/install.php
     state: absent
+
+- name: ITSM-NG - Prevent itsm-ng from begin automatically upgraded
+  ansible.builtin.dpkg_selections:
+    name: itsm-ng
+    selection: hold
+
+- name: ITSM-NG - Prevent fusioninventory-for-itsm-ng from begin automatically upgraded
+  ansible.builtin.dpkg_selections:
+    name: fusioninventory-for-itsm-ng
+    selection: hold
