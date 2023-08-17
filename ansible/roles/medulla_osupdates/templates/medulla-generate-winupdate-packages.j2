@@ -98,8 +98,8 @@ if [[ ${DL_SUCCESSFUL} == 'True' ]]; then
             echo "$(date +\[%F\ %X\]) Enabling ${FAMILY}_${VERSION} in table up_list_produit"
             mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} xmppmaster -e "INSERT IGNORE INTO xmppmaster.up_list_produit (name_procedure, enable) VALUES ('up_packages_${FAMILY}_${VERSION}', 1) ON DUPLICATE KEY UPDATE enable = 1"
             # The following two lines will not be needed anymore once udf is available as this will be done by the db when needed
-            echo "$(date +\[%F\ %X\]) Generating update packages for ${FAMILY}_${VERSION}"
-            python3 /usr/sbin/medulla-generate-update-package.py -H${DBHOST} -P${DBPORT} -u${DBUSER} -p${DBPASS} -Tup_packages_${FAMILY}_${VERSION} -o/var/lib/pulse2/packages/sharing/winupdates -d -q
+            #echo "$(date +\[%F\ %X\]) Generating update packages for ${FAMILY}_${VERSION}"
+            #python3 /usr/sbin/medulla-generate-update-package.py -H${DBHOST} -P${DBPORT} -u${DBUSER} -p${DBPASS} -Tup_packages_${FAMILY}_${VERSION} -o/var/lib/pulse2/packages/sharing/winupdates -d -q
         done
     done
 
