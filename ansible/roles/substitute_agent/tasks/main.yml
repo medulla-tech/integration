@@ -224,6 +224,21 @@
     mode: '0644'
     backup: yes
 
+- name: SUBSTITUTE_AGENT/PKI - Configure certificates
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: /etc/pulse-xmpp-agent-substitute/keys/
+    remote_src: yes
+
+- name: SUBSTITUTE_AGENT - Additional configuration for master substitute
+  ansible.builtin.template:
+    src: __server_mmc_master.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local
+    mode: '0644'
+    backup: yes
+  when:
+    - SUBS_LONG_TYPE == 'master'
+
 - name: SUBSTITUTE_AGENT - Additional configuration for assessor substitute
   ansible.builtin.template:
     src: assessor_agent.ini.local.j2

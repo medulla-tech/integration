@@ -27,3 +27,4 @@ SUBS_LONG_TYPE: '' # can be assessor, registration, inventory, subscription, log
 # SUBS_NAME can be forced by defining the variable. Else it is calculated
 SUBS_NAME: '' #eg registration3
 PYTHON_VERSION: 3
+MASTER_TOKEN: '' # 32 character string. Must be vaulted
