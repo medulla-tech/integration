@@ -251,3 +251,34 @@
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ IP_ADDRESS }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
     - res_query.rowcount[0] != 0
+
+- name: PULSE/AGENT - Install packages for deploying agent
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - powershell
+      - gss-ntlmssp
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE/AGENT - Install packages for deploying agent
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - powershell
+      - gss-ntlmssp
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/AGENT - Copy agent deployment script
+  ansible.builtin.copy:
+    src: medulla-deploy-agent.sh
+    dest: /usr/sbin/
+    mode: '0755'
+
+- name: PULSE/AGENT - Copy agent installation script
+  ansible.builtin.template:
+    src: install-agent.ps1.j2
+    dest: '/var/lib/pulse2/clients/win/install-agent.ps1'
+    mode: '0644'
+    backup: yes

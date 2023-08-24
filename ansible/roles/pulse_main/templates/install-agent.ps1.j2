@@ -1,0 +1,10 @@
+# Disable Windows Update
+New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update" -Force
+New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Force
+New-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Name AUOptions -Value 2 -PropertyType DWORD -Force
+Stop-Service -Name wuauserv
+Set-Service -Name wuauserv -StartupType Disabled
+
+# Download and install pulse agent
+Invoke-WebRequest -Uri 'http://{{ SERVER_FQDN }}/downloads/win/Medulla-Agent-windows-FULL-latest.exe' -OutFile 'C:\Windows\Temp\medulla-setup.exe'
+Start-Process -FilePath 'C:\Windows\Temp\medulla-setup.exe' -ArgumentList '/S' -NoNewWindow -Wait
