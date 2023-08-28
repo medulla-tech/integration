@@ -272,6 +272,13 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: PULSE/AGENT - Set up powershell
+  ansible.builtin.command: pwsh -Command '{{ item }}'
+  with_items:
+    - Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+    - Install-Module -Name PSWSMan
+    - Install-WSMan
+
 - name: PULSE/AGENT - Copy agent deployment script
   ansible.builtin.copy:
     src: medulla-deploy-agent.sh

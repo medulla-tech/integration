@@ -5,6 +5,10 @@
 # https://learn.microsoft.com/en-us/powershell/scripting/install/install-debian?view=powershell-7.3#installation-via-direct-download
 # gss-ntlmssp
 # Powershell remoting must be enabled. cf https://theitbros.com/run-powershell-script-on-remote-computer/
+# WSMan must be installed:
+#    pwsh -Command "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted"
+#    pwsh -Command 'Install-Module -Name PSWSMan'
+#    pwsh -Command 'Install-WSMan'
 
 # Parameters
 RED='\033[0;31m'
