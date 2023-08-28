@@ -19,6 +19,8 @@ display_usage() {
     echo "  $0 --target=10.10.0.0/24 --namefilter=win --username=vagrant --password=vagrant"
     echo "Example using Active Directory:"
     echo "  $0 --server=10.10.0.100 --namefilter=win --ou=OU=grp1,DC=MEDULLA,DC=int --domain=MEDULLA --username=Administrator --password=P@ssw0rd"
+    echo "Example for an individual machine:"
+    echo "  $0 --target=10.10.0.94/32 --username=vagrant --password=vagrant"
 }
 
 check_arguments() {
@@ -207,10 +209,14 @@ Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Cr
 
 
 check_arguments "$@"
-if [ -z ${SERVER+x} ]; then
-    get_machines_list_nmap
+if [[ "$TARGET" == */32 ]]; then
+    MACH_LIST=("${TARGET:0:-3}")
 else
-    get_machines_list_ad
+    if [ -z ${SERVER+x} ]; then
+        get_machines_list_nmap
+    else
+        get_machines_list_ad
+    fi
 fi
 if [ ${#MACH_LIST[@]} -eq 0 ]; then
     echo -e "${NC}No machines to install Medulla Agent on"
