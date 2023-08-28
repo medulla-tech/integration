@@ -69,15 +69,6 @@
 
 - name: SUBSTITUTE_AGENT - Set subs_short_type value
   ansible.builtin.set_fact:
-    subs_short_type: mast
-    subs_short_name: 'mast{{ subs_number }}'
-    SUBS_LONG_TYPE: master
-    subs_long_name: 'master{{ subs_number }}'
-  when:
-    SUBS_LONG_TYPE == 'master' or SUBS_NAME.startswith('master')
-
-- name: SUBSTITUTE_AGENT - Set subs_short_type value
-  ansible.builtin.set_fact:
     subs_short_type: reg
     subs_short_name: 'reg{{ subs_number }}'
     SUBS_LONG_TYPE: registration
@@ -195,19 +186,9 @@
     
 - name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account
   community.general.ejabberd_user:
-    username: master
-    host: '{{ XMPP_DOMAIN }}'
-    password: '{{ XMPP_MASTER_PASSWORD }}'
-  when:
-    - SUBS_LONG_TYPE == 'master'
-    
-- name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account
-  community.general.ejabberd_user:
     username: master_{{ subs_short_name }}
     host: '{{ XMPP_DOMAIN }}'
     password: '{{ XMPP_MASTER_PASSWORD }}'
-  when:
-    - SUBS_LONG_TYPE != 'master'
 
 - name: SUBSTITUTE_AGENT - Create initial config file if needed
   ansible.builtin.copy:
@@ -229,15 +210,6 @@
     src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
     dest: /etc/pulse-xmpp-agent-substitute/keys/
     remote_src: yes
-
-- name: SUBSTITUTE_AGENT - Additional configuration for master substitute
-  ansible.builtin.template:
-    src: __server_mmc_master.ini.local.j2
-    dest: /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local
-    mode: '0644'
-    backup: yes
-  when:
-    - SUBS_LONG_TYPE == 'master'
 
 - name: SUBSTITUTE_AGENT - Additional configuration for assessor substitute
   ansible.builtin.template:
@@ -269,14 +241,6 @@
   ansible.builtin.systemd:
     name: pulse-xmpp-master-substitute-{{ subs_long_name }}
     state: restarted
-    
-- name: SUBSTITUTE_AGENT - Restart master service
-  ansible.builtin.systemd:
-    name: pulse-xmpp-master-substitute-master
-    state: restarted
-  when:
-    - XMPP_DOMAIN == 'pulse'
-    - PYTHON_VERSION == 3
     
 - name: SUBSTITUTE_AGENT - Ensure service is running
   ansible.builtin.systemd:

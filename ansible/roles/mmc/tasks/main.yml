@@ -61,6 +61,7 @@
       - pulse-agent-installers
       - pulse-update-manager
       - pulse2-uuid-resolver
+      - pulse-xmpp-master-substitute
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
@@ -92,6 +93,7 @@
       - pulse-agent-installers
       - medulla-update-manager
       - pulse2-uuid-resolver
+      - pulse-xmpp-master-substitute
       - pulse-debug-tools
   when:
     - ansible_distribution == 'Debian'
@@ -146,18 +148,17 @@
     - /etc/mmc/agent/keys/localcert.pem
     - /etc/mmc/agent/keys/cacert.pem
     - /etc/mmc/agent/keys/privkey.pem
+    - /etc/pulse-xmpp-agent-substitute/keys/
   notify:
     - MMC - Restart mmc-agent
 
-- name: MMC/EJABBERD - Register master account for mmc-agent
+- name: MMC/EJABBERD - Register master account for mmc-agent or master substitute
   community.general.ejabberd_user:
     username: master
     host: '{{ XMPP_DOMAIN }}'
     password: '{{ XMPP_MASTER_PASSWORD }}'
   notify:
     - MMC - Restart mmc-agent
-  when:
-    - PYTHON_VERSION == 2
 
 - name: MMC - Reset PULSEDB_CHANGED variable
   ansible.builtin.set_fact:
@@ -303,6 +304,24 @@
     - { regexp: 'SetEnvIf Referer .* FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
   notify:
     - MMC - Restart apache
+    
+- name: MMC/SUBSTITUTE_AGENT - Configure substitute
+  ansible.builtin.template:
+    src: agent_master_substitute_mast.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mast.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart pulse-xmpp-master-substitute-master
+
+- name: MMC/SUBSTITUTE_AGENT - Additional configuration for master substitute
+  ansible.builtin.template:
+    src: __server_mmc_master.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart pulse-xmpp-master-substitute-master
 
 - name: MMC - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
@@ -374,3 +393,11 @@
     state: started
     enabled: yes
     masked: no
+    
+- name: MMC/SUBSTITUTE_AGENT - Ensure service is running
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-master
+    state: started
+    enabled: yes
+    masked: no
+
