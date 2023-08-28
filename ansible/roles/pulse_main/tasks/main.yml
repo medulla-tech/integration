@@ -258,6 +258,7 @@
     pkg:
       - powershell
       - gss-ntlmssp
+      - nmap
   when:
     - ansible_distribution == 'CentOS'
 
@@ -267,6 +268,7 @@
     pkg:
       - powershell
       - gss-ntlmssp
+      - nmap
   when:
     - ansible_distribution == 'Debian'
 
