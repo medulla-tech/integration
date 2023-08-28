@@ -276,6 +276,32 @@
     - MMC - Restart mmc-agent
   when: 
     - not baseinilocal.stat.exists
+    - PYTHON_VERSION == 2
+
+- name: MMC - Enable plugins
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: '/etc/mmc/plugins/{{ item }}.ini.local'
+    mode: '0644'
+    backup: yes
+  with_items:
+    - base
+    - dyngroup
+    - msc
+    - pkgs
+    - medulla_server
+    - xmppmaster
+    - glpi
+    - admin
+    - imaging
+    - kiosk
+    - updates
+    - urbackup
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - not baseinilocal.stat.exists
+    - PYTHON_VERSION == 3
 
 - name: MMC - Configure mmc-agent
   ansible.builtin.template:
