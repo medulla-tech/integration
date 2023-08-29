@@ -60,6 +60,7 @@
     - '{{ PULSE_UEFI64_PATH }}'
     - /var/lib/pulse2/imaging/tools
     - /var/lib/pulse2/imaging/bootmenus
+    - /var/log/clonezilla
 
 - name: PULSE_IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
   ansible.builtin.file:
