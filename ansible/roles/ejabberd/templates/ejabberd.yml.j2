@@ -36,7 +36,7 @@ listen:
     max_stanza_size: 8388608
     shaper: c2s_shaper
     access: c2s
-{% if ansible_distribution == 'Debian' and ansible_distribution_major_version == '9' %}
+{% if ansible_distribution == 'Debian' %}
     starttls_required: false
 {% else %}
     starttls_required: true
