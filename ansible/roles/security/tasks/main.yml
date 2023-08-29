@@ -95,6 +95,7 @@
     - '9999'
     - '80'
     - '3306'
+    - '55415'
   when:
     - PUBLIC_INTERFACE_NAME is defined
     - PUBLIC_INTERFACE_NAME != '' 
