@@ -339,6 +339,8 @@
     backup: yes
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
+  when: 
+    - PYTHON_VERSION == 3
 
 - name: MMC/SUBSTITUTE_AGENT - Additional configuration for master substitute
   ansible.builtin.template:
@@ -348,6 +350,8 @@
     backup: yes
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
+  when: 
+    - PYTHON_VERSION == 3
 
 - name: MMC - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
@@ -426,4 +430,6 @@
     state: started
     enabled: yes
     masked: no
+  when: 
+    - PYTHON_VERSION == 3
 
