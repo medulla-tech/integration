@@ -12,6 +12,7 @@
       - open-vm-tools
       - curl
       - wget
+      - winrmcp
     update_cache: yes
   when:
     - ansible_distribution == 'Debian'
