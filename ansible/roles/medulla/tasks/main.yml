@@ -1990,6 +1990,48 @@
    when:
      - INSTALL_TYPE == 'p'
 
+ - name: BACKUP - Create type of profiles
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: groupadd
+       name: '{{ item }}'
+       ses: '{{ URBACKUP_SESSION }}'
+   with_items:
+     - Windows_All_C
+     - Windows_Users
+     - Linux_All
+     - Linux_home
+     - MacOS_All
+     - MacOS_Users
+
+ - name: BACKUP - Create type of profiles
+   uri:
+     url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
+     method: POST
+     body_format: form-urlencoded
+     return_content: true
+     headers:
+       Accept: application/json
+     body:
+       sa: clientsettings_save
+       t_clientid: '{{ item.id }}'
+       default_dirs: '{{ item.path }}'
+       overwrite: 'true'
+       ses: '{{ URBACKUP_SESSION }}'
+   with_items:
+     - { id: '1', path: 'C:' }
+     - { id: '2', path: 'C:\Users' }
+     - { id: '3', path: '/' }
+     - { id: '4', path: '/home' }
+     - { id: '5', path: '/' }
+     - { id: '6', path: '/Users' }
+
  - name: BACKUP - Configure backup server internet settings
    uri:
      url: http://{{ SERVER_FQDN }}/urbackup/x?a=settings
