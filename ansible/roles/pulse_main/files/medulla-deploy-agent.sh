@@ -17,7 +17,7 @@ NC='\033[0m'
 WINRM_PORT='5985'
 
 display_usage() {
-    echo -e "${RED}Usage: $0 --target=<target_cidr> | --server=<ad_server_name>  [--port=<winrm_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--ou=<ad_ou>] [--force]"
+    echo -e "${RED}Usage: $0 --target=<target_cidr> | --server=<ad_server_name>  [--port=<winrm_or_ssh_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--sshkey=<path_to_ssh_key>] [--ou=<ad_ou>] [--force] [--reinstall]"
     echo -e "${NC}"
     echo "Example using network discovery:"
     echo "  $0 --target=10.10.0.0/24 --namefilter=win --username=vagrant --password=vagrant"
@@ -25,6 +25,8 @@ display_usage() {
     echo "  $0 --server=10.10.0.100 --namefilter=win --ou=OU=grp1,DC=MEDULLA,DC=int --domain=MEDULLA --username=Administrator --password=P@ssw0rd"
     echo "Example for an individual machine:"
     echo "  $0 --target=10.10.0.94/32 --username=vagrant --password=vagrant"
+    echo "Example for a linux machine:"
+    echo "  $0 --target=10.10.0.94/32 --port=22 --username=root --sshkey=/root/.ssh/id_rsa"
 }
 
 check_arguments() {
@@ -69,6 +71,10 @@ check_arguments() {
                 PASSWORD="${i#*=}"
                 shift
                 ;;
+            --sshkey=*)
+                SSHKEY="${i#*=}"
+                shift
+                ;;
             --domain=*)
                 DOMAIN="${i#*=}"
                 shift
@@ -96,12 +102,21 @@ check_arguments() {
         PORT=${WINRM_PORT}
     fi
     # Ask for username and password if not given in the command
-    if [[ -z $USERNAME || -z $PASSWORD ]]; then
-        echo "Please provide a domain account for accessing the machines and/or the Active Directory."
-        read -r -p "Username: " USERNAME
-        read -p "Password: " PASSWORD
-        # Cater for inclusion of domain in username eg. MEDULLA\Administrateur
-        USERNAME=$(echo ${USERNAME} | sed 's~\\~\\\\~g')
+    if [[ -z $SSHKEY ]]; then
+        # Check if a user name and password is given
+        if [[ -z $USERNAME || -z $PASSWORD ]]; then
+            echo "Please provide a domain account for accessing the machines and/or the Active Directory."
+            read -r -p "Username: " USERNAME
+            read -p "Password: " PASSWORD
+            # Cater for inclusion of domain in username eg. MEDULLA\Administrateur
+            USERNAME=$(echo ${USERNAME} | sed 's~\\~\\\\~g')
+        fi
+    else
+        # Ony check if a username is given
+        if [[ -z $USERNAME ]]; then
+            echo "Please provide a domain account for accessing the machines and/or the Active Directory."
+            read -r -p "Username: " USERNAME
+        fi
     fi
 }
 
@@ -189,24 +204,40 @@ install_agent() {
     # Install agent on list of machines
     for MACH in ${MACH_LIST[@]}; do
         echo -e "${GREEN}---\nProcessing ${MACH}"
-        if [ ! -z ${DEBUG+x} ]; then
-            echo -e "Running pwsh -Command \"
-\$pw = ConvertTo-SecureString -AsPlainText -Force -String ********
-\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \"${USERNAME}\",\$pw
-Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-}
-\""
-            pwsh -Command "
-\$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
-\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
-Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-"
+        if [[ $(timeout 1 bash -c cat < /dev/tcp/10.10.0.73/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
+            # Using SSH
+            if [ -z ${SSHKEY+x}]; then
+                CMD="ssh ${USERNAME}@${MACH} -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
+            else
+                CMD="sshpass -p ${PASSWORD} ssh ${USERNAME}@${MACH} -p ${PORT} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
+            fi
+            if [ ! -z ${DEBUG+x} ]; then
+                echo -e "Running ${CMD}"
+                eval ${CMD}
+            else
+                eval ${CMD}&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+            fi
         else
-            pwsh -Command "
-\$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
-\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
-Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-"&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+            # Using WINRM
+            if [ ! -z ${DEBUG+x} ]; then
+                echo -e "Running pwsh -Command \"
+    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ********
+    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \"${USERNAME}\",\$pw
+    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+    }
+    \""
+                pwsh -Command "
+    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
+    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
+    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+    "
+            else
+                pwsh -Command "
+    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
+    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
+    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+    "&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+            fi
         fi
     done
 }
