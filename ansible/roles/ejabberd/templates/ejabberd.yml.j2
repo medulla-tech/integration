@@ -36,7 +36,11 @@ listen:
     max_stanza_size: 8388608
     shaper: c2s_shaper
     access: c2s
-    tls: true
+{% if ansible_distribution == 'Debian' %}
+    starttls_required: false
+{% else %}
+    starttls_required: true
+{% endif %}
     protocol_options: 'TLS_OPTIONS'
   -
     port: 5223
