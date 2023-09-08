@@ -2338,6 +2338,10 @@
      - pulsemaster_baseremoteagent
      - pulsemaster_bootmenus
      - pulsemaster_downloads
+   register: syncthingsync
+   until: syncthingsync is not failed
+   retries: 10
+   delay: 30
    vars:
      ansible_ssh_user: root
    delegate_to: '{{ PULSEMAIN_IP }}'
