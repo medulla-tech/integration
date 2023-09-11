@@ -414,9 +414,6 @@
   when:
     - PKI_SERVER == 'localhost'
 
-- name: MMC - Generate pulse agent in minimal for debian
-  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --linux-distros=debian-stretch,debian-bookworm
-
 - name: MMC - Ensure mmc-agent service is running
   ansible.builtin.systemd:
     name: mmc-agent
