@@ -97,7 +97,7 @@
       - INSERT IGNORE INTO xmppmaster.qa_custom_command (user, os, namecmd, customcmd, description) VALUES ('allusers', 'windows', 'Deploy updatebackupclient.ini file', 'powershell.exe "$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ URBACKUP_SERVERADDRESS }} {0}backup_port = {{ URBACKUP_SERVERPORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent"', 'Copy urbackup installation config file to client machine')
 
 - name: PULSE/AGENT - Generate minimal agent
-  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads -ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }} --minimal --linux-distros=debian-stretch,debian-bookworm
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }} --linux-distros=debian-stretch,debian-bookworm
   ignore_errors: true
 
 - name: PULSE/PACKAGESERVER - Configure samba for package server
