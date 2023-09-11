@@ -204,9 +204,9 @@ install_agent() {
     # Install agent on list of machines
     for MACH in ${MACH_LIST[@]}; do
         echo -e "${GREEN}---\nProcessing ${MACH}"
-        if [[ $(timeout 1 bash -c cat < /dev/tcp/10.10.0.73/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
+        if [[ $(timeout 1 bash -c cat < /dev/tcp/${MACH}/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
             # Using SSH
-            if [ -z ${SSHKEY+x}]; then
+            if [ -z ${SSHKEY+x} ]; then
                 CMD="sshpass -p ${PASSWORD} ssh ${USERNAME}@${MACH} -p ${PORT} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
             else
                 CMD="ssh ${USERNAME}@${MACH} -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
