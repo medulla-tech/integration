@@ -2,7 +2,28 @@
 
 To install your Medulla infrastructure, we use Ansible, open-source solution includes software provisioning, configuration management, and application deployment functionality working with SSH.
 
-To simplify documentation, passwords are in clear text. Good practice would suggest that they be encrypted. In this case please refer to the Ansible documentation : https://docs.ansible.com/ansible/latest/vault_guide/index.html
+Some passwords are in plain text and some others are vaulted. To vault the passwords we use the command:
+
+ansible-vault encrypt_string --vault-password-file $thevaultfile '$pass' --name $vault
+with:
+
+$thevaultfile:  The file with the secret vault key
+$pass:  The password to be vaulted
+$vault: The name of the variable we want to vault
+
+exemple:
+
+
+ansible-vault encrypt_string --vault-password-file ~/thefile 'medulla' --name ROOT_PASSWORD
+    ROOT_PASSWORD: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          32396638663936666663613832346533383433643664393132393637313462613937346636363264
+          3431376433353063653735666336343034333164353733330a653465336464653332636565366366
+          36323539386366363136323133663930316265646531323365343637626465303531346132313864
+          3133626638386336310a653538643834393837303266323939623661356237333937613138313032
+          3162
+
+https://docs.ansible.com/ansible/latest/vault_guide/index.html
 
 ## Contents :
 
@@ -17,17 +38,87 @@ To simplify documentation, passwords are in clear text. Good practice would sugg
 Repository contains :
 ```bash
 ansible
+├── ansible.cfg
 ├── ansible_hosts
+├── playbook_cleanup.yml
+├── playbook_debug.yml
+├── playbook_pulsemain.yml
+├── playbook_pulserelay.yml
+├── playbook_resetpasswd.yml
 ├── playbook.yml
+├── README.md
 └── roles
-    └── pulse4ambx
-        ├── handlers	
-        │   └── main.yml
-        ├── tasks
-        │   └── main.yml
-        └── templates
-               └── medulla-generate-winupdate-packages.j2
+    ├── apache
+    │   ├── files
+    │   │   └── nopt.conf
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── tasks
+    │   │   └── main.yml
+    │   └── vars
+    │       ├── Debian.yml
+    │       └── RedHat.yml
+    ├── base
+    │   ├── defaults
+    │   │   └── main.yml
+    │   ├── files
+    │   │   ├── 99-pulse.conf
+    │   │   └── pulse.conf
+    │   ├── tasks
+    │   │   └── main.yml
+    │   └── vars
+    │       ├── Debian.yml
+    │       └── RedHat.yml
+    ...
+
 ```
+
+All actions are splitted into roles.
+In our ansible we have several roles:
+* apache
+* glpi
+* itsm-ng
+* mariadb
+* nfs
+* pulse_inventoryserver
+* relay_agent
+* siveotest
+* syncthing_discosrv
+* base
+* glpi_cleanup
+* itsm-ng_cleanup
+* mariadb_cleanup
+* php
+* pulse_main
+* reset_medulla_password
+* ssh
+* syncthing_relay
+* create_teams
+* grafana
+* ldap
+* medulla_osupdates
+* pki
+* pulse_packageserver
+* samba
+* substitute_agent
+* tomcat
+* ejabberd
+* grafana_cleanup
+* ldap_cleanup
+* mmc
+* pulse_file_browser
+* pulse_relay
+* security
+* syncthing
+* urbackup
+* ejabberd_cleanup
+* guacamole
+* local_certs
+* mmc_cleanup
+* pulse_imaging
+* pxe_registration
+* siveodev
+* syncthing_cleanup
 
 
 Given ansible_hosts file is an exemple, it will install and configure Medulla on your server.
@@ -107,12 +198,12 @@ DBDUMP_DL_BASEURL='https://updates.siveo.net'
 
 Command-line to install Main Medulla server :
 ```yaml
-ansible-playbook playbook.yml -i ansible_hosts --limit=hostname.siveo.net
+ansible-playbook playbook_pulsemain.yml -i ~/ansible_hosts --limit=your_server --vault-password-file ~/vp.siveo
 ```
 
 Command-line to install Relay Medulla server :
 ```yaml
-ansible-playbook playbook.yml -i ansible_hosts --limit=hostname-ars-1.siveo.lan
+ansible-playbook playbook_pulserelay.yml -i ~/ansible_hosts --limit=your_server --vault-password-file ~/vp.siveo
 ```
 
 ## Complete installation
