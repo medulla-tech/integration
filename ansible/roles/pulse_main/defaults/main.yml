@@ -22,3 +22,4 @@ DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
 URBACKUP_SERVERADDRESS: '{{ ansible_fqdn }}'
 URBACKUP_SERVERPORT: 55415
+LINUX_DISTROS_AGENT_SUPPORT: 'debian-stretch,debian-bookworm'
