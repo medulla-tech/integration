@@ -201,45 +201,43 @@ list_machines() {
 }
 
 install_agent() {
-    # Install agent on list of machines
-    for MACH in ${MACH_LIST[@]}; do
-        echo -e "${GREEN}---\nProcessing ${MACH}"
-        if [[ $(timeout 1 bash -c cat < /dev/tcp/${MACH}/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
-            # Using SSH
-            if [ -z ${SSHKEY+x} ]; then
-                CMD="sshpass -p ${PASSWORD} ssh ${USERNAME}@${MACH} -p ${PORT} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
-            else
-                CMD="ssh ${USERNAME}@${MACH} -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
-            fi
-            if [ ! -z ${DEBUG+x} ]; then
-                echo -e "Running ${CMD}"
-                eval ${CMD}
-            else
-                eval ${CMD}&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
-            fi
+    # Install agent on machine: $1 = machine name or ip
+    echo -e "${GREEN}$1: Processing"
+    if [[ $(timeout 1 bash -c cat < /dev/tcp/$1/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
+        # Using SSH
+        if [ -z ${SSHKEY+x} ]; then
+            CMD="sshpass -p ${PASSWORD} ssh ${USERNAME}@$1 -p ${PORT} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
         else
-            # Using WINRM
-            if [ ! -z ${DEBUG+x} ]; then
-                echo -e "Running pwsh -Command \"
-    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ********
-    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \"${USERNAME}\",\$pw
-    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-    }
-    \""
-                pwsh -Command "
-    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
-    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
-    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-    "
-            else
-                pwsh -Command "
-    \$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
-    \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
-    Invoke-Command -ComputerName ${MACH} -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-    "&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
-            fi
+            CMD="ssh ${USERNAME}@$1 -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
         fi
-    done
+        if [ ! -z ${DEBUG+x} ]; then
+            echo -e "$1: Running ${CMD}"
+            eval ${CMD}
+        else
+            eval ${CMD}&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+        fi
+    else
+        # Using WINRM
+        if [ ! -z ${DEBUG+x} ]; then
+            echo -e "$1: Running pwsh -Command \"
+\$pw = ConvertTo-SecureString -AsPlainText -Force -String ********
+\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \"${USERNAME}\",\$pw
+Invoke-Command -ComputerName $1 -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+}
+\""
+            pwsh -Command "
+\$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
+\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
+Invoke-Command -ComputerName $1 -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+"
+        else
+            pwsh -Command "
+\$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
+\$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
+Invoke-Command -ComputerName $1 -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
+"&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+        fi
+    fi
 }
 
 
@@ -262,5 +260,8 @@ else
     else
         list_machines
     fi
-    install_agent
+    # Install agent on list of machines
+    for MACH in ${MACH_LIST[@]}; do
+        install_agent ${MACH} &
+    done
 fi
