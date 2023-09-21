@@ -99,13 +99,26 @@
     - ansible_distribution == 'Debian'
     - PYTHON_VERSION == 3
 
-- name: MMC - Allow mmc-agent to manage xml-rpc requests coming from relays
+- name: MMC - Configure mmc-agent
   ansible.builtin.copy:
     src: config.ini.local
     dest: /etc/mmc/agent/config.ini.local
     mode: '0644'
   notify:
     - MMC - Restart mmc-agent
+  when: 
+    - PYTHON_VERSION == 2
+
+- name: MMC - Configure mmc-agent
+  ansible.builtin.template:
+    src: config.ini.local.j2
+    dest: /etc/mmc/agent/config.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - PYTHON_VERSION == 3
 
 - name: MMC/APACHE - Enable pulse and mmc modules
   ansible.builtin.command: a2enconf {{ item }}
