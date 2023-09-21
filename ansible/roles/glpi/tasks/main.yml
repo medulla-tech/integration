@@ -155,6 +155,11 @@
     single_transaction: yes
   no_log: True
 
+- name: GLPI - Make log file writable for all
+  ansible.builtin.file:
+    path: /usr/share/glpi/files/_log/php-errors.log
+    mode: '0666'
+
 - name: GLPI - Initialise session to API
   ansible.builtin.uri:
     url: "http://localhost/glpi/apirest.php/initSession"
@@ -288,11 +293,6 @@
     owner: '{{ APACHE_USER }}'
   when:
     - GLPI_PLUGIN == 'fusioninventory'
-
-- name: GLPI - Make log file writable for all
-  ansible.builtin.file:
-    path: /usr/share/glpi/files/_log/php-errors.log
-    mode: '0666'
 
 - name: GLPI - Remove install.php file, not needed after the configuration.
   ansible.builtin.file:
