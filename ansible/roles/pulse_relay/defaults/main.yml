@@ -10,7 +10,7 @@ ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'
-ORGANISATION: Siveo Pulse
+ORGANISATION: Siveo Medulla
 IMAGING_SERVER_NAME: '{{ ENTITY }}'
 NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
 DBHOST: '{{ PULSEMAIN_IP }}' # To be set to PULSEMAIN_IP on relays
