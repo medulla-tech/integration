@@ -1,5 +1,8 @@
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
+ITSM_TYPE: glpi # can be glpi or itsm-ng
+ITSM_API_USER: 'root'
+ITSM_API_PASSWORD: '{{ ROOT_PASSWORD }}'
 ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
 ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi

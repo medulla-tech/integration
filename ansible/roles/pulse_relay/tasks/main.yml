@@ -60,7 +60,7 @@
     query:
       - SELECT id FROM glpi_entities WHERE completename = %(completename)s
     named_args:
-      completename: '{{ ORGANISATION }} > {{ CLUSTER_NAME }}'
+      completename: '{{ ORGANISATION }} > {{ ENTITY }}'
   register: res_query
   vars:
     ansible_ssh_user: root
@@ -68,7 +68,47 @@
   when:
     - ITSM_DBHOST == PULSEMAIN_IP
 
+- name: PULSE/GLPI - Initialise session to API
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+
 - name: PULSE/GLPI - Create entity in GLPI if it does not exist
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: POST
+    body_format: json
+    body:
+      input:
+        name: '{{ ENTITY }}'
+        completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+        level: 2
+        ancestors_cache: '[0]'
+    return_content: yes
+  register: result
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/GLPI - Create rules in GLPI if entity does not exist
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
     login_port: '{{ ITSM_DBPORT }}'
@@ -76,11 +116,10 @@
     login_password: '{{ ITSM_DBPASSWD }}'
     login_db: '{{ ITSM_DBNAME }}'
     query:
-      - INSERT INTO glpi_entities (id, entities_id, level, name, completename) SELECT MAX(id)+1, 0, 2, '{{ CLUSTER_NAME }}', '{{ ORGANISATION }} > {{ CLUSTER_NAME }}' FROM glpi_entities
       - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
-      - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ CLUSTER_NAME }}', 'AND')
+      - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
       - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
-      - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ CLUSTER_NAME }}'))
+      - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'

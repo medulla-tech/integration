@@ -28,8 +28,8 @@
 - name: PULSE/GLPI - Initialise session to API
   ansible.builtin.uri:
     url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
-    url_username: root
-    url_password: '{{ ITSM_ADMINPASSWD }}'
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
     method: GET
   register: json_session
@@ -39,8 +39,8 @@
 - name: PULSE/GLPI - Create entity in GLPI
   ansible.builtin.uri:
     url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
-    url_username: root
-    url_password: '{{ ITSM_ADMINPASSWD }}'
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
     headers:
       Session-Token: '{{ json_session.json.session_token }}'
@@ -48,7 +48,10 @@
     body_format: json
     body:
       input:
-        name: '{{ CLUSTER_NAME }}'
+        name: '{{ ENTITY }}'
+        completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+        level: 2
+        ancestors_cache: '[0]'
     return_content: yes
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
@@ -63,7 +66,7 @@
     login_password: '{{ ITSM_DBPASSWD }}'
     login_db: '{{ ITSM_DBNAME }}'
     query:
-    - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ CLUSTER_NAME }}', 'AND')
+    - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
   when:
