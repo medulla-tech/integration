@@ -125,7 +125,7 @@
 - name: GLPI - Upgrade database if needed
   ansible.builtin.command: php /usr/share/glpi/bin/console -n db:update
 
-- name: GLPI - Initialise database for Pulse
+- name: GLPI - Configure LDAP authentication
   community.mysql.mysql_query:
     login_host: '{{ GLPI_DBHOST }}'
     login_port: '{{ GLPI_DBPORT }}'
@@ -133,12 +133,7 @@
     login_password: '{{ GLPI_DBPASSWD }}'
     login_db: '{{ GLPI_DBNAME }}'
     query:
-    - DELETE FROM glpi_users WHERE name NOT LIKE 'glpi'
-    - DELETE FROM glpi_profiles_users WHERE id NOT LIKE (SELECT id FROM glpi_users where name = 'glpi')
-    - UPDATE glpi_entities SET completename='{{ ORGANISATION }}' where id=0
-    - INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'{{ ORGANISATION }}','{{ ORGANISATION }}')
     - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
-    single_transaction: yes
   when:
     - GLPI_CHANGED | bool
 
@@ -159,6 +154,87 @@
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
     single_transaction: yes
   no_log: True
+
+- name: GLPI - Initialise session to API
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/initSession"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+
+- name: GLPI - Delete all initially created users apart from glpi/root
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/User/{{ item }}"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: DELETE
+    return_content: yes
+  with_items:
+    - 3
+    - 4
+    - 5
+  register: result
+  failed_when: ('not found' not in result.content) and ('introuvable' not in result.content) and (result.status != 200)
+
+- name: GLPI - Delete all initially associated profiles apart from glpi/root
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/Profile_User/{{ item }}"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: DELETE
+    return_content: yes
+  with_items:
+    - 3
+    - 4
+    - 5
+  register: result
+  failed_when: ('not found' not in result.content) and ('introuvable' not in result.content) and (result.status != 200)
+
+- name: GLPI - Rename first entity in GLPI
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/Entity/0"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: PUT
+    body_format: json
+    body:
+      input:
+        name: '{{ ORGANISATION }}'
+        completename: '{{ ORGANISATION }}'
+    return_content: yes
+  register: result
+  failed_when: ('false' not in result.content) and (result.status != 200)
+
+- name: GLPI - Create location in GLPI
+  ansible.builtin.uri:
+    url: "http://localhost/glpi/apirest.php/Location/"
+    url_username: root
+    url_password: '{{ GLPI_ADMINPASSWD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: POST
+    body_format: json
+    body:
+      input:
+        name: '{{ ORGANISATION }}'
+        completename: '{{ ORGANISATION }}'
+        entities_id: 0
+        locations_id: 0
+    return_content: yes
+  register: result
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
 
 - name: GLPI - Enable {{ GLPI_PLUGIN }} plugin after db init
   ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} {{ GLPI_PLUGIN }}
