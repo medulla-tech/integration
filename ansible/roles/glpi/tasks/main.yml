@@ -154,6 +154,7 @@
     - UPDATE glpi_users SET password = MD5('{{ GLPI_ADMINPASSWD }}') where name = 'root'
     - UPDATE glpi_users SET api_token = '{{ GLPI_ROOTUSER_APITOKEN }}' where name = 'root'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
+    - UPDATE glpi_configs SET value='http://localhost/glpi/apirest.php/' WHERE name='url_base_api'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
     single_transaction: yes
