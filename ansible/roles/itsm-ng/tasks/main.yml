@@ -146,6 +146,11 @@
     single_transaction: yes
   no_log: True
 
+- name: ITSM-NG - Make log file writable for all
+  ansible.builtin.file:
+    path: /usr/share/itsm-ng/files/_log/php-errors.log
+    mode: '0666'
+
 - name: ITSM-NG - Initialise session to API
   ansible.builtin.uri:
     url: "http://localhost/itsm-ng/apirest.php/initSession"
@@ -264,11 +269,6 @@
     owner: '{{ APACHE_USER }}'
   when:
     - ITSMNG_PLUGIN == 'fusioninventory'
-
-- name: ITSM-NG - Make log file writable for all
-  ansible.builtin.file:
-    path: /usr/share/itsm-ng/files/_log/php-errors.log
-    mode: '0666'
 
 - name: ITSM-NG - Remove install.php file, not needed after the configuration.
   ansible.builtin.file:
