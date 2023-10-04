@@ -1,0 +1,157 @@
+##########################################################
+#   Enable synch to CDN and configure relay to use CDN   #
+##########################################################
+
+- name: ENABLE_CDN - Configure package_watching.ini.local
+  community.general.ini_file:
+    path: /etc/pulse-xmpp-agent/package_watching.ini.local
+    section: rsynctocdn
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'enable', value: 'True' }
+    - { parameter: 'ssh_remoteuser', value: '{{ SSH_REMOTEUSER }}' }
+    - { parameter: 'ssh_servername', value: '{{ SSH_REMOTESERVER }}' }
+    - { parameter: 'ssh_destpath', value: '{{ SSH_REMOTE_PATH }}' }
+  notify:
+    - ENABLE_CDN - Restart pulse-package-watching
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: ENABLE_CDN - Configure package_watching.ini.local
+  community.general.ini_file:
+    path: /etc/pulse-xmpp-agent/package_watching.ini.local
+    section: rsynctocdn
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'enable', value: 'True' }
+    - { parameter: 'ssh_remoteuser', value: '{{ SSH_REMOTEUSER }}' }
+    - { parameter: 'ssh_servername', value: '{{ SSH_REMOTESERVER }}' }
+    - { parameter: 'ssh_destpath', value: '{{ SSH_REMOTE_PATH }}' }
+  notify:
+    - ENABLE_CDN - Restart pulse-package-watching
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ENABLE_CDN - Configure pkgs.ini.local
+  community.general.ini_file:
+    path: /etc/mmc/plugins/pkgs.ini.local
+    section: integrity_checks
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'generate_hash', value: 'True' }
+    - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+  notify:
+    - ENABLE_CDN - Restart mmc-agent
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: ENABLE_CDN - Configure pkgs.ini.local
+  community.general.ini_file:
+    path: /etc/mmc/plugins/pkgs.ini.local
+    section: integrity_checks
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'generate_hash', value: 'True' }
+    - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+  notify:
+    - ENABLE_CDN - Restart mmc-agent
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ENABLE_CDN - Configure loaddeployment.ini.local
+  community.general.ini_file:
+    path: /etc/pulse-xmpp-agent-substitute/loaddeployment.ini.local
+    section: parameters
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'send_hash', value: 'True' }
+    - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+  notify:
+    - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: ENABLE_CDN - Configure loaddeployment.ini.local
+  community.general.ini_file:
+    path: /etc/pulse-xmpp-agent-substitute/loaddeployment.ini.local
+    section: parameters
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'send_hash', value: 'True' }
+    - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
+  notify:
+    - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ENABLE_CDN - Configure Relay server applicationdeploymentjson.ini.local
+  community.general.ini_file:
+    path: /etc/pulse-xmpp-agent/applicationdeploymentjson.ini.local
+    section: parameters
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'cdn_enable', value: 'True' }
+    - { parameter: 'cdn_baseurl', value: '{{ CDN_BASEURL }}' }
+    - { parameter: 'cdn_token', value: '{{ CDN_TOKEN }}' }
+  notify:
+    - ENABLE_CDN - Restart pulse-xmpp-agent-relay
+
+- name: ENABLE_CDN - Force restart of services after configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: ENABLE_CDN - Ensure package_watching is running
+  ansible.builtin.systemd:
+    name: pulse-package-watching
+    state: started
+    enabled: yes
+    masked: no
+
+- name: ENABLE_CDN - Make sure ssh key exists on pulsemain
+  ansible.builtin.user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+  register: pulsemain_sshkey
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: ENABLE_CDN - Make sure ssh key exists on pulsemain
+  ansible.builtin.user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+  register: pulsemain_sshkey
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ENABLE_CDN - !!!!! IMPORTANT MESSAGE !!!!!
+  ansible.builtin.debug:
+    msg: 
+    - Please make sure the following key is added to {{ SSH_REMOTEUSER }} account on {{ SSH_REMOTESERVER }}
+    - '{{ pulsemain_sshkey.ssh_public_key }}'
