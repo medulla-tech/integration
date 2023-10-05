@@ -36,7 +36,7 @@ listen:
     max_stanza_size: 8388608
     shaper: c2s_shaper
     access: c2s
-    tls: true
+    starttls_required: true
     protocol_options: 'TLS_OPTIONS'
   -
     port: 5223
@@ -45,7 +45,7 @@ listen:
     max_stanza_size: 262144
     shaper: c2s_shaper
     access: c2s
-    starttls_required: true
+    tls: true
     protocol_options: 'TLS_OPTIONS'
   -
     port: 5269
