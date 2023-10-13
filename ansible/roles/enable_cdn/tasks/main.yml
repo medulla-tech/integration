@@ -138,6 +138,14 @@
   when:
     - PULSEMAIN_IP == ''
 
+- name: ENABLE_CDN - !!!!! IMPORTANT MESSAGE !!!!!
+  ansible.builtin.debug:
+    msg: 
+    - Please make sure the following key is added to {{ SSH_REMOTEUSER }} account on {{ SSH_REMOTESERVER }}
+    - '{{ pulsemain_sshkey.ssh_public_key }}'
+  when:
+    - PULSEMAIN_IP == ''
+
 - name: ENABLE_CDN - Make sure ssh key exists on pulsemain
   ansible.builtin.user:
     name: root
@@ -155,3 +163,5 @@
     msg: 
     - Please make sure the following key is added to {{ SSH_REMOTEUSER }} account on {{ SSH_REMOTESERVER }}
     - '{{ pulsemain_sshkey.ssh_public_key }}'
+  when:
+    - PULSEMAIN_IP != ''

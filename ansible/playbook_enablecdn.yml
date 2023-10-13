@@ -1,0 +1,7 @@
+- name: Enable CDN
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  serial: 1
+  roles:
+    - enable_cdn
