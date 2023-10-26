@@ -9,6 +9,13 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
+- name: BASE - Run apt upgrade before any other install
+  ansible.builtin.apt:
+    upgrade: yes
+    update_cache: true
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: BASE - Install python3 bindings to SELinux shared libraries 
   ansible.builtin.yum:
     state: latest
