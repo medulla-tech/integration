@@ -93,7 +93,7 @@
       dc: '{{ ansible_domain.split(".", 1)[0] }}'
       o: '{{ ansible_domain }}'
   when:
-    - ansible_distribution == 'CentOS' or (ansible_distribution == 'Debian' and ansible_distribution_major_version != '9')
+    - ansible_distribution == 'CentOS'
 
 - name: LDAP - Add entry admin
   community.general.ldap_entry:
@@ -103,11 +103,22 @@
     bind_pw: '{{ LDAPADMINPASSWD }}'
     objectClass:
       - organizationalRole
+      - simpleSecurityObject
     attributes:
       cn: admin
       description: LDAP administrator
+      userPassword: "{SHA}{{ LDAPADMINPASSWD | sha1 }}"
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or (ansible_distribution == 'Debian' and ansible_distribution_major_version != '9')
+
+- name: LDAP - Regenerate LDAP admin user password
+  community.general.ldap_passwd:
+    bind_dn: cn=admin,{{ LDAP_BASEDN }}
+    bind_pw: "{{ LDAPADMINPASSWD }}"
+    dn: cn=admin,{{ LDAP_BASEDN }}
+    passwd: "{{ LDAPADMINPASSWD }}"
+  when:
+    - ansible_distribution == 'CentOS' or (ansible_distribution == 'Debian' and ansible_distribution_major_version != '9')
 
 - name: LDAP - Add entry schema
   ansible.builtin.command: '{{ item }}'
