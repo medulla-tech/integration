@@ -93,7 +93,7 @@
       dc: '{{ ansible_domain.split(".", 1)[0] }}'
       o: '{{ ansible_domain }}'
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or (ansible_distribution == 'Debian' and ansible_distribution_major_version != '9')
 
 - name: LDAP - Add entry admin
   community.general.ldap_entry:

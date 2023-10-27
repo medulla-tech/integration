@@ -1,1 +1,0 @@
-LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
