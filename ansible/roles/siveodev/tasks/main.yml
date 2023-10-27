@@ -69,3 +69,20 @@
       - python3-git
   when:
     - ansible_distribution == 'Debian'
+
+- name: SIVEODEV - Create folders for mounting first windows machine filesystem to /root
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+  - /root/{{ ansible_hostname }}-win-10-1/site-packages
+  - /root/{{ ansible_hostname }}-win-10-1/pulse
+
+- name: SIVEODEV - Mount first windows machine filesystem to /root
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: '{{ item }}'
+  with_items:
+  - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Python311\\Lib\\site-packages        /root/{{ ansible_hostname }}-win-10-1/site-packages        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0
+  - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Pulse        /root/{{ ansible_hostname }}-win-10-1/pulse        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0
