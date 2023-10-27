@@ -5,6 +5,7 @@
   serial: 1
   roles:
     - base
+    - security
     - mariadb
     - ejabberd
     - syncthing
@@ -15,5 +16,4 @@
     - pulse_packageserver
     - pulse_imaging
     - pulse_relay
-    - security
     - siveodev

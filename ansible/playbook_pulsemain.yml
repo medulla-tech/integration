@@ -5,6 +5,7 @@
   serial: 1
   roles:
     - base
+    - security
     - pki
     - php
     - ldap
@@ -37,7 +38,6 @@
     - pulse_imaging
     - medulla_osupdates
     - pulse_main
-    - security
     - siveodev
 
   # tasks:
