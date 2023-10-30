@@ -79,7 +79,7 @@
     - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
   when:
     - RESET_ITSM_ADMINPASS
-    - ITSM_DBPASSWD == 'root'
+    - ITSM_DBUSER == 'root'
     
 - name: RESET MEDULLA ROOT PASSWORD - Reset ITSM root user password
   community.mysql.mysql_query:
@@ -93,7 +93,7 @@
     - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
   when:
     - RESET_ITSM_ADMINPASS
-    - ITSM_DBPASSWD != 'root'
+    - ITSM_DBUSER != 'root'
 
 - name: RESET MEDULLA ROOT PASSWORD - Update glpi.ini.local
   community.general.ini_file:
