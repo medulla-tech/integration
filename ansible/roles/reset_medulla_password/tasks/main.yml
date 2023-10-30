@@ -74,13 +74,26 @@
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
     login_port: '{{ ITSM_DBPORT }}'
-    login_user: '{{ ITSM_DBUSER }}'
-    login_password: '{{ ITSM_DBPASSWD }}'
     login_db: '{{ ITSM_DBNAME }}'
     query:
     - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
   when:
     - RESET_ITSM_ADMINPASS
+    - ITSM_DBPASSWD == 'root'
+    
+- name: RESET MEDULLA ROOT PASSWORD - Reset ITSM root user password
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    config_file: ''
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+    - UPDATE glpi_users SET password = MD5('{{ ITSM_ADMINPASSWD }}') where name = 'root'
+  when:
+    - RESET_ITSM_ADMINPASS
+    - ITSM_DBPASSWD != 'root'
 
 - name: RESET MEDULLA ROOT PASSWORD - Update glpi.ini.local
   community.general.ini_file:
@@ -119,7 +132,7 @@
 - name: RESET MEDULLA ROOT PASSWORD - Reset Samba root password
   ansible.builtin.command: '{{ item }}'
   with_items:
-    - smbpasswd -x root
+    - pdbedit -x root
     - echo -ne "{{ SMBADMINPASSWD }}\n{{ SMBADMINPASSWD }}\n" | smbpasswd -a -s root
   when:
     - RESET_SAMBA_ADMINPASS
