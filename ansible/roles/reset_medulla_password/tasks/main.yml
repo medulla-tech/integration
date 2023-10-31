@@ -2,6 +2,12 @@
 #              Reset Medulla root password               #
 ##########################################################
 
+- name: RESET MEDULLA ROOT PASSWORD - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
 - name: RESET MEDULLA ROOT PASSWORD - Install required tools
   ansible.builtin.yum:
     pkg:
@@ -23,13 +29,18 @@
     - ansible_distribution == 'Debian'
 
 - name: RESET MEDULLA ROOT PASSWORD - Reset LDAP admin user password
-  community.general.ldap_passwd:
-    bind_dn: cn=admin,{{ LDAP_BASEDN }}
-    bind_pw: "{{ OLD_ROOT_PASSWORD }}"
-    dn: cn=admin,{{ LDAP_BASEDN }}
-    passwd: "{{ LDAPADMINPASSWD }}"
+  ansible.builtin.lineinfile:
+    path: '{{ ADMIN_LDIF_FILE }}'
+    regexp: '^olcRootPW: .*$'
+    line: 'olcRootPW: {{ LDAPADMINPASSWD }}'
+    state: 'present'
+  notify:
+    - RESET MEDULLA ROOT PASSWORD - Restart slapd
   when:
     - RESET_LDAP_ADMINPASS
+
+- name: RESET MEDULLA ROOT PASSWORD - Force restart of slapd before reconfiguring mmc-agent
+  ansible.builtin.meta: flush_handlers
 
 - name: RESET MEDULLA ROOT PASSWORD - Update base.ini.local
   community.general.ini_file:

@@ -2,7 +2,6 @@ OLD_ROOT_PASSWORD: '' # Must be vaulted and inserted in the playbook named playb
 ROOT_PASSWORD: '' # Must be vaulted and inserted in the playbook named playbook_resetpasswd.yml
 RESET_LDAP_ADMINPASS: True
 LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
-LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
 RESET_MARIADB_ADMINPASS: True
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'

@@ -18,3 +18,9 @@
     name: 'pulse-xmpp-agent-relay'
     state: restarted
     daemon_reload: yes
+
+- name: RESET MEDULLA ROOT PASSWORD - Restart slapd
+  ansible.builtin.systemd:
+    name: slapd
+    state: restarted
+    daemon_reload: yes
