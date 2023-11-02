@@ -173,5 +173,5 @@
   when:
     - RESET_SYNCTHING_ADMINPASS
 
-- name: SYNCTHING - Force restart of service to use new config files
+- name: RESET MEDULLA ROOT PASSWORD - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
