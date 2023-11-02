@@ -403,27 +403,36 @@
       access: direct
     status_code: [200, 409]
 
-- name: CERT - Fetch ca-chain.cert.pem from pki server
+- name: CERT - Fetch certificates from pki server
   ansible.builtin.fetch:
-    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
-    dest: /tmp/medulla-ca-chain.cert.pem
+    src: '{{ PKI_PATH }}/{{ item.src }}'
+    dest: '/tmp/{{ item.dest }}'
     flat: yes
+  with_items:
+    - {src: ca-chain.cert.pem, dest: medulla-ca-chain.cert.pem }
+    - {src: rootca.cert.pem, dest: medulla-rootca.cert.pem }
   delegate_to: '{{ PKI_SERVER }}'
   when:
     - PKI_SERVER != 'localhost'
 
-- name: CERT - Copy medulla-ca-chain.cert.pem to clients folder
+- name: CERT - Copy certificates to clients folder
   ansible.builtin.copy:
-    src: /tmp/medulla-ca-chain.cert.pem
-    dest: /var/lib/pulse2/clients/medulla-ca-chain.cert.pem
+    src: '/tmp/{{ item }}'
+    dest: '/var/lib/pulse2/clients/{{ item }}'
+  with_items:
+    - medulla-ca-chain.cert.pem
+    - medulla-rootca.cert.pem
   when:
     - PKI_SERVER != 'localhost'
 
-- name: CERT - Copy medulla-ca-chain.cert.pem to clients folder
+- name: CERT - Copy certificates to clients folder
   ansible.builtin.copy:
-    src: '{{ PKI_PATH }}/ca-chain.cert.pem'
-    dest: /var/lib/pulse2/clients/medulla-ca-chain.cert.pem
+    src: '{{ PKI_PATH }}/{{ item.src }}'
+    dest: '/var/lib/pulse2/clients/{{ item.dest }}'
     remote_src: true
+  with_items:
+    - {src: ca-chain.cert.pem, dest: medulla-ca-chain.cert.pem }
+    - {src: rootca.cert.pem, dest: medulla-rootca.cert.pem }
   when:
     - PKI_SERVER == 'localhost'
 
