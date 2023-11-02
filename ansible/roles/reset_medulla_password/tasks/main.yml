@@ -141,10 +141,10 @@
     - RESET_GRAFANA_ADMINPASS
 
 - name: RESET MEDULLA ROOT PASSWORD - Reset Samba root password
-  ansible.builtin.command: '{{ item }}'
+  ansible.builtin.shell: '{{ item }}'
   with_items:
     - pdbedit -x root
-    - echo -ne "{{ SMBADMINPASSWD }}\n{{ SMBADMINPASSWD }}\n" | smbpasswd -a -s root
+    - (echo {{ SMBADMINPASSWD }}; echo {{ SMBADMINPASSWD }}) | smbpasswd -a -s root
   when:
     - RESET_SAMBA_ADMINPASS
 
