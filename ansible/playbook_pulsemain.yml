@@ -16,7 +16,8 @@
     - syncthing
     - urbackup
     - ssh
-    - glpi
+    - { role: glpi, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'glpi') }
+    - { role: itsm-ng, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'itsm-ng') }
     - guacamole
     - grafana
     - nfs
