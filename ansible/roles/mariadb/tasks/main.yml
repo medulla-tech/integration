@@ -91,7 +91,7 @@
     group: root
     mode: 0600
 
-- name: MARIADB - Removes all anonymous user accounts and make sure admin user can connect
+- name: MARIADB - Remove all anonymous user accounts
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
