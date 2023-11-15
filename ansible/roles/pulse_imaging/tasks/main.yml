@@ -162,3 +162,23 @@
     - { path: '/tftpboot/nodes/127.0.0.1', state: 'directory', mode: '0755', src: '' }
     - { path: '/tftpboot/nbi_img', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/bootloader' }
     - { path: '/home/partimag', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/masters' }
+    - { path: '/var/lib/pulse2/imaging/bootloader/grub', state: 'directory', mode: '0755', src: '' }
+
+- name: PULSE_IMAGING - Add fake grub.cfg file
+  ansible.builtin.copy:
+    src: grub.cfg
+    dest: /var/lib/pulse2/imaging/bootloader/grub
+    mode: '0644'
+
+- name: PULSE_IMAGING - Add fake grub.cfg_skeleton file
+  ansible.builtin.copy:
+    src: grub.cfg_skeleton
+    dest: /var/lib/pulse2/imaging/bootloader/grub
+    mode: '0644'
+
+- name: PULSE_IMAGING - Add fake localboot.cfg file
+  ansible.builtin.copy:
+    src: localboot.cfg
+    dest: /var/lib/pulse2/imaging/bootloader/
+    mode: '0644'
+
