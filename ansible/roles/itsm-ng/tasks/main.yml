@@ -136,7 +136,7 @@
     login_password: '{{ ITSMNG_DBPASSWD }}'
     login_db: '{{ ITSMNG_DBNAME }}'
     query:
-    - UPDATE glpi_users SET name = 'root' WHERE name = 'itsm-ng'
+    - UPDATE glpi_users SET name = 'root' WHERE name = 'itsm'
     - UPDATE glpi_users SET password = MD5('{{ ITSMNG_ADMINPASSWD }}') where name = 'root'
     - UPDATE glpi_users SET api_token = '{{ ITSMNG_ROOTUSER_APITOKEN }}' where name = 'root'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
