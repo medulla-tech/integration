@@ -17,7 +17,6 @@ dependencies:
   - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
   - role: relay_agent
   - role: pulse_file_browser
-  - role: pulse_inventoryserver
   - role: pulse_packageserver
   - role: pxe_registration
   - role: pulse_imaging

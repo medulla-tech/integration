@@ -33,7 +33,6 @@
     - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
     - relay_agent
     - pulse_file_browser
-    - pulse_inventoryserver
     - pulse_packageserver
     - pxe_registration
     - pulse_imaging
