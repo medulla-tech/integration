@@ -22,7 +22,16 @@
     pkg:
       - tomcat{{ DEB_TOMCAT_VERSION }}
   when:
-    - ansible_distribution == 'Debian'
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - tomcat{{ DEB_TOMCAT_VERSION }}
+      - jdk-11
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: TOMCAT - Change tomcat port from 8080 to 8081
   ansible.builtin.replace:
@@ -31,6 +40,23 @@
     replace: 'Connector port="8081"'
   notify:
     - TOMCAT - Restart tomcat
+
+- name: Use java 11 by default
+  community.general.alternatives:
+    name: java
+    path: /usr/lib/jvm/jdk-11/bin/java
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: Use jdk-11 by default on tomcat9 service
+  ansible.builtin.copy:
+    src: java_home.conf
+    dest: /etc/systemd/system/{{ TOMCAT_DAEMON }}.service.d/
+    mode: '0644'
+  notify:
+    - TOMCAT - Restart tomcat
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: TOMCAT - Ensure tomcat is running
   ansible.builtin.systemd:

@@ -56,6 +56,7 @@
       - libguac-client-vnc0
       - guacamole-auth-jdbc
       - guacamole-tomcat
+      - mysql-connector-j
     state: latest
   when:
     - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
@@ -126,13 +127,24 @@
 - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
   ansible.builtin.copy:
     src: /usr/share/java/mysql-connector-java.jar
-    dest: /etc/guacamole/lib/
+    dest: /etc/guacamole/lib/mysql-connector-java.jar
     remote_src: yes
     owner: root
     group: root
     mode: '644'
   when:
     - ansible_distribution == 'CentOS'
+
+- name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
+  ansible.builtin.copy:
+    src: /usr/share/java/mysql-connector-java-8.2.0.jar
+    dest: /etc/guacamole/lib/mysql-connector-java.jar
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '644'
+   when:
+     - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
 - name: GUACAMOLE - Configure guacamole.properties
   ansible.builtin.template:
