@@ -135,6 +135,13 @@
   when:
     - ansible_distribution == 'CentOS'
 
+- name: Creates /etc/guacamole/lib/ folder
+  ansible.builtin.file:
+    path: /etc/guacamole/lib/
+    state: directory
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
 - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
   ansible.builtin.copy:
     src: /usr/share/java/mysql-connector-java-8.2.0.jar
