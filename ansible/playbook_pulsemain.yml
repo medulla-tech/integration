@@ -11,8 +11,8 @@
     - ldap
     - mariadb
     - ejabberd
-    #- syncthing_discosrv
-    #- syncthing_relay
+    - syncthing_discosrv
+    - syncthing_relay
     - syncthing
     - urbackup
     - ssh
@@ -38,7 +38,6 @@
     - pulse_imaging
     - medulla_osupdates
     - pulse_main
-    - siveodev
 
   # tasks:
   #   - name: SUBSTITUTE_AGENT - Find out name of substitute
