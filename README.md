@@ -1,4 +1,4 @@
-# Requierements
+# Requirements
 
 Medulla support different server flavor as Debian and RedHat familly (Centos / Alma Linux ), Mageia.
 
