@@ -4,9 +4,7 @@ Medulla support different server flavor as Debian and RedHat familly (Centos / A
 
 ### Debian
 
-Debian 9* (suggested Partitioning / 20Go ext4 and /var 400Go XFS
-
-*Next release will be on Debian 12
+Debian 12 (suggested Partitioning / 20Go ext4 and /var 400Go XFS
 
 # Install Medulla
 - Quick deployment using a container
