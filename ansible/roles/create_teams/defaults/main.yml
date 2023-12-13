@@ -1,0 +1,7 @@
+# For using database on another server, define DBHOST
+DBHOST: localhost
+DBPORT: 3306
+DBUSER: mmc
+DBPASSWORD: '' # 12 character string. Must be vaulted
+TEAM_NAME: MainAdmins
+USER_REGEX: Admin # This can also be a regex eg: ^Admin.*

@@ -1,0 +1,81 @@
+##########################################################
+#               Syncthing Discovery Server               #
+##########################################################
+
+- name: STDISCOSRV - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: STDISCOSRV - Install syncthing discovery server
+  ansible.builtin.yum:
+    pkg:
+      - syncthing-tools
+      - syncthing-systemd-addons
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: STDISCOSRV - Install syncthing discovery server
+  ansible.builtin.apt:
+    pkg:
+      - syncthing-discosrv
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: STDISCOSRV - Create user accounts
+  ansible.builtin.user:
+    name: syncthing
+    state: present
+    createhome: yes
+    home: /var/lib/syncthing
+    shell: /sbin/nologin
+    system: yes
+
+- name: STDISCOSRV - Make sure folder structure exists
+  ansible.builtin.file:
+    path: '{{ STDISCOSRV_PATH }}'
+    owner: syncthing
+    group: syncthing
+    mode: '0755'
+    recurse: yes
+    state: directory
+
+- name: STDISCOSRV/CERTS - Configure discovery server
+  ansible.builtin.copy:
+    src: '{{ item.src }}'
+    dest: '{{ STDISCOSRV_PATH }}/{{ item.dest }}'
+    owner: syncthing
+    group: syncthing
+    mode: '{{ item.mode }}'
+    remote_src: yes
+  with_items:
+    - { src: '{{ PKI_PATH }}/newcerts/{{ SERVER_FQDN }}.cert.pem', dest: 'cert.pem', mode: '0644' }
+    - { src: '{{ PKI_PATH }}/private/{{ SERVER_FQDN }}.key.pem', dest: 'key.pem', mode: '0600' }
+  notify:
+    - STDISCOSRV - Restart discovery server
+
+- name: STDISCOSRV - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: STDISCOSRV - Ensure syncthing discovery server is running
+  ansible.builtin.systemd:
+    name: '{{ STDISCOSRV_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no
+
+- name: STDISCOSRV - Get Service Status
+  ansible.builtin.shell: systemctl status syncthing-discosrv.service |awk 'match($0, /.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}/) {print substr($0, RSTART, RLENGTH)}'
+  register: stdiscosrv_status
+
+- name: STDISCOSRV - Set STDISCOSRV_URL variable
+  ansible.builtin.set_fact:
+    STDISCOSRV_URL: https://{{ SERVER_FQDN }}:8443/?id={{ stdiscosrv_status.stdout }}
+  when: stdiscosrv_status.stdout != ""
+
+- name: STDISCOSRV - Print STDISCOSRV_URL variable
+  ansible.builtin.debug:
+    var: STDISCOSRV_URL

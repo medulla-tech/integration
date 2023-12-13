@@ -1,0 +1,10 @@
+- name: GRAFANA - Stop service
+  ansible.builtin.systemd:
+    state: stopped
+    name: grafana-server
+  ignore_errors: true
+
+- name: GRAFANA - Delete previous database
+  ansible.builtin.file:
+    path: /var/lib/grafana/grafana.db
+    state: absent

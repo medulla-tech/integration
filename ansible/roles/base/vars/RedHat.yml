@@ -1,0 +1,2 @@
+PULSE4REPO_DEST: /etc/yum.repos.d/pulse4.repo
+NTP_DAEMON: ntpd

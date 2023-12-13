@@ -1,0 +1,11 @@
+- name: PHP - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes
+
+- name: PHP - Restart php-fpm
+  ansible.builtin.systemd:
+    name: '{{ PHP_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

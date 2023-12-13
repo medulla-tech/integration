@@ -1,0 +1,16 @@
+- name: LDAP - Stop service
+  ansible.builtin.systemd:
+    name: 'slapd'
+    state: stopped
+
+- name: LDAP - Cleanup data
+  ansible.builtin.file:
+    state: absent
+    path: '{{ item }}'
+  with_items:
+  - /etc/openldap/slapd.d/cn=config/cn=schema/cn={1}cosine.ldif
+  - /etc/openldap/slapd.d/cn=config/cn=schema/cn={2}nis.ldif
+  - /etc/openldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
+  - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
+  when:
+    - ansible_distribution == 'CentOS'

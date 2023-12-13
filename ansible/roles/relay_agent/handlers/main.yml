@@ -1,0 +1,5 @@
+- name: RELAY_AGENT - Restart pulse-xmpp-agent-relay
+  ansible.builtin.systemd:
+    name: 'pulse-xmpp-agent-relay'
+    state: restarted
+    daemon_reload: yes

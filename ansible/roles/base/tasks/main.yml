@@ -1,0 +1,235 @@
+
+##########################################################
+#                      Base setup                        #
+##########################################################
+
+- name: BASE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: BASE - Run apt upgrade before any other install
+  ansible.builtin.apt:
+    upgrade: yes
+    update_cache: true
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Install python3 bindings to SELinux shared libraries 
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - libselinux-python3
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Install python3 bindings to SELinux shared libraries
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-selinux
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Disable SELinux
+  ansible.posix.selinux:
+    state: disabled
+  ignore_errors: true
+
+- name: BASE - Configure posix queues limits
+  ansible.builtin.copy:
+    src: 99-pulse.conf
+    dest: /etc/sysctl.d/
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: BASE - Configure system limits for posix queues
+  ansible.builtin.copy:
+    src: pulse.conf
+    dest: /etc/security/limits.d/
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: BASE - Clean yum repo
+  ansible.builtin.command: yum clean {{ item }}
+  loop:
+    - metadata
+    - all
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Configure locales
+  ansible.builtin.lineinfile:
+    dest: /etc/locale.gen
+    state: present
+    create: yes
+    line: '{{ item }}'
+  with_items:
+    - da_DK.UTF-8 UTF-8
+    - de_DE.UTF-8 UTF-8
+    - en_US.UTF-8 UTF-8
+    - es_ES.UTF-8 UTF-8
+    - fr_FR.UTF-8 UTF-8
+    - it_IT.UTF-8 UTF-8
+    - ja_JP.UTF-8 UTF-8
+    - nb_NO.UTF-8 UTF-8
+    - pl_PL.UTF-8 UTF-8
+    - pt_BR.UTF-8 UTF-8
+    - ru_RU.UTF-8 UTF-8
+    - uk_UA.UTF-8 UTF-8
+    - zh_CN.UTF-8 UTF-8
+    - zh_TW.UTF-8 UTF-8
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Install locales
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - locales
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Generate locales
+  ansible.builtin.command: locale-gen
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Install ntp
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - ntp
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Install ntp
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - ntp
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Ensure ntp is running
+  ansible.builtin.systemd:
+    name: '{{ NTP_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no
+
+- name: BASE - Make sure ssh key exists
+  ansible.builtin.user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+  register: sshkey
+
+- name: BASE - Add relay ssh public key to authorized_keys on pulsemain
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ sshkey.ssh_public_key }}"
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: BASE - Fetch ssh public key from pulsemain
+  ansible.builtin.user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+  register: pulsemain_sshkey
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: BASE - Add pulsemain ssh public key to authorized_keys on relay
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ pulsemain_sshkey.ssh_public_key }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: BASE - Create rbash shell
+  ansible.builtin.file:
+    src: /bin/bash
+    dest: /bin/rbash
+    state: link
+    force: yes
+
+- name: BASE - Update /etc/hosts
+  ansible.builtin.lineinfile:
+    dest: "/etc/hosts"
+    line: "{{ item.line }}"
+    regexp: "{{ item.regex }}"
+  when: "item.when"
+  with_items:
+    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: PULSEMAIN_IP != '' }
+    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: ansible_hostname != 'pulse' }
+
+- name: BASE - Install apt-transport-https and gpg
+  ansible.builtin.apt:
+    state: latest
+    update_cache: yes
+    pkg:
+      - apt-transport-https
+      - gpg
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Download packages repository file from {{ PULSE4REPO_URL }}
+  ansible.builtin.get_url:
+    url: '{{ PULSE4REPO_URL }}'
+    dest: '{{ PULSE4REPO_DEST }}'
+
+- name: BASE - Find out URL of SIVEO public key
+  ansible.builtin.command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
+  register: grep_output
+  ignore_errors: true
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Import SIVEO public key
+  ansible.builtin.rpm_key:
+    state: present
+    key: '{{ grep_output.stdout.split("=")[1] }}'
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Import SIVEO public key
+  ansible.builtin.apt_key:
+    state: present
+    url: '{{ PULSE4REPOKEY_URL }}'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Run apt update
+  ansible.builtin.apt:
+    update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+      - xmlstarlet
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BASE - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+      - xmlstarlet
+  when:
+    - ansible_distribution == 'Debian'

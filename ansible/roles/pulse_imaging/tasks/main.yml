@@ -1,0 +1,184 @@
+##########################################################
+#                     Pulse Imaging                      #
+##########################################################
+
+- name: PULSE_IMAGING - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PULSE_IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.yum:
+    pkg:
+      - pulse2-package-server
+      - pulse2-common
+      - ipxe-siveo # TDB: to be replaced by pulse-ipxe-config
+      - clonezilla
+      - pulse2-davos-client
+      - udpcast
+      - tftp-server
+      - syslinux
+      - syslinux-efi64
+      - hwdata
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE_IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.apt:
+    pkg:
+      - pulse2-package-server
+      - pulse2-common
+      - ipxe-siveo # TDB: to be replaced by pulse-ipxe-config
+      - pulse2-davos-client
+      - clonezilla
+      - udpcast
+      - pxelinux
+      - syslinux-common
+      - syslinux-efi
+      - hwdata
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE_IMAGING - Create needed exports
+  ansible.builtin.copy:
+    src: exports
+    dest: /etc/
+    mode: '0644'
+  notify:
+    - PULSE_IMAGING - Restart nfs service
+
+- name: PULSE_IMAGING - Make sure needed folders exist
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+  with_items:
+    - '{{ PULSE_BIOS_PATH }}'
+    - '{{ PULSE_UEFI32_PATH }}'
+    - '{{ PULSE_UEFI64_PATH }}'
+    - /var/lib/pulse2/imaging/tools
+    - /var/lib/pulse2/imaging/bootmenus
+    - /var/log/clonezilla
+
+- name: PULSE_IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
+  ansible.builtin.file:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    state: hard
+    force: yes
+  with_items:
+    - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/libutil.c32', dest: '{{ PULSE_BIOS_PATH }}/libutil.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/reboot.c32', dest: '{{ PULSE_BIOS_PATH }}/reboot.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/ldlinux.c32', dest: '{{ PULSE_BIOS_PATH }}/ldlinux.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/liblua.c32', dest: '{{ PULSE_BIOS_PATH }}/liblua.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/vesamenu.c32', dest: '{{ PULSE_BIOS_PATH }}/vesamenu.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/hdt.c32', dest: '{{ PULSE_BIOS_PATH }}/hdt.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/libcom32.c32', dest: '{{ PULSE_BIOS_PATH }}/libcom32.c32' }
+    - { src: '{{ SYSLINUX_BIOS_PATH }}/libmenu.c32', dest: '{{ PULSE_BIOS_PATH }}/libmenu.c32' }
+    - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_BIOS_PATH }}/pci.ids' }
+    - { src: '{{ SYSLINUX_EFI32 }}', dest: '{{ PULSE_UEFI32_PATH }}/syslinux.efi' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI32_PATH }}/libgpl.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI32_PATH }}/libutil.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI32_PATH }}/reboot.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/liblua.c32', dest: '{{ PULSE_UEFI32_PATH }}/liblua.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/vesamenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/vesamenu.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI32_PATH }}/hdt.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/libcom32.c32', dest: '{{ PULSE_UEFI32_PATH }}/libcom32.c32' }
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI32_PATH }}/libmenu.c32' }
+    - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI32_PATH }}/pci.ids' }
+    - { src: '{{ SYSLINUX_EFI64 }}', dest: '{{ PULSE_UEFI64_PATH }}/syslinux.efi' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/libgpl.c32', dest: '{{ PULSE_UEFI64_PATH }}/libgpl.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/libutil.c32', dest: '{{ PULSE_UEFI64_PATH }}/libutil.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/reboot.c32', dest: '{{ PULSE_UEFI64_PATH }}/reboot.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/ldlinux.e64', dest: '{{ PULSE_UEFI64_PATH }}/ldlinux.e64' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/liblua.c32', dest: '{{ PULSE_UEFI64_PATH }}/liblua.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/vesamenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/vesamenu.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/hdt.c32', dest: '{{ PULSE_UEFI64_PATH }}/hdt.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/libcom32.c32', dest: '{{ PULSE_UEFI64_PATH }}/libcom32.c32' }
+    - { src: '{{ SYSLINUX_UEFI64_PATH }}/libmenu.c32', dest: '{{ PULSE_UEFI64_PATH }}/libmenu.c32' }
+    - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
+
+- name: PULSE_IMAGING - Create syslinux specific setup for Debian
+  ansible.builtin.file:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    state: hard
+    force: yes
+  with_items:
+    - { src: '{{ SYSLINUX_UEFI32_PATH }}/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE_IMAGING - Create symlinks for pxelinux
+  ansible.builtin.file:
+    src: ../bootmenus
+    dest: '{{ item }}/pxelinux.cfg'
+    state: link
+    force: yes
+  with_items:
+    - '{{ PULSE_BIOS_PATH }}'
+    - '{{ PULSE_UEFI32_PATH }}'
+    - '{{ PULSE_UEFI64_PATH }}'
+
+- name: PULSE_IMAGING - Copy utilities.menu
+  ansible.builtin.template:
+    src: utilities.menu.j2
+    dest: /var/lib/pulse2/imaging/tools/utilities.menu
+    mode: '0644'
+    backup: yes
+
+- name: PULSE_IMAGING - Prevent clonezilla from being upgraded
+  ansible.builtin.dpkg_selections:
+    name: clonezilla
+    selection: hold
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE_IMAGING - Configure UDP Sender
+  ansible.builtin.lineinfile:
+    dest: /etc/drbl/drbl-ocs.conf
+    line: udp_sender_extra_opt_default="--log /tmp/udp-sender.log -b 1024"
+    regexp: '^udp_sender_extra_opt_default=.*$'
+
+- name: PULSE_IMAGING - Create isc-dhcp-server file to trick Clonezilla
+  ansible.builtin.template:
+    src: isc-dhcp-server.j2
+    dest: /etc/default/isc-dhcp-server
+    mode: '0644'
+    backup: yes
+
+- name: PULSE_IMAGING - Create files and folders needed to trick Clonezilla
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: '{{ item.state }}'
+    mode: '{{ item.mode }}'
+    src: '{{ item.src }}'
+  with_items:
+    - { path: '/etc/dhcp/dhcpd.conf', state: 'touch', mode: '0644', src: '' }
+    - { path: '/tftpboot/nodes/127.0.0.1', state: 'directory', mode: '0755', src: '' }
+    - { path: '/tftpboot/nbi_img', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/bootloader' }
+    - { path: '/home/partimag', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/masters' }
+    - { path: '/var/lib/pulse2/imaging/bootloader/grub', state: 'directory', mode: '0755', src: '' }
+
+- name: PULSE_IMAGING - Add fake grub.cfg file
+  ansible.builtin.copy:
+    src: grub.cfg
+    dest: /var/lib/pulse2/imaging/bootloader/grub
+    mode: '0644'
+
+- name: PULSE_IMAGING - Add fake grub.cfg_skeleton file
+  ansible.builtin.copy:
+    src: grub.cfg_skeleton
+    dest: /var/lib/pulse2/imaging/bootloader/grub
+    mode: '0644'
+
+- name: PULSE_IMAGING - Add fake localboot.cfg file
+  ansible.builtin.copy:
+    src: localboot.cfg
+    dest: /var/lib/pulse2/imaging/bootloader/
+    mode: '0644'
+

@@ -1,0 +1,71 @@
+- name: MMC - Stop mmc-agent service
+  ansible.builtin.systemd:
+    name: mmc-agent
+    state: stopped
+  ignore_errors: true
+
+- name: MMC - Stop pulse-xmpp-master-substitute-master service
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-master
+    state: stopped
+  ignore_errors: true
+
+- name: MMC/EJABBERD - Delete master account
+  community.general.ejabberd_user:
+    username: master
+    host: '{{ XMPP_DOMAIN }}'
+    state: absent
+
+- name: MMC - Delete plugins config
+  ansible.builtin.file:
+    path: '/etc/mmc/plugins/{{ item }}.ini.local'
+    state: absent
+  with_items:
+    - base
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - glpi
+    - admin
+    - imaging
+    - kiosk
+
+- name: MMC - Delete plugins config
+  ansible.builtin.file:
+    path: '/var/lib/mmc/.dbinitialised'
+    state: absent
+
+- name: MMC - Delete database user
+  community.mysql.mysql_user:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    host_all: yes
+    state: absent
+
+- name: MMC - Delete databases
+  community.mysql.mysql_db:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ item }}'
+    state: absent
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+
+- name: MMC - Delete database initialisation marker
+  ansible.builtin.file:
+    path: '/var/lib/mmc/.dbinitialised'
+    state: absent

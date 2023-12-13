@@ -1,0 +1,25 @@
+PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
+PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
+ITSM_TYPE: glpi # can be glpi or itsm-ng
+ITSM_API_USER: 'root'
+ITSM_API_PASSWORD: '{{ ROOT_PASSWORD }}'
+ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
+ITSM_DBPORT: 3306
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSM_DBNAME: glpi
+ENTITY: Public
+CLUSTER_NAME: '{{ ENTITY }}'
+ORGANISATION: Siveo Medulla
+IMAGING_SERVER_NAME: '{{ ENTITY }}'
+NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
+DBHOST: '{{ PULSEMAIN_IP }}' # To be set to PULSEMAIN_IP on relays
+DBPORT: 3306
+DBUSER: mmc
+DBPASSWORD: '' # 12 character string. Must be vaulted
+XMPP_DOMAIN: '{{ ansible_hostname }}'
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+PUBLIC_IP: ''
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'

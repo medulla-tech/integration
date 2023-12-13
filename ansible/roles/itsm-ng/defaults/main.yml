@@ -1,0 +1,14 @@
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+ITSMNG_DBHOST: localhost
+ITSMNG_DBPORT: 3306
+ITSMNG_DBUSER: glpi
+ITSMNG_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSMNG_DBNAME: glpi
+ITSMNG_PLUGIN: fusioninventory
+ITSMNG_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
+ITSMNG_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
+ORGANISATION: Siveo Medulla
+LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"

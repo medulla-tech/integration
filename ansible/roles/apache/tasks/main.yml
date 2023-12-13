@@ -1,0 +1,57 @@
+##########################################################
+#                     Install Apache                     #
+##########################################################
+
+- name: APACHE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: APACHE - Install Apache
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - httpd
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: APACHE - Install Apache
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - apache2
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: APACHE - Enable and disable apache modules
+  community.general.apache2_module:
+    state: '{{ item.state }}'
+    name: '{{ item.name }}'
+  with_items:
+    - { name: 'proxy', state: 'present' }
+    - { name: 'proxy_http', state: 'present' }
+    - { name: 'proxy_wstunnel', state: 'present' }
+    - { name: 'proxy_fcgi', state: 'present' }
+    - { name: 'mpm_prefork', state: 'absent' }
+    - { name: 'mpm_event', state: 'present' }
+    - { name: 'rewrite', state: 'present' }
+  notify:
+    - APACHE - Restart apache
+  when:
+    - ansible_distribution == "Debian"
+
+- name: APACHE - Enable and disable apache modules
+  ansible.builtin.copy:
+    src: nopt.conf
+    dest: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d/
+    mode: '0644'
+  notify:
+    - APACHE - Restart apache
+
+- name: APACHE - Ensure apache is running
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

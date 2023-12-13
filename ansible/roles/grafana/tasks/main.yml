@@ -1,0 +1,138 @@
+##########################################################
+#                     Grafana setup                      #
+##########################################################
+
+- name: GRAFANA - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: GRAFANA - Install grafana
+  ansible.builtin.yum:
+    pkg:
+      - grafana
+      - grafana-image-renderer
+      - python3-jmespath
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: GRAFANA - Install grafana
+  ansible.builtin.apt:
+    pkg:
+      - grafana
+      - grafana-image-renderer
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GRAFANA - Fix grafana-cli
+  ansible.builtin.copy:
+    src: grafana-cli
+    dest: /usr/sbin/grafana-cli
+    mode: '0755'
+
+- name: GRAFANA/APACHE - Enable apache module
+  community.general.apache2_module:
+    state: present
+    name: headers
+  notify:
+    - GRAFANA - Restart apache
+  when:
+    - ansible_distribution == "Debian"
+
+- name: GRAFANA/APACHE - Setup local apache for grafana
+  ansible.builtin.copy:
+    src: grafana.conf
+    dest: '{{ APACHE_CONF_PATH }}/'
+    mode: '0644'
+  notify:
+    - GRAFANA - Restart apache
+
+- name: GRAFANA/APACHE - Enable grafana module
+  ansible.builtin.command: a2enconf grafana
+  notify:
+    - GRAFANA - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GRAFANA - Configure grafana
+  ansible.builtin.copy:
+    src: grafana.ini
+    dest: /etc/grafana/
+    mode: '0640'
+    group: grafana
+  notify:
+    - GRAFANA - Restart grafana
+
+- name: GRAFANA - Restart grafana service to build grafana db
+  ansible.builtin.systemd:
+    name: grafana-server
+    state: restarted
+
+- name: GRAFANA - Wait for grafana port to become available
+  ansible.builtin.wait_for:
+    port: 3000
+    delay: 5
+
+- name: GRAFANA - Reset admin password
+  ansible.builtin.command: grafana-cli admin reset-admin-password '{{ GRAFANAADMINPASSWD }}'
+
+- name: GRAFANA - Get adminkey api key if present
+  ansible.builtin.uri:
+    url: "http://localhost:3000/api/auth/keys"
+    url_username: admin
+    url_password: '{{ GRAFANAADMINPASSWD }}'
+    force_basic_auth: yes
+    method: GET
+    return_content: yes
+  register: api_keys
+
+- name: GRAFANA - Get adminkey api key id if present
+  ansible.builtin.set_fact:
+    adminkey_id: '{{ item.id }}'
+  with_items: 
+    - "{{ api_keys | json_query(server_query) }}"
+  vars:
+    server_query: "json[?name=='adminkey'].{id: id}"
+  when:
+    - "'adminkey' in api_keys.content"
+
+- name: GRAFANA - Delete api key if present
+  ansible.builtin.uri:
+    url: "http://localhost:3000/api/auth/keys/{{ adminkey_id }}"
+    url_username: admin
+    url_password: '{{ GRAFANAADMINPASSWD }}'
+    force_basic_auth: yes
+    method: DELETE
+  when:
+    - adminkey_id is defined
+
+- name: GRAFANA - Generate api key
+  ansible.builtin.uri:
+    url: "http://localhost:3000/api/auth/keys"
+    url_username: admin
+    url_password: '{{ GRAFANAADMINPASSWD }}'
+    force_basic_auth: yes
+    method: POST
+    body_format: json
+    body:
+      name: adminkey
+      role: Admin
+  register: admin_key
+
+- name: GRAFANA - Get api key
+  ansible.builtin.set_fact:
+    GRAFANA_ADMIN_KEY: '{{ admin_key.json.key }}'
+
+- name: GRAFANA - Ensure grafana is running
+  ansible.builtin.systemd:
+    name: grafana-server
+    state: started
+    enabled: yes
+    masked: no
+
+- name: GRAFANA - Print GRAFANA_ADMIN_KEY variable
+  ansible.builtin.debug:
+    var: GRAFANA_ADMIN_KEY

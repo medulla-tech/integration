@@ -1,0 +1,117 @@
+##########################################################
+#                 Install urbackup server                #
+##########################################################
+
+- name: BACKUP - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: VARS - Generate backup API password
+  ansible.builtin.set_fact:
+    URBACKUP_API_PASSWORD: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=12') }}"
+    
+- name: BACKUP - Define parameters for debian
+  ansible.builtin.debconf:
+    name: urbackup-server
+    question: urbackup/backuppath
+    vtype: string
+    value: '/media/BACKUP/urbackup'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BACKUP - Install backup-server
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - urbackup-server
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BACKUP - Install backup-server
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - urbackup-server
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: BACKUP - Do not broadcast on local network
+  ansible.builtin.lineinfile:
+    dest: /etc/default/{{ URBACKUP_DAEMON }}
+    line: INTERNET_ONLY=true
+    regexp: '^INTERNET_ONLY=.*$'
+  notify:
+    - BACKUP - Restart urbackup
+
+- name: BACKUP - Configure apache for pulse backup
+  ansible.builtin.copy:
+    src: urbackup.conf
+    dest: '{{ APACHE_CONF_PATH }}/'
+    mode: '0644'
+  notify:
+    - BACKUP - Restart apache
+
+- name: BACKUP - Enable pulse backup configuration
+  ansible.builtin.command: a2enconf urbackup
+  notify:
+    - BACKUP - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BACKUP - Force restart of service to use new config files
+  ansible.builtin.meta: flush_handlers
+
+- name: BACKUP - Create admin user
+  ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a admin -p {{ URBACKUP_ADMINPASSWD }}
+
+- name: BACKUP - Create API user
+  ansible.builtin.command: /usr/bin/urbackupsrv reset-admin-pw -a adminapi -p {{ URBACKUP_API_PASSWORD }}
+
+- name: BACKUP - Generate session key
+  ansible.builtin.uri:
+    url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=login
+    method: POST
+    body_format: form-urlencoded
+    return_content: true
+    headers:
+      Accept: application/json
+    body:
+      username: admin
+      password: '{{ URBACKUP_ADMINPASSWD }}'
+      plainpw: 1
+  register: session_key
+
+- name: BACKUP - Get session key
+  ansible.builtin.set_fact:
+    urbackup_session: '{{ session_key.json.session }}'
+
+- name: BACKUP - Configure backup server internet settings
+  ansible.builtin.uri:
+    url: http://{{ URBACKUP_SERVERADDRESS }}/urbackup/x?a=settings
+    method: POST
+    body_format: form-urlencoded
+    return_content: true
+    headers:
+      Accept: application/json
+    body:
+      sa: general_save
+      internet_mode_enabled: 'true'
+      internet_server: '{{ URBACKUP_SERVERADDRESS }}'
+      internet_server_port: '{{ URBACKUP_SERVERPORT }}'
+      no_images: 'true'
+      allow_tray_exit: 'false'
+      allow_starting_full_image_backups: 'false'
+      allow_starting_incr_image_backups: 'false'
+      allow_overwrite: 'false'
+      update_freq_image_incr: -5184000
+      internet_full_file_backups: 'true'
+      ses: '{{ urbackup_session }}'
+
+- name: BACKUP - Ensure urbackup is running
+  ansible.builtin.systemd:
+    name: '{{ URBACKUP_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

@@ -1,0 +1,1 @@
+ADMIN_LDIF_FILE: /etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif

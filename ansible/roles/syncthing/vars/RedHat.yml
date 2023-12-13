@@ -1,0 +1,2 @@
+APACHE_DAEMON: httpd
+APACHE_CONF_PATH: /etc/httpd/conf.d

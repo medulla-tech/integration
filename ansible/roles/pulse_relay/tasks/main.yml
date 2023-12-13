@@ -1,0 +1,361 @@
+##########################################################
+#                   Pulse Relay Server                   #
+# To be run only on ars                                  #
+##########################################################
+
+- name: PULSE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PULSE/GUACAMOLE - Setup apache for guacamole on main pulse
+  ansible.builtin.template:
+    src: guacamole.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
+    mode: '0644'
+    backup: yes
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+
+- name: PULSE/GUACAMOLE - Enable guacamole module
+  ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GUACAMOLE/APACHE - Reload apache on pulsemain
+  systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: reloaded
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+
+- name: PULSE/APACHE - Setup local apache for agent update
+  ansible.builtin.copy:
+    src: pulse.conf
+    dest: '{{ APACHE_CONF_PATH }}/'
+    mode: '0644'
+  notify:
+    - PULSE - Restart apache
+
+- name: PULSE/APACHE - Enable pulse module
+  ansible.builtin.command: a2enconf pulse
+  notify:
+    - PULSE - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/GLPI - Check if entity exists in glpi
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT id FROM glpi_entities WHERE completename = %(completename)s
+    named_args:
+      completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+  register: res_query
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+
+- name: PULSE/GLPI - Initialise session to API
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+
+- name: PULSE/GLPI - Create entity in GLPI if it does not exist
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: POST
+    body_format: json
+    body:
+      input:
+        name: '{{ ENTITY }}'
+        completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+        level: 2
+        ancestors_cache: '[0]'
+    return_content: yes
+  register: result
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/GLPI - Create rules in GLPI if entity does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'
+      - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
+      - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
+      - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - ITSM_DBHOST == PULSEMAIN_IP
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/SHARE - Allow user to connect to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    host: '{{ XMPP_DOMAIN }}'
+    state: present
+    append_privs: true
+    priv:
+      'xmppmaster.*': 'ALL'
+      'pkgs.*': 'ALL'
+      'imaging.*': 'ALL'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  no_log: True
+
+- name: PULSE/SHARE - Check if cluster share exists in database
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: pkgs
+    query:
+      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
+  register: res_queryshareexists
+
+- name: PULSE/SHARE - Get relay server id from db
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
+    named_args:
+      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
+  register: res_queryrelayserverid
+  when:
+    - res_queryshareexists.rowcount[0] == 0
+
+- name: PULSE/SHARE - Create cluster share in database if it did not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: pkgs
+    query:
+      - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
+  when:
+    - res_queryshareexists.rowcount[0] == 0
+
+- name: PULSE/SHARE - Find id of newly added share
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: pkgs
+    query:
+      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
+  register: res_querynewshare
+
+- name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: pkgs
+    query:
+      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+  when:
+    - res_queryshareexists.rowcount[0] == 0
+
+- name: PULSE/FILE_TRANSFER - Get relay ssh keys
+  ansible.builtin.user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+  register: sshkey
+
+- name: PULSE/FILE_TRANSFER - Add relay root public key to pulsetransfert authorized keys on pulsemain
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ sshkey.ssh_public_key }}"
+    path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+
+- name: PULSE/IMAGING - Load config file to find Package Server UUID
+  ansible.builtin.slurp:
+    src: /etc/mmc/pulse2/package-server/package-server.ini.local
+  register: psinifile
+
+- name: PULSE/IMAGING - Find Package Server UUID
+  ansible.builtin.set_fact:
+    ps_uuid: "{{ psinifile['content'] | b64decode | regex_search('uuid = (.+)', '\\1') | first }}"
+
+- name: PULSE/IMAGING - Check if imaging server is registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE packageserver_uuid = %(packageserver_uuid)s
+    named_args:
+      packageserver_uuid: '{{ ps_uuid }}'
+  register: res_query
+
+- name: PULSE/IMAGING - Find Entity from GLPI
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT id FROM glpi_entities WHERE completename = %(completename)s
+    named_args:
+      completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  register: res_queryentityglpi
+
+- name: PULSE/IMAGING - Find Entity from Imaging
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Entity WHERE uuid = %(uuid)s
+    named_args:
+      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
+  register: res_queryentityimaging
+  when:
+    - res_queryentityglpi.rowcount[0] != 0
+
+- name: PULSE/IMAGING - Insert entity in Imaging if it does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO Entity (name, uuid) VALUES ('{{ ORGANISATION }} > {{ ENTITY }}', 'UUID{{ res_queryentityglpi.query_result[0][0].id }}')
+  when:
+    - res_queryentityimaging.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Update entity in Imaging if it already exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = {{ res_queryentityimaging.query_result[0][0].id }}
+  when:
+    - res_queryentityimaging.rowcount[0] != 0
+
+- name: PULSE/IMAGING - Find Entity from Imaging
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Entity WHERE uuid = %(uuid)s
+    named_args:
+      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
+  register: res_queryentityimaging
+
+- name: PULSE/IMAGING - Insert imaging server in database if not registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
+  when:
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Update imaging server in database if registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+  when:
+    - res_query.rowcount[0] != 0
+
+- name: PULSE/SHARE - Remove user connection to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    host: '{{ XMPP_DOMAIN }}'
+    state: absent
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  register: res_queryclusterid
+  when:
+    - PULSEMAIN_IP != ''
+  no_log: True

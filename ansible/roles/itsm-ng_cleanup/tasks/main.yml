@@ -1,0 +1,29 @@
+- name: ITSM-NG - Delete database user
+  community.mysql.mysql_user:
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ ITSMNG_DBUSER }}'
+    host_all: yes
+    state: absent
+
+- name: ITSM-NG - Delete database
+  community.mysql.mysql_db:
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ ITSMNG_DBNAME }}'
+    state: absent
+
+- name: ITSM-NG - Delete previous config file
+  ansible.builtin.file:
+    path: /etc/itsm-ng/config/config_db.php
+    state: absent
+    
+- name: ITSM-NG - Delete marker set for database initialisation
+  ansible.builtin.file:
+    path: /var/lib/itsm-ng/.dbinitialised
+    state: absent
+

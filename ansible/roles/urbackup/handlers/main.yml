@@ -1,0 +1,11 @@
+- name: BACKUP - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes
+
+- name: BACKUP - Restart urbackup
+  ansible.builtin.systemd:
+    name: '{{ URBACKUP_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

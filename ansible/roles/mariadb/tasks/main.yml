@@ -1,0 +1,160 @@
+##########################################################
+#                     Install mariadb                    #
+##########################################################
+
+- name: MARIADB - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: MARIADB - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MARIADB - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MARIADB - Install mariadb
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - mariadb
+      - mariadb-server
+      - MySQL-python
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MARIADB - Install mariadb
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - mariadb-client-10.3
+      - mariadb-server-10.3
+      - mariadb-server-core-10.3
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: MARIADB - Install mariadb
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - mariadb-client
+      - mariadb-server
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: MARIADB - Ensure datadir exists
+  ansible.builtin.file:
+    path: '{{ MARIADB_DATADIR }}'
+    state: directory
+    owner: '{{ MARIADB_USER }}'
+    group: '{{ MARIADB_GROUP }}'
+    recurse: yes
+    mode: 0700
+
+- name: MARIADB - Check if datadir is initialized
+  ansible.builtin.command: ls '{{ MARIADB_DATADIR }}/mysql'
+  register: lsdatadir
+  ignore_errors: True
+
+- name: MARIADB - Trying to initialize datadir
+  ansible.builtin.command: mysql_install_db --user={{ MARIADB_USER }}
+  when: 
+    - lsdatadir.stdout | length == 0
+
+- name: MARIADB - Restart mariadb
+  ansible.builtin.systemd:
+    name: mariadb
+    state: restarted
+
+- name: MARIADB - Define root password
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+
+- name: MARIADB - Create .my.cnf
+  ansible.builtin.template:
+    src: "client.my.cnf.j2"
+    dest: "/root/.my.cnf"
+    owner: root
+    group: root
+    mode: 0600
+
+- name: MARIADB - Remove all anonymous user accounts
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: ''
+    host_all: yes
+    state: absent
+
+- name: MARIADB - Delete test database
+  community.mysql.mysql_db:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: test
+    state: absent
+
+- name: MARIADB - Create limits file of system
+  ansible.builtin.copy:
+    src: mysql.conf
+    dest: /etc/security/limits.d/
+
+- name: MARIADB - Create limits file for mariadb
+  ansible.builtin.copy:
+    src: limits.conf
+    dest: /etc/systemd/system/mariadb.service.d/
+    mode: '0644'
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Enable server on all interfaces
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
+    section: mysqld
+    option: bind-address
+    value: '0.0.0.0'
+    backup: yes
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Define specific configuration for Pulse
+  ansible.builtin.template:
+    src: 99-pulse.cnf.j2
+    dest: '{{ MARIADB_CONF_PATH }}/99-pulse.cnf'
+    mode: '0644'
+  notify:
+    - MARIADB - Restart mariadb
+    
+- name: MARIADB - Load time zone tables into mariadb
+  ansible.builtin.shell: mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u{{ DBADMINUSER }} -p{{ DBADMINPASSWD }} mysql
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Define time zone
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
+    section: mariadb
+    option: default_time_zone
+    value: "'Europe/Paris'"
+    backup: yes
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Ensure mariadb is running
+  ansible.builtin.systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+    masked: no

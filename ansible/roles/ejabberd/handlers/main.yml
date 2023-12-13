@@ -1,0 +1,5 @@
+- name: EJABBERD - Restart ejabberd
+  ansible.builtin.systemd:
+    name: 'ejabberd'
+    state: restarted
+    daemon_reload: yes

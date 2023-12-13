@@ -1,0 +1,3 @@
+dependencies:
+  - role: syncthing
+  - role: local_certs

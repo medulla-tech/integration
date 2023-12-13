@@ -1,0 +1,160 @@
+##########################################################
+#            Define security rules for server            #
+##########################################################
+
+- name: SECURITY - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: SECURITY/SSH - Make sure /etc/ssh/sshd_config.d exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: SECURITY/SSH - Disable password-based logins in SSH
+  ansible.builtin.template:
+    src: medullasshsecurity.conf.j2
+    dest: '/etc/ssh/sshd_config.d/medullasshsecurity.conf'
+    mode: '0644'
+    owner: root
+    group: root
+    validate: /usr/sbin/sshd -t -f %s
+    backup: yes
+  notify:
+    - SECURITY - Restart ssh
+
+- name: SECURITY/IPTABLES - Install packages for iptable persistance
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - iptables-services
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SECURITY/IPTABLES - Install packages for iptable persistance
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - iptables-persistent
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SECURITY/IPTABLES - Iptables flush filter
+  ansible.builtin.iptables:
+    chain: "{{ item }}"
+    flush: yes
+  with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
+
+- name: SECURITY/IPTABLES - Define PUBLIC_INTERFACE_NAME
+  ansible.builtin.set_fact:
+    PUBLIC_INTERFACE_NAME : "{{ item }}"
+  when:
+    - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
+    - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
+  with_items:
+    - "{{ ansible_interfaces }}"
+
+- name: SECURITY/IPTABLES - Allow inbound tcp established,related traffic on public interface
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    jump: ACCEPT
+    ctstate: ESTABLISHED,RELATED
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Allow outbound tcp established,related traffic on public interface
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: tcp
+    jump: ACCEPT
+    ctstate: ESTABLISHED,RELATED
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Allow specific tcp ports in on public interface
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items: 
+    - '{{ REVERSE_SSH_PORT or 22}}'
+    - '5222'
+    - '443'
+    - '9999'
+    - '80'
+    - '3306'
+    - '55415'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Allow specific tcp ports out on public interface
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: tcp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items:
+    - '8443'
+    - '22067'
+    - '22070'
+    - '80'
+    - '443'
+    - '22'
+    - '3306'
+    - '5269'
+    - '9999'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Allow specific udp ports out on public interface
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: udp
+    destination_port: '{{ item }}'
+    jump: ACCEPT
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items:
+    - '123'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Drop other inbound traffic on public interface
+  ansible.builtin.iptables:
+    chain: '{{ item }}'
+    jump: DROP
+    in_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  with_items:
+    - INPUT
+    - FORWARD
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SECURITY/IPTABLES - Drop other outbound traffic on public interface
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    jump: DROP
+    out_interface: '{{ PUBLIC_INTERFACE_NAME }}'
+  when:
+    - PUBLIC_INTERFACE_NAME is defined
+    - PUBLIC_INTERFACE_NAME != '' 
+
+- name: SIVEOINFRA/IPTABLES - Save iptables rules
+  ansible.builtin.shell: "iptables-save > {{ IPTABLES_SAVE_PATH }}"
+

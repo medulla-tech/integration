@@ -1,0 +1,18 @@
+- name: EJABBERD - Stop service
+  ansible.builtin.systemd:
+    name: ejabberd
+    state: stopped
+  ignore_errors: true
+
+- name: EJABBERD - Delete /var/lib/ejabberd
+  ansible.builtin.file:
+    path: /var/lib/ejabberd
+    state: absent
+
+- name: EJABBERD - Create /var/lib/ejabberd
+  ansible.builtin.file:
+    path: /var/lib/ejabberd
+    state: directory
+    mode: '0755'
+    owner: ejabberd
+    group: ejabberd

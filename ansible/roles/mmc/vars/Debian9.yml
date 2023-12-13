@@ -1,0 +1,6 @@
+APACHE_DAEMON: apache2
+APACHE_CONF_PATH: /etc/apache2/conf-available
+CONTRIB_PATH: /usr/share/doc/mmc/contrib
+ITSM_VIEW_PATH: /usr/share/doc/pulse2-common/contrib/
+ITSM_VERSION: '10.0'
+PYTHON_VERSION: 2

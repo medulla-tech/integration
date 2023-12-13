@@ -1,0 +1,88 @@
+##########################################################
+#          Specific settings for SIVEO dev team          #
+##########################################################
+
+- name: SIVEODEV - Install a few interesting tools
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - vim
+      - htop
+      - less
+      - open-vm-tools
+      - curl
+      - wget
+      - winrmcp
+    update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SIVEODEV - Set timezone to Europe\Paris
+  community.general.timezone:
+    name: Europe/Paris
+
+- name: SIVEODEV - Add all users ssh keys to root account
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: '{{ item }}'
+  with_file:
+    - support@argo.pub
+    - jfk@jfk-ThinkPad-T530.pub
+    - noel@MacBook-Air.pub
+    - neoclust@localhost.pub
+    - spointu@macbook.pub
+    - yvan@rider.pub
+    - root@WILLIAMSIVEO.pub
+    - xdrien@nbadrien.pub
+
+- name: SIVEODEV - Set permissions for Workbench
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    host_all: true
+    append_privs: true
+    priv: '*.*:ALL'
+  no_log: True
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: SIVEODEV - Allow access to databases for automatic testing
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    host: '{{ item.ip }}'
+    append_privs: true
+    priv: '*.*:ALL'
+  loop: '{{ DB_ALLOWED_IPS }}'
+  no_log: True
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: SIVEODEV - Install python modules needed for deploy_pulse_files_from_git.py
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pip
+      - python3-git
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SIVEODEV - Create folders for mounting first windows machine filesystem to /root
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+  - /root/{{ ansible_hostname }}-win-10-1/site-packages
+  - /root/{{ ansible_hostname }}-win-10-1/pulse
+
+- name: SIVEODEV - Mount first windows machine filesystem to /root
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: '{{ item }}'
+  with_items:
+  - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Python311\\Lib\\site-packages        /root/{{ ansible_hostname }}-win-10-1/site-packages        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0
+  - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Pulse        /root/{{ ansible_hostname }}-win-10-1/pulse        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0

@@ -1,0 +1,2 @@
+APACHE_DAEMON: apache2
+SAMBA_DAEMON: smbd

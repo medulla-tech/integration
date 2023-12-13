@@ -1,0 +1,80 @@
+##########################################################
+#                    Install ejabberd                    #
+##########################################################
+
+- name: EJABBERD - Install ejabberd
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - ejabberd
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: EJABBERD - Install ejabberd
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - ejabberd
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: EJABBERD - Configure ejabberd
+  ansible.builtin.template:
+    src: ejabberd.yml.j2
+    dest: /etc/ejabberd/ejabberd.yml
+    mode: '0644'
+    owner: ejabberd
+    backup: yes
+  notify:
+    - EJABBERD - Restart ejabberd
+
+- name: EJABBERD - Copy certificate to /etc/ejabberd/{{ XMPP_DOMAIN }}.pem
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+    remote_src: yes
+
+- name: EJABBERD - Force restart of service to build ejabberd domain
+  ansible.builtin.systemd:
+    name: ejabberd
+    state: restarted
+
+- name: EJABBERD - Wait for ejabberd port to become available
+  ansible.builtin.wait_for:
+    port: 5222
+    delay: 5
+
+- name: EJABBERD - Copy .erlang.cookie to allow root to use ejabberdctl
+  ansible.builtin.copy:
+    src: /var/lib/ejabberd/.erlang.cookie
+    dest: /root/.erlang.cookie
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '400'
+
+- name: EJABBERD - register root account
+  community.general.ejabberd_user:
+    username: root
+    host: '{{ XMPP_DOMAIN }}'
+    password: '{{ EJABBERDADMINPASSWD }}'
+
+- name: EJABBERD - Create limits file of system
+  ansible.builtin.copy:
+    src: ejabberd.conf
+    dest: /etc/security/limits.d/
+
+- name: EJABBERD - Create limits file for ejabberd
+  ansible.builtin.copy:
+    src: limits.conf
+    dest: /etc/systemd/system/ejabberd.service.d/
+    mode: '0644'
+  notify:
+    - EJABBERD - Restart ejabberd
+
+- name: EJABBERD - Ensure ejabberd is running
+  ansible.builtin.systemd:
+    name: ejabberd
+    state: started
+    enabled: yes
+    masked: no

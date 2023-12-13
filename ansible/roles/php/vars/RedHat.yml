@@ -1,0 +1,3 @@
+APACHE_DAEMON: httpd
+PHP_INI_PATH: /etc/php.ini
+PHP_DAEMON: php-fpm

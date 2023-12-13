@@ -1,0 +1,2 @@
+STDISCOSRV_DAEMON: stdiscosrv
+STDISCOSRV_PATH: /var/lib/syncthing/discosrv

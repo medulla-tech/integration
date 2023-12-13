@@ -1,0 +1,284 @@
+##########################################################
+#                   relay-agent setup                    #
+##########################################################
+
+- name: RELAY_AGENT - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: RELAY_AGENT - Install relay server packages
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pulse-xmpp-agent-relay
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: RELAY_AGENT - Install relay server packages
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - pulse-xmpp-agent-relay
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: RELAY_AGENT - Configure relay
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: /etc/pulse-xmpp-agent/{{ item }}.ini.local
+    mode: '0644'
+    backup: yes
+  with_items:
+    - relayconf
+    - applicationdeploymentjson
+    - downloadfile
+    - downloadfileexpert
+    - guacamole
+    - guacamoleconf
+    - reverse_ssh_on
+  notify:
+    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
+
+- name: RELAY_AGENT - Update /etc/hosts
+  ansible.builtin.lineinfile:
+    dest: "/etc/hosts"
+    line: "{{ item.line }}"
+    regexp: "{{ item.regex }}"
+  when: "item.when"
+  with_items:
+    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: PULSEMAIN_IP != '' }
+    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: ansible_hostname != 'pulse' }
+  notify:
+    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
+
+- name: RELAY_AGENT - Update /etc/hosts on pulsemain
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
+    regexp: '^.* {{ XMPP_DOMAIN }}$'
+  notify:
+    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: RELAY_AGENT - Force relay to re-register in case of upgrade
+  ansible.builtin.file:
+    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION'
+    state: touch
+  notify:
+    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
+
+- name: RELAY_AGENT - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: RELAY_AGENT - Allow user to connect to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    host: '{{ XMPP_DOMAIN }}'
+    state: present
+    append_privs: true
+    priv:
+      'xmppmaster.*': 'ALL'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  no_log: True
+
+- name: RELAY_AGENT - Get cluster id for relay if it exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT id from cluster_ars where name = %(name)s
+    named_args:
+      name: '{{ CLUSTER_NAME }}'
+  register: res_queryclusterid
+
+- name: RELAY_AGENT - Get MAX_ID FROM cluster_ars when cluster does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT MAX(id) as id FROM cluster_ars
+  register: res_querymaxclusterid
+  when: 
+    - res_queryclusterid.rowcount[0] == 0
+
+- name: RELAY_AGENT - Set id for cluster update when domain is pulse
+  ansible.builtin.set_fact:
+    id_clusterars: 1
+  when:
+    - XMPP_DOMAIN == 'pulse'
+
+- name: RELAY_AGENT - Set id for cluster update when cluster exists
+  ansible.builtin.set_fact:
+    id_clusterars: '{{ res_queryclusterid.query_result[0][0].id }}'
+  when:
+    - XMPP_DOMAIN != 'pulse'
+    - res_queryclusterid.rowcount[0] != 0
+
+- name: RELAY_AGENT - Set id for cluster update when cluster does not exist
+  ansible.builtin.set_fact:
+    id_clusterars: '{{ res_querymaxclusterid.query_result[0][0].id + 1 }}'
+  when:
+    - XMPP_DOMAIN != 'pulse'
+    - res_queryclusterid.rowcount[0] == 0
+
+- name: RELAY_AGENT - Create or update cluster
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - INSERT INTO cluster_ars (id, name, description) VALUES({{ id_clusterars }}, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}') ON DUPLICATE KEY UPDATE name='{{ CLUSTER_NAME }}', description='{{ CLUSTER_NAME }}'
+
+- name: RELAY_AGENT - Get MAX_ID FROM has_cluster_ars
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT MAX(id) as id FROM has_cluster_ars
+  register: res_querymaxhasclusterarsid
+
+- name: RELAY_AGENT - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
+    named_args:
+      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
+  register: res_queryrelayserverid
+  until: res_queryrelayserverid.rowcount[0] != 0
+  retries: 10
+  delay: 30
+
+- name: RELAY_AGENT - Get has_cluster_ars id for relay if it has already been inserted in its cluster
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT id from has_cluster_ars where has_cluster_ars.id_ars = %(id_ars)s
+    named_args:
+      id_ars: '{{ res_queryrelayserverid.query_result[0][0].id }}'
+  register: res_queryhasclusterarsid
+
+- name: RELAY_AGENT - Set query for cluster update when domain is pulse
+  ansible.builtin.set_fact:
+    query_hasclusterars: UPDATE has_cluster_ars SET id_cluster = 1 WHERE id_ars = {{ res_queryrelayserverid.query_result[0][0].id }}
+  when:
+    - XMPP_DOMAIN == 'pulse'
+
+- name: RELAY_AGENT - Set query for cluster update when cluster already exists but relay is not in cluster
+  ansible.builtin.set_fact:
+    query_hasclusterars: INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ({{ res_querymaxhasclusterarsid.query_result[0][0].id + 1 }}, {{ res_queryrelayserverid.query_result[0][0].id }}, {{ res_queryclusterid.query_result[0][0].id }})
+  when:
+    - XMPP_DOMAIN != 'pulse'
+    - res_queryclusterid.rowcount[0] != 0
+    - res_queryhasclusterarsid.rowcount[0] == 0
+
+- name: RELAY_AGENT - Set query for cluster update when cluster already exists and relay is already in cluster
+  ansible.builtin.set_fact:
+    query_hasclusterars: UPDATE has_cluster_ars SET id_cluster = {{ res_queryclusterid.query_result[0][0].id }} WHERE id_ars = {{ res_queryrelayserverid.query_result[0][0].id }}
+  when:
+    - XMPP_DOMAIN != 'pulse'
+    - res_queryclusterid.rowcount[0] != 0
+    - res_queryhasclusterarsid.rowcount[0] != 0
+
+- name: RELAY_AGENT - Set query for cluster update when cluster does not exist
+  ansible.builtin.set_fact:
+    query_hasclusterars: INSERT INTO has_cluster_ars (id, id_ars, id_cluster) VALUES ({{ res_querymaxhasclusterarsid.query_result[0][0].id + 1 }}, {{ res_queryrelayserverid.query_result[0][0].id }}, {{ res_querymaxclusterid.query_result[0][0].id + 1 }})
+  when:
+    - XMPP_DOMAIN != 'pulse'
+    - res_queryclusterid.rowcount[0] == 0
+
+- name: RELAY_AGENT - Insert or update relay in its cluster
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - '{{ query_hasclusterars }}'
+
+- name: RELAY_AGENT - Create substituteconf records
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ res_queryrelayserverid.query_result[0][0].id }})
+  with_items:
+    - { type: 'assessor', jid: 'master_asse@pulse' }
+    - { type: 'subscription', jid: 'master_subs@pulse' }
+    - { type: 'registration', jid: 'master_reg@pulse' }
+    - { type: 'inventory', jid: 'master_inv@pulse' }
+    - { type: 'logger', jid: 'master_log@pulse' }
+    - { type: 'monitoring', jid: 'master_mon@pulse' }
+    - { type: 'deployment', jid: 'master_depl@pulse' }
+    - { type: 'updates', jid: 'master_upd@pulse' }
+
+- name: RELAY_AGENT - Remove user connection to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    host: '{{ XMPP_DOMAIN }}'
+    state: absent
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  register: res_queryclusterid
+  when:
+    - PULSEMAIN_IP != ''
+  no_log: True
+
+- name: RELAY_AGENT - Ensure relay service is running
+  ansible.builtin.systemd:
+    name: pulse-xmpp-agent-relay
+    state: started
+    enabled: yes
+    masked: no
+
+- name: RELAY_AGENT - Ensure package watching service is running
+  ansible.builtin.systemd:
+    name: pulse-package-watching
+    state: started
+    enabled: yes
+    masked: no

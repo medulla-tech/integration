@@ -1,0 +1,17 @@
+<Location /guacamole/>
+    SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+    Order Deny,Allow
+    Deny from all
+    Allow from env=GUACAMOLE_ALLOWED
+    ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on
+    ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
+</Location>
+<Location /guacamole/websocket-tunnel>
+    SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+    Order Deny,Allow
+    Deny from all
+    Allow from env=GUACAMOLE_ALLOWED
+    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+</Location>
+SetEnvIf Request_URI "^/guacamole/tunnel" dontlog

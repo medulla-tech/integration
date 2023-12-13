@@ -1,0 +1,66 @@
+##########################################################
+#                     Install Tomcat                     #
+##########################################################
+
+- name: TOMCAT - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - tomcat
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - tomcat{{ DEB_TOMCAT_VERSION }}
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: TOMCAT - Install Tomcat
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - tomcat{{ DEB_TOMCAT_VERSION }}
+      - jdk-11
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: TOMCAT - Change tomcat port from 8080 to 8081
+  ansible.builtin.replace:
+    path: /etc/{{ TOMCAT_DAEMON }}/server.xml
+    regexp: 'Connector port="8080"'
+    replace: 'Connector port="8081"'
+  notify:
+    - TOMCAT - Restart tomcat
+
+- name: Use java 11 by default
+  community.general.alternatives:
+    name: java
+    path: /usr/lib/jvm/jdk-11/bin/java
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: Use jdk-11 by default on tomcat9 service
+  ansible.builtin.copy:
+    src: java_home.conf
+    dest: /etc/systemd/system/{{ TOMCAT_DAEMON }}.service.d/
+    mode: '0644'
+  notify:
+    - TOMCAT - Restart tomcat
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: TOMCAT - Ensure tomcat is running
+  ansible.builtin.systemd:
+    name: '{{ TOMCAT_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

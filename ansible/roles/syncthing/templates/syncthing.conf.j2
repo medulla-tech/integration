@@ -1,0 +1,10 @@
+ProxyPass /syncthing-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing/
+<Location /syncthing-{{ XMPP_DOMAIN }}/>
+    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing/
+    Require all granted
+</Location>
+ProxyPass /syncthing-depl-{{ XMPP_DOMAIN }}/ http://{{ XMPP_DOMAIN }}/syncthing-depl/
+<Location /syncthing-depl-{{ XMPP_DOMAIN }}/>
+    ProxyPassReverse http://{{ XMPP_DOMAIN }}/syncthing-depl/
+    Require all granted
+</Location>

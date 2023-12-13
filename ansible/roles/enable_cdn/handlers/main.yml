@@ -1,0 +1,23 @@
+- name: ENABLE_CDN - Restart pulse-package-watching
+  ansible.builtin.systemd:
+    name: pulse-package-watching
+    state: restarted
+    daemon_reload: yes
+
+- name: ENABLE_CDN - Restart mmc-agent
+  ansible.builtin.systemd:
+    name: 'mmc-agent'
+    state: restarted
+    daemon_reload: yes
+
+- name: ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
+  ansible.builtin.systemd:
+    name: 'pulse-xmpp-master-substitute-deployment'
+    state: restarted
+    daemon_reload: yes
+
+- name: ENABLE_CDN - Restart pulse-xmpp-agent-relay
+  ansible.builtin.systemd:
+    name: 'pulse-xmpp-agent-relay'
+    state: restarted
+    daemon_reload: yes

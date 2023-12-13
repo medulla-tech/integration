@@ -1,0 +1,7 @@
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+GUACAMOLE_ROOT_PASSWORD: '' # 40 character string. Must be vaulted
+GUACDBPASSWD: '' # 12 character string. Must be vaulted
+PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"

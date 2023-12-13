@@ -1,0 +1,250 @@
+##########################################################
+#                   substitute setup                     #
+##########################################################
+
+- name: SUBSTITUTE_AGENT - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: SUBSTITUTE_AGENT - Install packages
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pulse-xmpp-master-substitute
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SUBSTITUTE_AGENT - Install packages
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - pulse-xmpp-master-substitute
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: SUBSTITUTE_AGENT - Find substitute number
+  ansible.builtin.set_fact:
+    subs_long_name: '{{ SUBS_NAME }}'
+  when:
+    - SUBS_NAME != ''
+
+- name: SUBSTITUTE_AGENT - Find current number of substitutes
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT COUNT( DISTINCT jidsubtitute ) AS nb_subs FROM substituteconf  WHERE type = %(type)s
+    named_args:
+      type: '{{ SUBS_LONG_TYPE }}'
+  register: res_query
+  when:
+    - SUBS_NAME == ''
+
+- name: SUBSTITUTE_AGENT - Find substitute number
+  ansible.builtin.set_fact:
+    subs_number: ''
+  when:
+    - SUBS_NAME == ''
+    - res_query.query_result[0][0].nb_subs == 0
+
+- name: SUBSTITUTE_AGENT - Find substitute number
+  ansible.builtin.set_fact:
+    subs_number: '{{ res_query.query_result[0][0].nb_subs + 1 }}'
+  when:
+    - SUBS_NAME == ''
+    - res_query.query_result[0][0].nb_subs != 0
+  
+- name: SUBSTITUTE_AGENT - Find substitute number
+  ansible.builtin.set_fact:
+    subs_number: "{{ SUBS_NAME | regex_replace('[^0-9]', '') }}"
+  when:
+    - SUBS_NAME != ''
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: reg
+    subs_short_name: 'reg{{ subs_number }}'
+    SUBS_LONG_TYPE: registration
+    subs_long_name: 'registration{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'registration' or SUBS_NAME.startswith('registration')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: asse
+    subs_short_name: 'asse{{ subs_number }}'
+    SUBS_LONG_TYPE: assessor
+    subs_long_name: 'assessor{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'assessor' or SUBS_NAME.startswith('assessor')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: inv
+    subs_short_name: 'inv{{ subs_number }}'
+    SUBS_LONG_TYPE: inventory
+    subs_long_name: 'inventory{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'inventory' or SUBS_NAME.startswith('inventory')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: subs
+    subs_short_name: 'subs{{ subs_number }}'
+    SUBS_LONG_TYPE: subscription
+    subs_long_name: 'subscription{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'subscription' or SUBS_NAME.startswith('subscription')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: log
+    subs_short_name: 'log{{ subs_number }}'
+    SUBS_LONG_TYPE: logger
+    subs_long_name: 'logger{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'logger' or SUBS_NAME.startswith('logger')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: mon
+    subs_short_name: 'mon{{ subs_number }}'
+    SUBS_LONG_TYPE: monitoring
+    subs_long_name: 'monitoring{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'monitoring' or SUBS_NAME.startswith('monitoring')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: reconf
+    subs_short_name: 'reconf{{ subs_number }}'
+    SUBS_LONG_TYPE: reconfigurator
+    subs_long_name: 'reconfigurator{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'reconfigurator' or SUBS_NAME.startswith('reconfigurator')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: depl
+    subs_short_name: 'depl{{ subs_number }}'
+    SUBS_LONG_TYPE: deployment
+    subs_long_name: 'deployment{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'deployment' or SUBS_NAME.startswith('deployment')
+
+- name: SUBSTITUTE_AGENT - Set subs_short_type value
+  ansible.builtin.set_fact:
+    subs_short_type: upd
+    subs_short_name: 'upd{{ subs_number }}'
+    SUBS_LONG_TYPE: updates
+    subs_long_name: 'updates{{ subs_number }}'
+  when:
+    - SUBS_LONG_TYPE == 'updates' or SUBS_NAME.startswith('updates')
+
+- name: SUBSTITUTE_AGENT - Fetch master agent keys from mmc
+  ansible.builtin.fetch:
+    src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
+    dest: /tmp/{{ item }}
+    flat: yes
+  with_items:
+    - master-public-RSA.key
+    - master-all-RSA.key
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 2
+
+- name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
+  ansible.builtin.copy:
+    src: /tmp/{{ item }}
+    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
+  with_items:
+    - master-public-RSA.key
+    - master-all-RSA.key
+  when:
+    - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 2
+
+- name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
+  ansible.builtin.copy:
+    src: '{{ PYTHON_BASEDIR }}/mmc/plugins/xmppmaster/master/INFOSTMP/{{ item }}'
+    dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_master_substitute/INFOSTMP/'
+    remote_src: true
+  with_items:
+    - master-public-RSA.key
+    - master-all-RSA.key
+  when:
+    - PULSEMAIN_IP == ''
+    - PYTHON_VERSION == 2
+    
+- name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account
+  community.general.ejabberd_user:
+    username: master_{{ subs_short_name }}
+    host: '{{ XMPP_DOMAIN }}'
+    password: '{{ XMPP_MASTER_PASSWORD }}'
+
+- name: SUBSTITUTE_AGENT - Create initial config file if needed
+  ansible.builtin.copy:
+    src: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_{{ subs_short_type }}.ini
+    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_{{ subs_short_name }}.ini
+    remote_src: yes
+  when:
+    - subs_number != ''
+    
+- name: SUBSTITUTE_AGENT - Configure substitute
+  ansible.builtin.template:
+    src: agent_master_substitute_{{ subs_short_type }}.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_{{ subs_short_name }}.ini.local
+    mode: '0644'
+    backup: yes
+
+- name: SUBSTITUTE_AGENT/PKI - Configure certificates
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: /etc/pulse-xmpp-agent-substitute/keys/
+    remote_src: yes
+
+- name: SUBSTITUTE_AGENT - Additional configuration for assessor substitute
+  ansible.builtin.template:
+    src: assessor_agent.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/assessor_agent.ini.local
+    mode: '0644'
+    backup: yes
+  when:
+    - SUBS_LONG_TYPE == 'assessor'
+
+- name: SUBSTITUTE_AGENT - Additional configuration for deployment substitute
+  ansible.builtin.template:
+    src: loaddeployment.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/loaddeployment.ini.local
+    mode: '0644'
+    backup: yes
+  when:
+    - SUBS_LONG_TYPE == 'deployment'
+
+- name: SUBSTITUTE_AGENT - Create service if needed
+  ansible.builtin.copy:
+    src: /usr/lib/systemd/system/pulse-xmpp-master-substitute-{{ SUBS_LONG_TYPE }}.service
+    dest: /usr/lib/systemd/system/pulse-xmpp-master-substitute-{{ subs_long_name }}.service
+    remote_src: yes
+  when:
+    - subs_number != ''
+    
+- name: SUBSTITUTE_AGENT - Restart service
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-{{ subs_long_name }}
+    state: restarted
+    
+- name: SUBSTITUTE_AGENT - Ensure service is running
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-{{ subs_long_name }}
+    state: started
+    enabled: yes
+    masked: no

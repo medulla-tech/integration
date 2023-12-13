@@ -1,0 +1,298 @@
+##########################################################
+#                   Pulse Main Server                    #
+# To be run only on mmc                                  #
+##########################################################
+
+- name: PULSE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PULSE/GUACAMOLE - Setup local apache for guacamole
+  ansible.builtin.template:
+    src: guacamole.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/guacamole.conf'
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE - Restart apache
+
+- name: PULSE/GUACAMOLE - Enable guacamole module
+  ansible.builtin.command: a2enconf guacamole
+  notify:
+    - PULSE - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/GLPI - Initialise session to API
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+  when:
+    - ITSM_DBHOST == 'localhost'
+
+- name: PULSE/GLPI - Create entity in GLPI
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
+    url_username: '{{ ITSM_API_USER }}'
+    url_password: '{{ ITSM_API_PASSWORD }}'
+    force_basic_auth: yes
+    headers:
+      Session-Token: '{{ json_session.json.session_token }}'
+    method: POST
+    body_format: json
+    body:
+      input:
+        name: '{{ ENTITY }}'
+        completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+        level: 2
+        ancestors_cache: '[0]'
+    return_content: yes
+  register: result
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
+  when:
+    - ITSM_DBHOST == 'localhost'
+    
+- name: PULSE/GLPI - Define created entity as default entity for fusioninventory
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+    - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
+    - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
+    - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
+  when:
+    - ITSM_DBHOST == 'localhost'
+    - result.status == 201
+
+- name: PULSE/AGENT - Configure the agent updatebackupclient plugin
+  ansible.builtin.template:
+    src: '{{ item }}.ini.j2'
+    dest: '/var/lib/pulse2/clients/config/{{ item }}.ini'
+    mode: '0644'
+    backup: yes
+  with_items:
+    - updatebackupclient
+    - inventory
+
+- name: PULSE/AGENT - Generate full agent
+  ansible.builtin.command: '{{ item }}'
+  with_items:
+    - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }}
+    - /var/lib/pulse2/clients/generate-agent-package
+
+- name: PULSE/AGENT - Create the quick action that will deploy updatebackupclient.ini to the machines
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - INSERT IGNORE INTO xmppmaster.qa_custom_command (user, os, namecmd, customcmd, description) VALUES ('allusers', 'windows', 'Deploy updatebackupclient.ini file', 'powershell.exe "$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ URBACKUP_SERVERADDRESS }} {0}backup_port = {{ URBACKUP_SERVERPORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent"', 'Copy urbackup installation config file to client machine')
+
+- name: PULSE/AGENT - Generate minimal agent
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
+  ignore_errors: true
+
+- name: PULSE/PACKAGESERVER - Configure samba for package server
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_packages.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK packages"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.yum:
+    pkg:
+      - pulse-imaging-scripts
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE/IMAGING - Install Pulse imaging and clonezilla
+  ansible.builtin.apt:
+    pkg:
+      - pulse-imaging-scripts
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+
+- name: PULSE/IMAGING - Configure samba for drivers
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb_drivers.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Configure samba for postinst
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_postinst.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK postinst"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Configure samba for tools
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_tools.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK tools"
+  notify:
+    - PULSE - Restart samba
+
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+
+- name: PULSE/IMAGING - Define Samba drivers Password
+  ansible.builtin.shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
+
+- name: PULSE/IMAGING - Load config file to find Package Server UUID
+  ansible.builtin.slurp:
+    src: /etc/mmc/pulse2/package-server/package-server.ini.local
+  register: psinifile
+
+- name: PULSE/IMAGING - Find Package Server UUID
+  ansible.builtin.set_fact:
+    ps_uuid: "{{ psinifile['content'] | b64decode | regex_search('uuid = (.+)', '\\1') | first }}"
+
+- name: PULSE/IMAGING - Check if imaging server is registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE packageserver_uuid = %(packageserver_uuid)s
+    named_args:
+      packageserver_uuid: '{{ ps_uuid }}'
+  register: res_query
+
+- name: PULSE/IMAGING - Find Entity from GLPI
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT id FROM glpi_entities WHERE completename = %(completename)s
+    named_args:
+      completename: '{{ ORGANISATION }} > {{ ENTITY }}'
+  register: res_queryentityglpi
+
+- name: PULSE/IMAGING - Update entity in Imaging if it already exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = 1
+
+- name: PULSE/IMAGING - Find Entity from Imaging
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Entity WHERE uuid = %(uuid)s
+    named_args:
+      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
+  register: res_queryentityimaging
+  when:
+    - res_queryentityglpi.rowcount[0] != 0
+
+- name: PULSE/IMAGING - Insert imaging server in database if not registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://pulse:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
+  when:
+    - res_query.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Update imaging server in database if registered
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://pulse:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+  when:
+    - res_query.rowcount[0] != 0
+
+- name: PULSE/AGENT - Install packages for deploying agent
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - powershell
+      - gss-ntlmssp
+      - nmap
+      - sshpass
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE/AGENT - Install packages for deploying agent
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - powershell
+      - gss-ntlmssp
+      - nmap
+      - sshpass
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/AGENT - Set up powershell
+  ansible.builtin.command: pwsh -Command '{{ item }}'
+  with_items:
+    - Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+    - Install-Module -Name PSWSMan
+    - Install-WSMan
+
+- name: PULSE/AGENT - Copy agent deployment script
+  ansible.builtin.copy:
+    src: medulla-deploy-agent.sh
+    dest: /usr/sbin/
+    mode: '0755'
+
+- name: PULSE/AGENT - Copy agent installation script
+  ansible.builtin.template:
+    src: install-agent.ps1.j2
+    dest: '/var/lib/pulse2/clients/win/install-agent.ps1'
+    mode: '0644'
+    backup: yes

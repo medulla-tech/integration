@@ -1,0 +1,25 @@
+[ldap]
+baseDN = {{ LDAP_BASEDN }}
+baseUsersDN = ou=Users, %(baseDN)s
+baseGroupsDN = ou=Groups, %(baseDN)s
+rootName = cn=admin,{{ LDAP_BASEDN }}
+password = {{ LDAPADMINPASSWD }}
+
+[computers]
+method = glpi
+
+[authentication_baseldap]
+authonly = root
+
+[authentication_externalldap]
+exclude = root
+{% if EXTERNAL_LDAP_URL != '' %}
+ldapurl = {{ EXTERNAL_LDAP_URL }}
+suffix = {{ EXTERNAL_LDAP_SUFFIX }}
+bindname = {{ EXTERNAL_LDAP_BINDNAME }}
+bindpasswd = {{ EXTERNAL_LDAP_PASSWORD }}
+attr = {{ EXTERNAL_LDAP_USERATTR }}
+{% endif %}
+
+[provisioning]
+method = glpi

@@ -1,0 +1,73 @@
+##########################################################
+#                     Install php-fpm                    #
+##########################################################
+
+- name: PHP - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: PHP - Check if php-fpm exist
+  ansible.builtin.stat:
+    path: /etc/init.d/php-fpm
+  register: phpfpm_exists
+
+- name: PHP - Uninstall previous version
+  ansible.builtin.yum:
+    pkg:
+      - php-common
+      - php-mysql
+    state: absent
+  when:
+    - ansible_distribution == 'CentOS'
+    - phpfpm_exists.stat == false
+
+- name: PHP - Install php
+  ansible.builtin.yum:
+    pkg:
+      - php
+      - php-fpm
+      - php-mysqlnd
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PHP - Install php
+  ansible.builtin.apt:
+    pkg:
+      - php-fpm
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PHP - Enable modules
+  ansible.builtin.command: a2enconf php{{ DEB_PHP_VERSION }}-fpm
+  notify:
+    - PHP - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: PHP - Update php.ini
+  community.general.ini_file:
+    path: '{{ PHP_INI_PATH }}'
+    section: '{{ item.section }}'
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { section: 'PHP', option: 'post_max_size', value: '200M' }
+    - { section: 'PHP', option: 'upload_max_filesize', value: '200M' }
+    - { section: 'PHP', option: 'memory_limit', value: '1024M' }
+    - { section: 'PHP', option: 'short_open_tag', value: 'On' }
+    - { section: 'Date', option: 'date.timezone', value: 'Europe/Paris' }
+    - { section: 'Session', option: 'session.cookie_httponly', value: '1' }
+  notify:
+    - PHP - Restart php-fpm
+
+- name: PHP - Ensure php-fpm is running
+  ansible.builtin.systemd:
+    name: '{{ PHP_DAEMON }}'
+    state: started
+    enabled: yes
+    masked: no

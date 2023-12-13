@@ -1,0 +1,454 @@
+##########################################################
+#                    mmc-agent setup                     #
+##########################################################
+
+- name: MMC - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: MMC - Install mmc packages
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pulse2
+      - mmc-web-kiosk
+      - python3-mmc-kiosk
+      - mmc-web-urbackup
+      - python3-mmc-urbackup
+      - mmc-web-dashboard
+      - python3-mmc-dashboard
+      - mmc-web-glpi
+      - python3-mmc-glpi
+      - mmc-web-ppolicy
+      - python3-mmc-ppolicy
+      - mmc-web-services
+      - python3-mmc-services
+      - mmc-web-support
+      - python3-mmc-support
+      - mmc-web-base
+      - python3-mmc-xmppmaster
+      - python3-mmc-guacamole
+      - pulse-xmppmaster-agentplugins
+      - pulse-agent-installers
+      - pulse2-uuid-resolver
+      - pulse-xmpp-master-substitute
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MMC - Install mmc packages
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - pulse2
+      - mmc-web-dashboard
+      - python-mmc-dashboard
+      - mmc-web-glpi
+      - python-mmc-glpi
+      - mmc-web-ppolicy
+      - python-mmc-ppolicy
+      - mmc-web-services
+      - python-mmc-services
+      - mmc-web-support
+      - python-mmc-support
+      - mmc-web-xmppmaster
+      - python-mmc-xmppmaster
+      - python-mmc-guacamole
+      - pulse-xmppmaster-agentplugins
+      - pulse-xmpp-agent-relay
+      - pulse-agent-installers
+      - pulse-update-manager
+      - pulse2-uuid-resolver
+      - pulse-xmpp-master-substitute
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'Debian'
+    - PYTHON_VERSION == 2
+
+- name: MMC - Install mmc packages
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - pulse2
+      - mmc-web-kiosk
+      - python3-mmc-kiosk
+      - mmc-web-urbackup
+      - python3-mmc-urbackup
+      - mmc-web-dashboard
+      - python3-mmc-dashboard
+      - mmc-web-glpi
+      - python3-mmc-glpi
+      - mmc-web-ppolicy
+      - python3-mmc-ppolicy
+      - mmc-web-services
+      - python3-mmc-services
+      - mmc-web-support
+      - python3-mmc-support
+      - mmc-web-xmppmaster
+      - python3-mmc-xmppmaster
+      - python3-mmc-guacamole
+      - pulse-xmppmaster-agentplugins
+      - pulse-agent-installers
+      - medulla-update-manager
+      - pulse2-uuid-resolver
+      - pulse-xmpp-master-substitute
+      - pulse-debug-tools
+  when:
+    - ansible_distribution == 'Debian'
+    - PYTHON_VERSION == 3
+
+- name: MMC - Configure mmc-agent
+  ansible.builtin.copy:
+    src: config.ini.local
+    dest: /etc/mmc/agent/config.ini.local
+    mode: '0644'
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - PYTHON_VERSION == 2
+
+- name: MMC - Configure mmc-agent
+  ansible.builtin.template:
+    src: config.ini.local.j2
+    dest: /etc/mmc/agent/config.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - PYTHON_VERSION == 3
+
+- name: MMC/APACHE - Enable pulse and mmc modules
+  ansible.builtin.command: a2enconf {{ item }}
+  with_items:
+    - pulse
+    - mmc
+  notify:
+    - MMC - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MMC/LDAP - Check if mmc schema is already present in directory
+  ansible.builtin.command: "ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config -LLL '(&(objectclass=olcSchemaConfig)(cn=*mmc))'"
+  register: res_ldapsearch
+  ignore_errors: true
+
+- name: MMC/LDAP - Import mmc schemas to ldap server
+  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
+  when:
+    - res_ldapsearch.stdout | length == 0
+
+- name: MMC/LDAP - Add MedullaUsers group to local LDAP directory
+  community.general.ldap_entry:
+    dn: '{{ item.dn }},{{ LDAP_BASEDN }}'
+    server_uri: ldap://localhost/
+    bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+    bind_pw: '{{ LDAPADMINPASSWD }}'
+    objectClass: '{{ item.class }}'
+    attributes: '{{ item.attr }}'
+  with_items:
+    - {dn: 'ou=Groups', class: 'organizationalUnit', attr: {'ou': Groups}}
+    - {dn: 'cn=MedullaUsers,ou=Groups', class: 'posixGroup', attr: {'cn': MedullaUsers, 'gidNumber': 10001, 'description': Can be deleted once other groups have been created}}
+
+- name: MMC/PKI - Configure certificates
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: "{{ item }}"
+    remote_src: yes
+  with_items:
+    - /etc/mmc/agent/keys/localcert.pem
+    - /etc/mmc/agent/keys/cacert.pem
+    - /etc/mmc/agent/keys/privkey.pem
+    - /etc/pulse-xmpp-agent-substitute/keys/
+  notify:
+    - MMC - Restart mmc-agent
+
+- name: MMC/EJABBERD - Register master account for mmc-agent or master substitute
+  community.general.ejabberd_user:
+    username: master
+    host: '{{ XMPP_DOMAIN }}'
+    password: '{{ XMPP_MASTER_PASSWORD }}'
+  notify:
+    - MMC - Restart mmc-agent
+
+- name: MMC - Reset PULSEDB_CHANGED variable
+  ansible.builtin.set_fact:
+    PULSEDB_CHANGED: False
+
+- name: MMC - Check if .dbinitialised is present
+  ansible.builtin.stat:
+    path: /var/lib/mmc/.dbinitialised
+  register: resdbinitialised
+
+- name: MMC - Set MMC_DBINITIALISED if .dbinitialised is present
+  ansible.builtin.set_fact:
+    MMC_DBINITIALISED: True
+  when:
+    - resdbinitialised.stat.exists
+
+- name: MMC - Create databases
+  community.mysql.mysql_db:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ item }}'
+    state: import
+    target: '{{ CONTRIB_PATH }}/{{ item }}/sql/schema-001.sql'
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+    - urbackup
+    - updates
+  when:
+    - MMC_DBINITIALISED is not defined
+  register: db_init
+
+- name: MMC - Register PULSEDB_CHANGED variable
+  ansible.builtin.set_fact:
+    PULSEDB_CHANGED: '{{ db_init.changed }}'
+  when:
+    db_init.changed
+
+- name: MMC - Create database user
+  community.mysql.mysql_user:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    state: present
+    priv:
+      'dyngroup.*': 'ALL'
+      'msc.*': 'ALL'
+      'pkgs.*': 'ALL'
+      'pulse2.*': 'ALL'
+      'xmppmaster.*': 'ALL'
+      'admin.*': 'ALL'
+      'imaging.*': 'ALL'
+      'kiosk.*': 'ALL'
+      'urbackup.*': 'ALL'
+      'updates.*': 'ALL'
+  no_log: True
+
+- name: MMC - Set marker for database initialisation
+  ansible.builtin.file:
+    path: /var/lib/mmc/.dbinitialised
+    state: touch
+  when:
+    - PULSEDB_CHANGED | bool
+
+- name: MMC - Update database schemas
+  ansible.builtin.command: 'pulse2-dbupdate --user={{ DBADMINUSER }} --password={{ DBADMINPASSWD }} --host={{ DBHOST }} --port={{ DBPORT }} --db={{ item }}'
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+    - urbackup
+    - updates
+
+- name: MMC - Check if already configured
+  ansible.builtin.stat: 
+    path: /etc/mmc/plugins/base.ini.local
+  register: baseinilocal
+
+- name: MMC - Enable plugins
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: '/etc/mmc/plugins/{{ item }}.ini.local'
+    mode: '0644'
+    backup: yes
+  with_items:
+    - base
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - glpi
+    - admin
+    - imaging
+    - kiosk
+    - updates
+    - urbackup
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - not baseinilocal.stat.exists
+    - PYTHON_VERSION == 2
+
+- name: MMC - Enable plugins
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: '/etc/mmc/plugins/{{ item }}.ini.local'
+    mode: '0644'
+    backup: yes
+  with_items:
+    - base
+    - dyngroup
+    - msc
+    - pkgs
+    - medulla_server
+    - xmppmaster
+    - glpi
+    - admin
+    - imaging
+    - kiosk
+    - updates
+    - urbackup
+  notify:
+    - MMC - Restart mmc-agent
+  when: 
+    - not baseinilocal.stat.exists
+    - PYTHON_VERSION == 3
+
+- name: MMC - Configure mmc-agent
+  ansible.builtin.template:
+    src: 'mmc.ini.j2'
+    dest: /etc/mmc/mmc.ini
+    mode: '0644'
+    backup: yes
+
+- name: MMC - Create /home/archives folder
+  ansible.builtin.file:
+    dest: /home/archives
+    state: directory
+
+- name: MMC/GLPI - Create view for pulse
+  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ ITSM_VIEW_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
+  when:
+    - ITSM_DBHOST == 'localhost'
+
+- name: MMC - Configure referer
+  ansible.builtin.lineinfile:
+    dest: '{{ APACHE_CONF_PATH }}/pulse.conf'
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+  with_items:
+    - { regexp: 'SetEnvIf Referer .* FILEMANAGER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEMANAGER_ALLOWED'}
+    - { regexp: 'SetEnvIf Referer .* FILEBROWSER_ALLOWED$', line: 'SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" FILEBROWSER_ALLOWED'}
+  notify:
+    - MMC - Restart apache
+    
+- name: MMC/SUBSTITUTE_AGENT - Configure substitute
+  ansible.builtin.template:
+    src: agent_master_substitute_mast.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/agent_master_substitute_mast.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart pulse-xmpp-master-substitute-master
+  when: 
+    - PYTHON_VERSION == 3
+
+- name: MMC/SUBSTITUTE_AGENT - Additional configuration for master substitute
+  ansible.builtin.template:
+    src: __server_mmc_master.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local
+    mode: '0644'
+    backup: yes
+  notify:
+    - MMC - Restart pulse-xmpp-master-substitute-master
+  when: 
+    - PYTHON_VERSION == 3
+
+- name: MMC - Force restart of service to use new config files
+  ansible.builtin.meta: flush_handlers
+
+- name: MMC - Pause for 10 to 300 seconds to enable mmc-agent start
+  ansible.builtin.wait_for:
+    port: 7080
+    delay: 10
+
+- name: MMC - Set up global share and root user for packages management
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+      - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES (1, 'global', 'Global Packages', 'global', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/global')
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', 1)
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '.*', 'r', 1)
+
+- name: MMC/GRAFANA - Configure grafana data source
+  ansible.builtin.uri:
+    url: "http://localhost:3000/api/datasources"
+    headers:
+      Authorization: 'Bearer {{ GRAFANA_ADMIN_KEY }}'
+    method: POST
+    body_format: json
+    body:
+      name: xmppmaster
+      type: mysql
+      host: '{{ DBHOST }}:{{ DBPORT }}'
+      user: '{{ DBUSER }}'
+      password: '{{ DBPASSWORD }}'
+      database: xmppmaster
+      access: direct
+    status_code: [200, 409]
+
+- name: CERT - Fetch certificates from pki server
+  ansible.builtin.fetch:
+    src: '{{ PKI_PATH }}/{{ item.src }}'
+    dest: '/tmp/{{ item.dest }}'
+    flat: yes
+  with_items:
+    - {src: ca-chain.cert.pem, dest: medulla-ca-chain.cert.pem }
+    - {src: rootca.cert.pem, dest: medulla-rootca.cert.pem }
+  delegate_to: '{{ PKI_SERVER }}'
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Copy certificates to clients folder
+  ansible.builtin.copy:
+    src: '/tmp/{{ item }}'
+    dest: '/var/lib/pulse2/clients/{{ item }}'
+  with_items:
+    - medulla-ca-chain.cert.pem
+    - medulla-rootca.cert.pem
+  when:
+    - PKI_SERVER != 'localhost'
+
+- name: CERT - Copy certificates to clients folder
+  ansible.builtin.copy:
+    src: '{{ PKI_PATH }}/{{ item.src }}'
+    dest: '/var/lib/pulse2/clients/{{ item.dest }}'
+    remote_src: true
+  with_items:
+    - {src: ca-chain.cert.pem, dest: medulla-ca-chain.cert.pem }
+    - {src: rootca.cert.pem, dest: medulla-rootca.cert.pem }
+  when:
+    - PKI_SERVER == 'localhost'
+
+- name: MMC - Ensure mmc-agent service is running
+  ansible.builtin.systemd:
+    name: mmc-agent
+    state: started
+    enabled: yes
+    masked: no
+    
+- name: MMC/SUBSTITUTE_AGENT - Ensure service is running
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-master
+    state: started
+    enabled: yes
+    masked: no
+  when: 
+    - PYTHON_VERSION == 3
+

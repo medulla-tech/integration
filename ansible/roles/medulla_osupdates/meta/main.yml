@@ -1,0 +1,5 @@
+dependencies:
+  - role: mariadb
+  - role: mmc
+  - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
+

@@ -1,0 +1,4 @@
+APACHE_DAEMON: apache2
+PHP_INI_PATH: '/etc/php/{{ DEB_PHP_VERSION }}/fpm/php.ini'
+DEB_PHP_VERSION: 7.4
+PHP_DAEMON: 'php{{ DEB_PHP_VERSION }}-fpm'
