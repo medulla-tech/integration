@@ -15,7 +15,7 @@ medulla:
 
 mmc:
   hosts:
-    medulla-server:
+    medulla-main.medulla-tech.io:
   vars:
     AES_KEY: !vault |
       $ANSIBLE_VAULT;1.1;AES256
