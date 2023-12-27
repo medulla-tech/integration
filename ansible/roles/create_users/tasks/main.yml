@@ -33,11 +33,40 @@
       cn: '{{ USER_FIRSTNAME }} {{ USER_LASTNAME }}'
       gidNumber: 10001
       homeDirectory: '/home/{{ USER_USERNAME }}'
+      uidNumber: 10001
+      lmcACL: '{{ ACL_ALL }}'
+      loginShell: /bin/bash
+  when:
+    - PULSEMAIN_IP == ''
+    - ldap_uidnumbers.results | length == 0
+
+- name: CREATE_USERS - Add entry basedn
+  community.general.ldap_entry:
+    dn: 'uid={{ USER_USERNAME }},ou=Users,{{ LDAP_BASEDN }}'
+    server_uri: ldap://localhost/
+    bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+    bind_pw: '{{ LDAPADMINPASSWD }}'
+    objectClass:
+      - top
+      - person
+      - inetOrgPerson
+      - posixAccount
+      - shadowAccount
+      - lmcUserObject
+    attributes:
+      uid: '{{ USER_USERNAME }}'
+      userPassword: '{{ USER_PASSWORD }}'
+      sn: '{{ USER_LASTNAME }}'
+      givenName: '{{ USER_FIRSTNAME }}'
+      cn: '{{ USER_FIRSTNAME }} {{ USER_LASTNAME }}'
+      gidNumber: 10001
+      homeDirectory: '/home/{{ USER_USERNAME }}'
       uidNumber: "{{ (ldap_uidnumbers.results | map(attribute='uidNumber') | max | int) + 1 }}"
       lmcACL: '{{ ACL_ALL }}'
       loginShell: /bin/bash
   when:
     - PULSEMAIN_IP == ''
+    - ldap_uidnumbers.results | length > 0
 
 - name: CREATE_USERS - Provision user in ITSM
   ansible.builtin.uri:
