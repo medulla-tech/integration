@@ -33,7 +33,22 @@
   when:
     - res_query.query_result[0][0].nb_subs == '1'
 
-- name: SIVEOTEST/TEAMS_USERS - Create teams and users
+- name: SIVEOTEST/TEAMS_USERS - Create users in LDAP
+  ansible.builtin.include_role:
+    name: create_users
+  with_items:
+    - { user: 'spo', firstname: 'S', lastname: 'P' }
+    - { user: 'nle', firstname: 'N', lastname: 'L' }
+    - { user: 'wva', firstname: 'W', lastname: 'V' }
+    - { user: 'kno', firstname: 'N', lastname: 'K' }
+  vars:
+    USER_USERNAME: '{{ item.user }}'
+    USER_FIRSTNAME: '{{ item.firstname }}'
+    USER_LASTNAME: '{{ item.firstname }}'
+  when:
+    - XMPP_DOMAIN == 'pulse'
+
+- name: SIVEOTEST/TEAMS_USERS - Create teams and users in DB
   ansible.builtin.include_role:
     name: create_teams
   with_items:
@@ -46,22 +61,3 @@
     USER_REGEX: '{{ item.user }}'
   when:
     - XMPP_DOMAIN == 'pulse'
-
-- name: SIVEOTEST/TEAMS_USERS - Authenticate user to baseldap
-  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ item.team }}-{{ item.user }}'
-  with_items:
-    - { team: 'MainAdmins', user: 'spo' }
-    - { team: 'MainAdmins', user: 'nle' }
-    - { team: 'RelayAdmins', user: 'wva' }
-    - { team: 'RelayAdmins', user: 'kno' }
-
-- name: SIVEOTEST/TEAMS_USERS - Exlude user from externalldap authentication
-  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ item.team }}-{{ item.user }}'
-  with_items:
-    - { team: 'MainAdmins', user: 'spo' }
-    - { team: 'MainAdmins', user: 'nle' }
-    - { team: 'RelayAdmins', user: 'wva' }
-    - { team: 'RelayAdmins', user: 'kno' }
-
-- name: SIVEOTEST/TEAMS_USERS - Define ACL for Technician profile
-  ansible.builtin.command: crudini --set /etc/mmc/plugins/glpi.ini.local provisioning_glpi profile_acl_Technician '{{ TECHNICIAN_ACL }}'

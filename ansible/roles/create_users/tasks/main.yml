@@ -1,0 +1,97 @@
+##########################################################
+#          Create teams and assign users to them         #
+##########################################################
+
+- name: CREATE_USERS - Find max uidnumber
+  community.general.ldap_search:
+    dn: "ou=Users,{{ LDAP_BASEDN }}"
+    scope: "onelevel"
+    attrs:
+      - "uidNumber"
+  register: ldap_uidnumbers
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: CREATE_USERS - Add entry basedn
+  community.general.ldap_entry:
+    dn: 'uid={{ USER_USERNAME }},ou=Users,{{ LDAP_BASEDN }}'
+    server_uri: ldap://localhost/
+    bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
+    bind_pw: '{{ LDAPADMINPASSWD }}'
+    objectClass:
+      - top
+      - person
+      - inetOrgPerson
+      - posixAccount
+      - shadowAccount
+      - lmcUserObject
+    attributes:
+      uid: '{{ USER_USERNAME }}'
+      userPassword: '{{ USER_PASSWORD }}'
+      sn: '{{ USER_LASTNAME }}'
+      givenName: '{{ USER_FIRSTNAME }}'
+      cn: '{{ USER_FIRSTNAME }} {{ USER_LASTNAME }}'
+      gidNumber: 10001
+      homeDirectory: '/home/{{ USER_USERNAME }}'
+      uidNumber: "{{ (ldap_uidnumbers.results | map(attribute='uidNumber') | max | int) + 1 }}"
+      lmcACL: '{{ ACL_ALL }}'
+      loginShell: /bin/bash
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: CREATE_USERS - Provision user in ITSM
+  ansible.builtin.uri:
+    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url_username: '{{ USER_USERNAME }}'
+    url_password: '{{ USER_PASSWORD }}'
+    force_basic_auth: yes
+    method: GET
+  register: json_session
+  when:
+    - PULSEMAIN_IP == ''
+    - ITSM_DBHOST == localhost
+
+- name: CREATE_USERS - Check if user is already assigned Technician profile in ITSM
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT glpi_profiles_users.id FROM glpi_profiles_users INNER JOIN glpi_users ON glpi_profiles_users.users_id = glpi_users.id WHERE glpi_users.name = %(name)s AND glpi_profiles_users.profiles_id = 6 AND glpi_profiles_users.entities_id = 0 AND glpi_profiles_users.is_recursive = 1
+    named_args:
+      name: '{{ USER_USERNAME }}'
+  register: res_queryprofileid
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: CREATE_USERS - Assign user to Technician profile in ITSM if not already done
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id, is_recursive) SELECT id, 6, 0, 1 FROM glpi_users WHERE name=%(name)s
+    named_args:
+      name: '{{ USER_USERNAME }}'
+  when:
+    - PULSEMAIN_IP == ''
+    - res_queryprofileid.rowcount[0] == 0
+        
+- name: CREATE_USERS - Authenticate user to baseldap
+  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ USER_USERNAME }}'
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: CREATE_USERS - Exlude user from externalldap authentication
+  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ USER_USERNAME }}'
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: CREATE_USERS - Exlude user from glpi provisioning
+  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/glpi.ini.local provisioning_glpi exclude '{{ USER_USERNAME }}'
+  when:
+    - PULSEMAIN_IP == ''
