@@ -78,7 +78,7 @@
   register: json_session
   when:
     - PULSEMAIN_IP == ''
-    - ITSM_DBHOST == localhost
+    - ITSM_DBHOST == 'localhost'
 
 - name: CREATE_USERS - Check if user is already assigned Technician profile in ITSM
   community.mysql.mysql_query:
