@@ -1,0 +1,18 @@
+# Example comamnd line: join-ad.ps1 Administrator AdMinP@55W0rd
+
+param(
+    [string]$AdAdminUsername,
+    [string]$AdAdminPassword
+    )
+
+$primaryDnsServer = "{{ AD_IP_ADDRESS }}"
+$interfaceIndex = (Get-NetAdapter).ifIndex
+$currentDnsServers = (Get-DnsClientServerAddress -InterfaceIndex $interfaceIndex).ServerAddresses
+$secondaryDnsServer = $currentDnsServers[1]
+Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses $primaryDnsServer,$secondaryDnsServer
+
+$domain = "{{ AD_DOMAIN_NAME }}"
+$password = "$AdAdminPassword" | ConvertTo-SecureString -asPlainText -Force
+$username = "$domain\$AdAdminUsername" 
+$credential = New-Object System.Management.Automation.PSCredential($username,$password)
+Add-Computer -DomainName $domain -Credential $credential

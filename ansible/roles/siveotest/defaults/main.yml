@@ -4,3 +4,5 @@ DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
 XMPP_DOMAIN: 'pulse'
+AD_DOMAIN_NAME: siveo.lan
+AD_IP_ADDRESS: 10.10.0.112
