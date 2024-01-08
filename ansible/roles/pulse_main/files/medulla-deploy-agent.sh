@@ -19,10 +19,12 @@ WINRM_PORT='5985'
 display_usage() {
     echo -e "${RED}Usage: $0 --target=<target_cidr> | --server=<ad_server_name>  [--port=<winrm_or_ssh_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--sshkey=<path_to_ssh_key>] [--ou=<ad_ou>] [--force] [--reinstall]"
     echo -e "${NC}"
-    echo "Example using network discovery:"
+    echo "Example using network discovery and winrm:"
     echo "  $0 --target=10.10.0.0/24 --namefilter=win --username=vagrant --password=vagrant"
-    echo "Example using Active Directory:"
+    echo "Example using Active Directory and winrm:"
     echo "  $0 --server=10.10.0.100 --namefilter=win --ou=OU=grp1,DC=MEDULLA,DC=int --domain=MEDULLA --username=Administrator --password=P@ssw0rd"
+    echo "Example using network discovery and ssh:"
+    echo "  $0 --target=10.10.0.0/24 --namefilter=win --port=22 --username=pulseuser --sshkey=/root/.ssh/id_rsa"
     echo "Example for an individual machine:"
     echo "  $0 --target=10.10.0.94/32 --username=vagrant --password=vagrant"
     echo "Example for a linux machine:"
@@ -205,9 +207,12 @@ install_agent() {
     echo -e "${GREEN}$1: Processing"
     if [[ $(timeout 1 bash -c cat < /dev/tcp/$1/${PORT}) == *"SSH"* || ! -z ${SSHKEY+x} ]]; then
         # Using SSH
-        if [ -z ${SSHKEY+x} ]; then
-            CMD="sshpass -p ${PASSWORD} ssh ${USERNAME}@$1 -p ${PORT} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
+        ssh ${USERNAME}@$1 -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'wmic os get version /value' &> /dev/null
+        if [ $? -eq 0 ]; then
+            # Windows machine
+            CMD="ssh ${USERNAME}@$1 -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'PowerShell.exe -noprofile -' < /var/lib/pulse2/clients/win/install-agent.ps1"
         else
+            # Linux machine
             CMD="ssh ${USERNAME}@$1 -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh"
         fi
         if [ ! -z ${DEBUG+x} ]; then
