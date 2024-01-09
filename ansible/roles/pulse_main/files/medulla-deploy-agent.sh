@@ -17,7 +17,7 @@ NC='\033[0m'
 WINRM_PORT='5985'
 
 display_usage() {
-    echo -e "${RED}Usage: $0 --target=<target_cidr> | --server=<ad_server_name>  [--port=<winrm_or_ssh_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--sshkey=<path_to_ssh_key>] [--ou=<ad_ou>] [--force] [--reinstall]"
+    echo -e "${RED}Usage: $0 --target=<target_cidr | target_fqdn> | --server=<ad_server_name> [--port=<winrm_or_ssh_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--sshkey=<path_to_ssh_key>] [--ou=<ad_ou>] [--force] [--reinstall]"
     echo -e "${NC}"
     echo "Example using network discovery and winrm:"
     echo "  $0 --target=10.10.0.0/24 --namefilter=win --username=vagrant --password=vagrant"
@@ -25,8 +25,9 @@ display_usage() {
     echo "  $0 --server=10.10.0.100 --namefilter=win --ou=OU=grp1,DC=MEDULLA,DC=int --domain=MEDULLA --username=Administrator --password=P@ssw0rd"
     echo "Example using network discovery and ssh:"
     echo "  $0 --target=10.10.0.0/24 --namefilter=win --port=22 --username=pulseuser --sshkey=/root/.ssh/id_rsa"
-    echo "Example for an individual machine:"
+    echo "Examples for an individual machine:"
     echo "  $0 --target=10.10.0.94/32 --username=vagrant --password=vagrant"
+    echo "  $0 --target=host.siveo.net --username=pulseuser --sshkey=/root/.ssh/id_rsa"
     echo "Example for a linux machine:"
     echo "  $0 --target=10.10.0.94/32 --port=22 --username=root --sshkey=/root/.ssh/id_rsa"
 }
@@ -41,11 +42,13 @@ check_arguments() {
             --target=*)
                 CIDR_REGEX='(((25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?))(\/([8-9]|[1-2][0-9]|3[0-2]))([^0-9.]|$)'
                 TARGET="${i#*=}"
-                if [[ $TARGET =~ $REGEX ]]
-                then
+                if host "$TARGET" >/dev/null 2>&1; then
+                    echo -e "${GREEN}Running with FQDN $TARGET"
+                    FQDN=1
+                elif [[ $TARGET =~ $REGEX ]]; then
                     echo -e "${GREEN}Running with CIDR $TARGET"
                 else
-                    echo -e "${RED}$TARGET is not a valid CIDR"
+                    echo -e "${RED}$TARGET is not a valid CIDR or FQDN"
                     display_usage
                     exit 1
                 fi
@@ -219,7 +222,7 @@ install_agent() {
             echo -e "$1: Running ${CMD}"
             eval ${CMD}
         else
-            eval ${CMD}&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+            eval ${CMD}&> /dev/null && echo -e "${GREEN}$1: Execution successful" || echo -e "${RED}$1: Execution failed"
         fi
     else
         # Using WINRM
@@ -240,14 +243,16 @@ Invoke-Command -ComputerName $1 -Port ${PORT} -Authentication Negotiate -Credent
 \$pw = ConvertTo-SecureString -AsPlainText -Force -String ${PASSWORD}
 \$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "${USERNAME}",\$pw
 Invoke-Command -ComputerName $1 -Port ${PORT} -Authentication Negotiate -Credential \$cred -FilePath /var/lib/pulse2/clients/win/install-agent.ps1
-"&> /dev/null && echo -e "${GREEN}Execution successful" || echo -e "${RED}Execution failed"
+"&> /dev/null && echo -e "${GREEN}$1: Execution successful" || echo -e "${RED}$1: Execution failed"
         fi
     fi
 }
 
 
 check_arguments "$@"
-if [[ "$TARGET" == */32 ]]; then
+if [[ "$FQDN" == 1 ]]; then
+    MACH_LIST=("${TARGET}")
+elif [[ "$TARGET" == */32 ]]; then
     MACH_LIST=("${TARGET:0:-3}")
 else
     if [ -z ${SERVER+x} ]; then
