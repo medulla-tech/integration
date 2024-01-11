@@ -3,14 +3,14 @@
 To install your Medulla infrastructure, we use Ansible, open-source solution includes software provisioning, configuration management, and application deployment functionality working with SSH.
 
 Some passwords are in plain text and some others are vaulted. To vault the passwords we use the command:
-
+```bash
 ansible-vault encrypt_string --vault-password-file $thevaultfile '$pass' --name $vault
 with:
 
 $thevaultfile:  The file with the secret vault key
 $pass:  The password to be vaulted
 $vault: The name of the variable we want to vault
-
+```
 exemple:
 
 
