@@ -300,9 +300,9 @@
     - { share_id: 'pulsemaster_postinst', syncthing_folder: 'postinst', destination: '/var/lib/pulse2/imaging/postinst/' }
   vars:
     ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
   notify:
     - SYNCTHING - Restart syncthing on pulsemain
-  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
 
