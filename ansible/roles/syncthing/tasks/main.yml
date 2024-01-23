@@ -288,6 +288,22 @@
     - ansible_distribution == 'Debian'
     - PULSEMAIN_IP != ''
 
+- name: SHARE - Share all folders with ars from pulsemain
+  command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
+  with_items:
+    - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
+    - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
+    - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
+    - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
+    - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+  vars:
+    ansible_ssh_user: root
+  notify:
+    - SYNCTHING - Restart syncthing on pulsemain
+  delegate_to: '{{ PULSEMAIN_IP }}'
+ when:
+    - PULSEMAIN_IP != ''
+
 - name: SYNCTHING - Ensure syncthing is running
   ansible.builtin.systemd:
     name: syncthing@{{ item }}
