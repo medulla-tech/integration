@@ -296,12 +296,14 @@
     - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
     - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
     - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
+    - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
+    - { share_id: 'pulsemaster_postinst', syncthing_folder: 'postinst', destination: '/var/lib/pulse2/imaging/postinst/' }
   vars:
     ansible_ssh_user: root
   notify:
     - SYNCTHING - Restart syncthing on pulsemain
   delegate_to: '{{ PULSEMAIN_IP }}'
- when:
+  when:
     - PULSEMAIN_IP != ''
 
 - name: SYNCTHING - Ensure syncthing is running
