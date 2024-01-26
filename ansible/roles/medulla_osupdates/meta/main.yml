@@ -2,4 +2,4 @@ dependencies:
   - role: mariadb
   - role: mmc
   - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
-
+  - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
