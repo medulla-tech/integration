@@ -193,7 +193,7 @@
 
 - name: SYNCTHING - Get Pulsemain Syncthing-depl API Key
   community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
+    path: /var/lib/syncthing-depl/.config/syncthing/config.xml
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
