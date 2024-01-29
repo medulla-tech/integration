@@ -177,9 +177,9 @@
     named_args:
       jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
   register: res_queryrelayserverid
-  until: res_queryrelayserverid.rowcount[0] != 0
   retries: 10
   delay: 30
+  until: res_queryrelayserverid.rowcount[0] != 0
 
 - name: RELAY_AGENT - Get has_cluster_ars id for relay if it has already been inserted in its cluster
   community.mysql.mysql_query:
