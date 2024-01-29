@@ -131,7 +131,7 @@
   delay: 30
   until: ('status' in result) and result.status == 200
 
-- name: ST_SHARE_FOLDER - Append device to devices configuration
+- name: ST_SHARE_FOLDER - Append relay device to devices configuration
   ansible.builtin.set_fact:
     new_devices: '{{ (result.json.devices | default([])) + [ new_device ] }}'
   vars:
@@ -140,7 +140,7 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: ST_SHARE_FOLDER - Share folder between relay and main waiting up to 5 minutes
+- name: ST_SHARE_FOLDER - Share folder to relay waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
     headers:
@@ -159,4 +159,54 @@
   retries: 10
   delay: 30
   until: ('status' in result) and result.status == 200
+
+- name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  register: pulsemaindeviceid
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Set PULSEMAIN_DEVICE_ID for syncthing
+  ansible.builtin.set_fact:
+    PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Get current folder configuration
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: GET
+    body_format: json
+  register: result
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Append main device to devices configuration
+  ansible.builtin.set_fact:
+    new_devices: '{{ (result.json.devices | default([])) + [ new_device ] }}'
+  vars:
+    new_device:
+      deviceID: "{{ PULSEMAIN_DEVICE_ID }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Share folder to main
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: PATCH
+    body_format: json
+    body:
+      devices: "{{ new_devices }}"
+  when:
+    - PULSEMAIN_IP != ''
 
