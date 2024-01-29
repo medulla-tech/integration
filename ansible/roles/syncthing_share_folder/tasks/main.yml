@@ -113,7 +113,7 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: ST_SHARE_FOLDER - Get current folder configuration on main
+- name: ST_SHARE_FOLDER - Get current folder configuration on main waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
     headers:
@@ -137,7 +137,7 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: ST_SHARE_FOLDER - Share folder between relay and main
+- name: ST_SHARE_FOLDER - Share folder between relay and main waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
     headers:
@@ -145,7 +145,6 @@
     method: PATCH
     body_format: json
     body:
-      id: "pulsemaster_{{ SHARE_NAME }}"
       devices: "{{ new_devices }}"
     status_code: 200
   vars:

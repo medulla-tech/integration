@@ -219,7 +219,7 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Delete relayserver device from pulsemain syncthing
+- name: SYNCTHING - Delete relayserver device from pulsemain syncthing waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/devices/{{ relay_device_id.stdout }}"
     headers:
@@ -247,7 +247,7 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Delete relayserver device from pulsemain syncthing-depl
+- name: SYNCTHING - Delete relayserver device from pulsemain syncthing-depl waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8385/rest/config/devices/{{ relay_device_id.stdout }}"
     headers:
@@ -265,7 +265,7 @@
   delay: 30
   until: ('status' in result) and result.status == 200
 
-- name: SYNCTHING - Add relayserver device to pulsemain syncthing
+- name: SYNCTHING - Add relayserver device to pulsemain syncthing waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/devices"
     headers:
@@ -287,7 +287,7 @@
   delay: 30
   until: ('status' in result) and result.status == 200
 
-- name: SYNCTHING - Add relayserver device to pulsemain syncthing-depl
+- name: SYNCTHING - Add relayserver device to pulsemain syncthing-depl waiting up to 5 minutes
   ansible.builtin.uri:
     url: "http://localhost:8385/rest/config/devices"
     headers:
