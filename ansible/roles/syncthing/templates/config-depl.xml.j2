@@ -9,7 +9,7 @@
         <untrusted>false</untrusted>
         <remoteGUIPort>0</remoteGUIPort>
     </device>
-{% if PULSEMAINDEPL_DEVICE_ID != '' %}
+{% if PULSEMAIN_IP != '' %}
     <device id="{{ PULSEMAINDEPL_DEVICE_ID }}" name="pulse" compression="metadata" introducer="true" skipIntroductionRemovals="false" introducedBy="">
         <address>dynamic</address>
         <paused>false</paused>
