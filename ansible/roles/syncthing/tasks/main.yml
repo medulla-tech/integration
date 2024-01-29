@@ -225,12 +225,17 @@
     headers:
       X-API-Key: '{{ MAINSTAPIKEY }}'
     method: DELETE
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
     - not relay_device_id.failed
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING - Get device id for relayserver
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/.config/syncthing/config.xml
@@ -248,12 +253,17 @@
     headers:
       X-API-Key: '{{ MAINSTDEPLAPIKEY }}'
     method: DELETE
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
     - not relay_device_id.failed
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING - Add relayserver device to pulsemain syncthing
   ansible.builtin.uri:
@@ -266,11 +276,16 @@
       id: "{{ LOCAL_DEVICE_ID }}"
       name: "{{ XMPP_DOMAIN }}"
       introducer: "false"
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING - Add relayserver device to pulsemain syncthing-depl
   ansible.builtin.uri:
@@ -283,11 +298,16 @@
       id: "{{ LOCALDEPL_DEVICE_ID }}"
       name: "{{ XMPP_DOMAIN }}"
       introducer: "false"
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING/APACHE - Setup local apache for syncthing
   ansible.builtin.copy:

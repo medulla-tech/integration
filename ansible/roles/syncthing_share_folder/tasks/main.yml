@@ -120,12 +120,16 @@
       X-API-Key: '{{ MAINSTAPIKEY }}'
     method: GET
     body_format: json
+    status_code: 200
   register: result
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: ST_SHARE_FOLDER - Append device to devices configuration
   ansible.builtin.set_fact:
@@ -143,9 +147,14 @@
     body:
       id: "pulsemaster_{{ SHARE_NAME }}"
       devices: "{{ new_devices }}"
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
