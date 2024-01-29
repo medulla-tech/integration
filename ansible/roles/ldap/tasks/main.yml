@@ -30,7 +30,6 @@
     state: latest
     pkg:
       - ldap-server
-      - python3-pyldap
   when:
     - ansible_distribution == 'Debian'
 
@@ -40,9 +39,24 @@
     pkg:
       - openldap-servers
       - openldap-clients
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: LDAP - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
       - python-ldap
   when:
     - ansible_distribution == 'CentOS'
+
+- name: LDAP - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pyldap
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: LDAP - Configure ldap olcDatabase
   ansible.builtin.lineinfile:

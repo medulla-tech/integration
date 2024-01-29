@@ -8,7 +8,6 @@
     pkg:
       - curl
       - crudini
-      - python3-mysql
       - at
   when:
     - ansible_distribution == 'CentOS'
@@ -19,9 +18,24 @@
     pkg:
       - curl
       - crudini
-      - python3-mysqldb
       - at
       - cron
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MEDULLA_OSUPDATES - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MEDULLA_OSUPDATES - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
   when:
     - ansible_distribution == 'Debian'
 

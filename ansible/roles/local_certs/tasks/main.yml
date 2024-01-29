@@ -14,7 +14,6 @@
     pkg:
       - openssl
       - ca-certificates
-      - pyOpenSSL
   when:
     - ansible_distribution == 'CentOS'
 
@@ -24,7 +23,6 @@
     pkg:
       - openssl
       - ca-certificates
-      - python-openssl
   when:
     - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
 
@@ -34,6 +32,29 @@
     pkg:
       - openssl
       - ca-certificates
+  when:
+    - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
+
+- name: CERT - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pyOpenSSL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: CERT - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python-openssl
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: CERT - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
       - python3-openssl
   when:
     - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )

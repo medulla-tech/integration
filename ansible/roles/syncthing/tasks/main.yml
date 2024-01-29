@@ -24,6 +24,24 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: SYNCTHING - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-bcrypt
+      - python3-passlib
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SYNCTHING - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-bcrypt
+      - python3-passlib
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: SYNCTHING - Create user accounts
   ansible.builtin.user:
     name: '{{ item.name }}'
