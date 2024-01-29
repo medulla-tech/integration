@@ -37,21 +37,14 @@
     owner: syncthing
     group: syncthing
 
-- name: ST_SHARE_FOLDER - Check if a stignore file exists for this share
-  local_action: 
-    module: ansible.builtin.stat
-    path: '{{ SHARE_NAME }}_stignore'
-  register: file_status
-
-- name: ST_SHARE_FOLDER - Copy stignore file to share path
+- name: ST_SHARE_FOLDER - Copy stignore file to share path if exists
   ansible.builtin.copy:
     src: '{{ SHARE_NAME }}_stignore'
     dest: '{{ SHARE_PATH }}/.stignore'
     mode: '0644'
     owner: syncthing
     group: syncthing
-  when:
-    - file_status.stat.exists
+  ignore_errors: true
 
 - name: ST_SHARE_FOLDER - Create syncthing shares
   ansible.builtin.uri:
