@@ -273,9 +273,9 @@
     method: POST
     body_format: json
     body:
-      id: "{{ LOCAL_DEVICE_ID }}"
+      deviceID: "{{ LOCAL_DEVICE_ID }}"
       name: "{{ XMPP_DOMAIN }}"
-      introducer: "false"
+      introducer: false
     status_code: 200
   vars:
     ansible_ssh_user: root
@@ -295,9 +295,9 @@
     method: POST
     body_format: json
     body:
-      id: "{{ LOCALDEPL_DEVICE_ID }}"
+      deviceID: "{{ LOCALDEPL_DEVICE_ID }}"
       name: "{{ XMPP_DOMAIN }}"
-      introducer: "false"
+      introducer: false
     status_code: 200
   vars:
     ansible_ssh_user: root
