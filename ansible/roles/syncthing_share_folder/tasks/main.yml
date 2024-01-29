@@ -133,7 +133,10 @@
 
 - name: ST_SHARE_FOLDER - Append device to devices configuration
   ansible.builtin.set_fact:
-    new_devices: '{{ (result.json.devices | default([])) + [{ "deviceID": "{{ LOCAL_DEVICE_ID }}"}] }}'
+    new_devices: '{{ (result.json.devices | default([])) + [ new_device ] }}'
+  vars:
+    new_device:
+      deviceID: "{{ LOCAL_DEVICE_ID }}"
   when:
     - PULSEMAIN_IP != ''
 
