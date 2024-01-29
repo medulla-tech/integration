@@ -38,7 +38,8 @@
     group: syncthing
 
 - name: ST_SHARE_FOLDER - Check if a stignore file exists for this share
-  local_action: ansible.builtin.stat:
+  local_action: 
+    module: ansible.builtin.stat
     path: '{{ SHARE_NAME }}_stignore'
   register: file_status
 
