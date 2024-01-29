@@ -229,8 +229,8 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - not relay_device_id.failed
     - PULSEMAIN_IP != ''
+    - not relay_device_id.failed
 
 - name: SYNCTHING - Get device id for relayserver
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/.config/syncthing/config.xml
@@ -252,8 +252,8 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - not relay_device_id.failed
     - PULSEMAIN_IP != ''
+    - not relay_device_id.failed
 
 - name: SYNCTHING - Add relayserver device to pulsemain syncthing
   ansible.builtin.uri:
