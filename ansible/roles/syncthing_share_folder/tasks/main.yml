@@ -1,0 +1,205 @@
+##########################################################
+#                syncthing share folder                  #
+##########################################################
+
+- name: ST_SHARE_FOLDER - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-lxml
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: ST_SHARE_FOLDER - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-lxml
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: ST_SHARE_FOLDER - Get Syncthing API Key
+  community.general.xml:
+    path: /var/lib/syncthing/.config/syncthing/config.xml
+    xpath: /configuration/gui/apikey
+    content: text
+  register: xmlres
+
+- name: ST_SHARE_FOLDER - Set STAPIKEY variable
+  ansible.builtin.set_fact:
+    STAPIKEY: '{{ xmlres.matches[0].apikey }}'
+
+- name: ST_SHARE_FOLDER - Create syncthing special folder
+  ansible.builtin.file:
+    path: '{{ SHARE_PATH }}/.stfolder'
+    state: directory
+    mode: '0755'
+    owner: syncthing
+    group: syncthing
+
+- name: ST_SHARE_FOLDER - Copy stignore file to share path if exists
+  ansible.builtin.copy:
+    src: '{{ SHARE_NAME }}_stignore'
+    dest: '{{ SHARE_PATH }}/.stignore'
+    mode: '0644'
+    owner: syncthing
+    group: syncthing
+  ignore_errors: true
+
+- name: ST_SHARE_FOLDER - Create syncthing shares
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: PUT
+    body_format: json
+    body:
+      id: "pulsemaster_{{ SHARE_NAME }}"
+      label: "{{ SHARE_NAME }}"
+      path: "{{ SHARE_PATH }}"
+      type: "{{ MAIN_SHARE_TYPE }}"
+  when:
+    - PULSEMAIN_IP == ''
+
+- name: ST_SHARE_FOLDER - Create syncthing shares
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: PUT
+    body_format: json
+    body:
+      id: "pulsemaster_{{ SHARE_NAME }}"
+      label: "{{ SHARE_NAME }}"
+      path: "{{ SHARE_PATH }}"
+      type: "{{ RELAY_SHARE_TYPE }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Get local device id for sharing from main
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  register: localdeviceid
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Set LOCAL_DEVICE_ID for sharing from main
+  ansible.builtin.set_fact:
+    LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Get Pulsemain Syncthing API Key
+  community.general.xml:
+    path: /var/lib/syncthing/.config/syncthing/config.xml
+    xpath: /configuration/gui/apikey
+    content: text
+  register: xmlres
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Set MAINSTAPIKEY variable
+  ansible.builtin.set_fact:
+    MAINSTAPIKEY: '{{ xmlres.matches[0].apikey }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Get current folder configuration on main waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ MAINSTAPIKEY }}'
+    method: GET
+    body_format: json
+    status_code: 200
+  register: result
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
+
+- name: ST_SHARE_FOLDER - Append relay device to devices configuration
+  ansible.builtin.set_fact:
+    new_devices: '{{ (result.json.devices | default([])) + [ new_device ] }}'
+  vars:
+    new_device:
+      deviceID: "{{ LOCAL_DEVICE_ID }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Share folder to relay waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ MAINSTAPIKEY }}'
+    method: PATCH
+    body_format: json
+    body:
+      devices: "{{ new_devices }}"
+    status_code: 200
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
+
+- name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  register: pulsemaindeviceid
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Set PULSEMAIN_DEVICE_ID for syncthing
+  ansible.builtin.set_fact:
+    PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Get current folder configuration
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: GET
+    body_format: json
+  register: result
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Append main device to devices configuration
+  ansible.builtin.set_fact:
+    new_devices: '{{ (result.json.devices | default([])) + [ new_device ] }}'
+  vars:
+    new_device:
+      deviceID: "{{ PULSEMAIN_DEVICE_ID }}"
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: ST_SHARE_FOLDER - Share folder to main
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
+    headers:
+      X-API-Key: '{{ STAPIKEY }}'
+    method: PATCH
+    body_format: json
+    body:
+      devices: "{{ new_devices }}"
+  when:
+    - PULSEMAIN_IP != ''
+

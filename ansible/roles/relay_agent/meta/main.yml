@@ -1,3 +1,8 @@
 dependencies:
   - role: ejabberd
-  - role: syncthing
+  - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+  - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+  - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+  - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+
+

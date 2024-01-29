@@ -126,32 +126,6 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Create syncthing special folders
-  ansible.builtin.file:
-    path: '{{ item }}/.stfolder'
-    state: directory
-    mode: '0755'
-    owner: syncthing
-    group: syncthing
-  with_items:
-    - /var/lib/pulse2/clients
-    - /var/lib/pulse2/imaging/bootmenus
-    - /var/lib/pulse2/xmpp_baseremoteagent
-    - /var/lib/pulse2/packages/sharing/global
-    - /var/lib/pulse2/packages/sharing/winupdates
-    - /var/lib/pulse2/imaging/postinst
-
-- name: SYNCTHING - Create stignore files
-  ansible.builtin.copy:
-    src: '{{ item.src }}'
-    dest: '{{ item.dest }}'
-    mode: '0644'
-    owner: syncthing
-    group: syncthing
-  with_items:
-    - { src: bootmenus_stignore, dest: /var/lib/pulse2/imaging/bootmenus/.stignore }
-    - { src: downloads_stignore, dest: /var/lib/pulse2/clients/.stignore }
-
 - name: SYNCTHING - Reset STCONF_CHANGED variable
   ansible.builtin.set_fact:
     STCONF_CHANGED: False
@@ -199,55 +173,141 @@
 - name: SYNCTHING - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
 
-- name: SYNCTHING - Stop service for editing configuration on pulsemain
-  ansible.builtin.systemd:
-    name: syncthing@{{ item }}
-    state: stopped
-  with_items:
-    - syncthing
-    - syncthing-depl
+- name: SYNCTHING - Get Pulsemain Syncthing API Key
+  community.general.xml:
+    path: /var/lib/syncthing/.config/syncthing/config.xml
+    xpath: /configuration/gui/apikey
+    content: text
+  register: xmlres
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Delete relayserver device from pulsemain syncthing
-  ansible.builtin.command: xmlstarlet ed --inplace -d "configuration/device[@name='{{ XMPP_DOMAIN }}']" /var/lib/{{ item }}/.config/syncthing/config.xml
-  with_items:
-    - syncthing
-    - syncthing-depl
+- name: SYNCTHING - Set MAINSTAPIKEY variable
+  ansible.builtin.set_fact:
+    MAINSTAPIKEY: '{{ xmlres.matches[0].apikey }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: SYNCTHING - Get Pulsemain Syncthing-depl API Key
+  community.general.xml:
+    path: /var/lib/syncthing-depl/.config/syncthing/config.xml
+    xpath: /configuration/gui/apikey
+    content: text
+  register: xmlres
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: SYNCTHING - Set MAINSTDEPLAPIKEY variable
+  ansible.builtin.set_fact:
+    MAINSTDEPLAPIKEY: '{{ xmlres.matches[0].apikey }}'
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: SYNCTHING - Get device id for relayserver
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing/.config/syncthing/config.xml
+  register: relay_device_id
   ignore_errors: yes
-  notify:
-    - SYNCTHING - Restart syncthing on pulsemain
-  when:
-    - PULSEMAIN_IP != ''
-
-- name: SYNCTHING - Add relayserver device to pulsemain syncthing
-  ansible.builtin.command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCAL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='false'" /var/lib/syncthing/.config/syncthing/config.xml
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
-  notify:
-    - SYNCTHING - Restart syncthing on pulsemain
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Add relayserver device to pulsemain syncthing-depl
-  ansible.builtin.command: xmlstarlet ed --inplace -s "configuration" -t elem -n "device id='{{ LOCALDEPL_DEVICE_ID }}' name='{{ XMPP_DOMAIN }}' introducer='false'" /var/lib/syncthing-depl/.config/syncthing/config.xml
+- name: SYNCTHING - Delete relayserver device from pulsemain syncthing waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/devices/{{ relay_device_id.stdout }}"
+    headers:
+      X-API-Key: '{{ MAINSTAPIKEY }}'
+    method: DELETE
+    status_code: 200
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
-  notify:
-    - SYNCTHING - Restart syncthing on pulsemain
+  when:
+    - PULSEMAIN_IP != ''
+    - not relay_device_id.failed
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
+
+- name: SYNCTHING - Get device id for relayserver
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/.config/syncthing/config.xml
+  register: relay_device_id
+  ignore_errors: yes
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
 
-- name: SYNCTHING - Force restart of service on pulsemain to use new config files
-  ansible.builtin.meta: flush_handlers
+- name: SYNCTHING - Delete relayserver device from pulsemain syncthing-depl waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8385/rest/config/devices/{{ relay_device_id.stdout }}"
+    headers:
+      X-API-Key: '{{ MAINSTDEPLAPIKEY }}'
+    method: DELETE
+    status_code: 200
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+    - not relay_device_id.failed
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
+
+- name: SYNCTHING - Add relayserver device to pulsemain syncthing waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8384/rest/config/devices"
+    headers:
+      X-API-Key: '{{ MAINSTAPIKEY }}'
+    method: POST
+    body_format: json
+    body:
+      deviceID: "{{ LOCAL_DEVICE_ID }}"
+      name: "{{ XMPP_DOMAIN }}"
+      introducer: false
+    status_code: 200
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
+
+- name: SYNCTHING - Add relayserver device to pulsemain syncthing-depl waiting up to 5 minutes
+  ansible.builtin.uri:
+    url: "http://localhost:8385/rest/config/devices"
+    headers:
+      X-API-Key: '{{ MAINSTDEPLAPIKEY }}'
+    method: POST
+    body_format: json
+    body:
+      deviceID: "{{ LOCALDEPL_DEVICE_ID }}"
+      name: "{{ XMPP_DOMAIN }}"
+      introducer: false
+    status_code: 200
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  register: result
+  retries: 10
+  delay: 30
+  until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING/APACHE - Setup local apache for syncthing
   ansible.builtin.copy:
@@ -286,24 +346,6 @@
     - SYNCTHING - Restart apache on pulsemain
   when:
     - ansible_distribution == 'Debian'
-    - PULSEMAIN_IP != ''
-
-- name: SHARE - Share all folders with ars from pulsemain
-  command: xmlstarlet ed --inplace -s "configuration/folder[@id='{{ item.share_id }}']" -t elem -n 'device id="{{ LOCAL_DEVICE_ID }}"' /var/lib/syncthing/.config/syncthing/config.xml
-  with_items:
-    - { share_id: 'pulsemaster_downloads', syncthing_folder: 'downloads', destination: '/var/lib/pulse2/clients/' }
-    - { share_id: 'pulsemaster_bootmenus', syncthing_folder: 'bootmenus', destination: '/var/lib/pulse2/imaging/bootmenus/' }
-    - { share_id: 'pulsemaster_baseremoteagent', syncthing_folder: 'baseremoteagent', destination: '/var/lib/pulse2/xmpp_baseremoteagent/' }
-    - { share_id: 'pulsemaster_global', syncthing_folder: 'global', destination: '/var/lib/pulse2/packages/sharing/global/' }
-    - { share_id: 'pulsemaster_{{ ansible_hostname[:6] }}', syncthing_folder: '{{ ansible_hostname[:6] }}', destination: '/var/lib/pulse2/packages/sharing/{{ ansible_hostname[:6] }}/' }
-    - { share_id: 'pulsemaster_winupdates', syncthing_folder: 'winupdates', destination: '/var/lib/pulse2/packages/sharing/winupdates/' }
-    - { share_id: 'pulsemaster_postinst', syncthing_folder: 'postinst', destination: '/var/lib/pulse2/imaging/postinst/' }
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  notify:
-    - SYNCTHING - Restart syncthing on pulsemain
-  when:
     - PULSEMAIN_IP != ''
 
 - name: SYNCTHING - Ensure syncthing is running
