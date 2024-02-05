@@ -114,6 +114,7 @@
     method: GET
     body_format: json
     status_code: 200
+  throttle: 1
   register: result
   vars:
     ansible_ssh_user: root
@@ -143,6 +144,7 @@
     body:
       devices: "{{ new_devices }}"
     status_code: 200
+  throttle: 1
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'

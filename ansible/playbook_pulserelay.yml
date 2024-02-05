@@ -2,7 +2,6 @@
   gather_facts: true
   hosts: ars
   remote_user: root
-  serial: 1
   roles:
     - base
     - security

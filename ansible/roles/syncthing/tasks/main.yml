@@ -244,6 +244,7 @@
       X-API-Key: '{{ MAINSTAPIKEY }}'
     method: DELETE
     status_code: 200
+  throttle: 1
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -272,6 +273,7 @@
       X-API-Key: '{{ MAINSTDEPLAPIKEY }}'
     method: DELETE
     status_code: 200
+  throttle: 1
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -295,6 +297,7 @@
       name: "{{ XMPP_DOMAIN }}"
       introducer: false
     status_code: 200
+  throttle: 1
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -317,6 +320,7 @@
       name: "{{ XMPP_DOMAIN }}"
       introducer: false
     status_code: 200
+  throttle: 1
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
