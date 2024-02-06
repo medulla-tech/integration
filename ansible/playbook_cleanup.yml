@@ -33,6 +33,17 @@
           63613762396638316561663138623939653033666361333866663637633966613331663361326162
           3765653537343438310a363761326434356238306565616230646466383536373861393930616136
           3564
+
+  pre_tasks:
+    - name: CLEANUP - Set version for this playbook
+      ansible.builtin.set_fact:
+        PLAYBOOK_VERSION: '5.0.0'
+
+    - name: CLEANUP - Display version
+      ansible.builtin.debug:
+        msg:
+        - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
   roles:
     - ldap_cleanup
     - ejabberd_cleanup
@@ -42,21 +53,3 @@
     - grafana_cleanup
     - mmc_cleanup
     - mariadb_cleanup
-
-  # tasks:
-  #   - name: SUBSTITUTE_AGENT - Find out name of substitute
-  #     mysql_query:
-  #       login_host: localhost
-  #       login_port: 3306
-  #       login_user: root
-  #       login_password: siveo
-  #       login_db: 'xmppmaster'
-  #       query:
-  #        - SELECT COUNT( DISTINCT jidsubtitute ) FROM substituteconf  WHERE type = %(type)s")
-  #       named_args:
-  #         type: 'registration'
-  #     register: res_query
-
-  #   - name: Result
-  #     debug:
-  #       var: res_query

@@ -2,6 +2,17 @@
   gather_facts: true
   hosts: ars
   remote_user: root
+
+  pre_tasks:
+    - name: PULSERELAY - Set version for this playbook
+      ansible.builtin.set_fact:
+        PLAYBOOK_VERSION: '5.0.0'
+
+    - name: PULSERELAY - Display version
+      ansible.builtin.debug:
+        msg:
+        - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
   roles:
     - base
     - security
