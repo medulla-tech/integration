@@ -1,0 +1,19 @@
+- name: Medulla_PatchMgmt
+  hosts: all
+  remote_user: root
+
+  vars:
+    - PULSEMAIN_IP: '55.245.5.32'
+
+  pre_tasks:
+    - name: PATCHMGMT - Set version for this playbook
+      ansible.builtin.set_fact:
+        PLAYBOOK_VERSION: '1.0.0'
+
+    - name: PATCHMGMT - Display version
+      ansible.builtin.debug:
+        msg:
+        - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
+  roles:
+    - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
