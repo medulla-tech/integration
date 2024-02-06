@@ -2,6 +2,15 @@
 #          Specific settings for SIVEO dev team          #
 ##########################################################
 
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
 - name: SIVEODEV - Install a few interesting tools
   ansible.builtin.apt:
     state: latest

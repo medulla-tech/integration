@@ -2,6 +2,15 @@
 #                syncthing share folder                  #
 ##########################################################
 
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
 - name: ST_SHARE_FOLDER - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest

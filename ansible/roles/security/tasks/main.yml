@@ -2,6 +2,15 @@
 #            Define security rules for server            #
 ##########################################################
 
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
 - name: SECURITY - Add the OS specific variables
   ansible.builtin.include_vars: "{{ item }}"
   with_first_found:

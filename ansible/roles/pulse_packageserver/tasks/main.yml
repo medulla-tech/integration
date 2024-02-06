@@ -2,6 +2,15 @@
 #                  Pulse Package Server                  #
 ##########################################################
 
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
 - name: PULSE_PACKAGESERVER - Install Pulse package server
   ansible.builtin.yum:
     pkg:
