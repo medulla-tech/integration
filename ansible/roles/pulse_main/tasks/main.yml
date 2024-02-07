@@ -18,6 +18,22 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
+- name: PULSE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: PULSE/GUACAMOLE - Setup local apache for guacamole
   ansible.builtin.template:
     src: guacamole.conf.j2

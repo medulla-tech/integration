@@ -11,6 +11,24 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: CREATE_USERS - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+      - python3-ldap
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: CREATE_USERS - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+      - python3-pyldap
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: CREATE_USERS - Find max uidnumber
   community.general.ldap_search:
     dn: "ou=Users,{{ LDAP_BASEDN }}"

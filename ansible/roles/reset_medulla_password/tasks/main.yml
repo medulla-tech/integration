@@ -20,7 +20,6 @@
 - name: RESET MEDULLA ROOT PASSWORD - Install tools needed for the setup
   ansible.builtin.yum:
     pkg:
-      - python3-ldap
       - python3-PyMySQL
       - xmlstarlet
     state: latest
@@ -30,7 +29,6 @@
 - name: RESET MEDULLA ROOT PASSWORD - Install tools needed for the setup
   ansible.builtin.apt:
     pkg:
-      - python3-pyldap
       - python3-pymysql
       - xmlstarlet
     state: latest

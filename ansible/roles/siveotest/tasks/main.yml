@@ -11,6 +11,22 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: SIVEOTEST/SUBSTITUTE_AGENT - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SIVEOTEST/SUBSTITUTE_AGENT - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: SIVEOTEST/SUBSTITUTE_AGENT - Find current number of substitutes
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'

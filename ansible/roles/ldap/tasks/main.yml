@@ -55,7 +55,7 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python-ldap
+      - python3-ldap
   when:
     - ansible_distribution == 'CentOS'
 

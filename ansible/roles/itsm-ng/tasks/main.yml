@@ -62,6 +62,22 @@
     - ansible_distribution == 'Debian'
     - ITSMNG_PLUGIN == 'fusioninventory'
 
+- name: ITSM-NG - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: ITSM-NG - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: ITSM-NG - Create database
   community.mysql.mysql_db:
     login_host: '{{ ITSMNG_DBHOST }}'

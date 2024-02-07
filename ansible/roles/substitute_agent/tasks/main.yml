@@ -35,6 +35,22 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: SUBSTITUTE_AGENT - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3-PyMySQL
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: SUBSTITUTE_AGENT - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - python3-pymysql
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: SUBSTITUTE_AGENT - Find substitute number
   ansible.builtin.set_fact:
     subs_long_name: '{{ SUBS_NAME }}'
