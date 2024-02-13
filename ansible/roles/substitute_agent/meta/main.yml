@@ -1,3 +1,0 @@
-dependencies:
-  - role: ejabberd
-  - role: local_certs

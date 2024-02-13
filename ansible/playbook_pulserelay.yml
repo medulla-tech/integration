@@ -1,4 +1,4 @@
-- name: Pulse Relay
+- name: Pulse Relay - Part 1
   gather_facts: true
   hosts: ars
   remote_user: root
@@ -17,12 +17,39 @@
     - base
     - security
     - mariadb
+    - local_certs
     - ejabberd
+    - apache
     - syncthing
     - ssh
+    - tomcat
+    - mariadb
     - guacamole
     - nfs
-    - relay_agent
     - pulse_packageserver
-    - pulse_imaging
+    - pxe_registration
+    - samba
+
+- name: Pulse Relay - Part 2
+  gather_facts: true
+  hosts: ars
+  serial: 1
+  remote_user: root
+  roles:
+    - { role: syncthing_share_folder, SHARE_NAME: 'bootmenus', SHARE_PATH: '/var/lib/pulse2/imaging/bootmenus/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }    - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - relay_agent
+
+- name: Pulse Relay - Part 3
+  gather_facts: true
+  hosts: ars
+  remote_user: root
+  roles:
     - pulse_relay
+    - pulse_imaging
+
+
+

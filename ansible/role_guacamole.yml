@@ -1,0 +1,8 @@
+- name: Guacamole server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - tomcat
+    - mariadb
+    - guacamole

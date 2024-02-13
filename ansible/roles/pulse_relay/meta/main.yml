@@ -1,6 +1,0 @@
-dependencies:
-  - role: ssh
-  - role: guacamole
-  - role: relay_agent
-  - role: pulse_packageserver
-  - role: pulse_imaging

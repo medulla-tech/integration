@@ -1,0 +1,7 @@
+- name: Syncthing Discovery server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - local_certs
+    - syncthing_discosrv

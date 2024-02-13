@@ -1,0 +1,9 @@
+- name: ITSM-NG server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - apache
+    - php
+    - mariadb
+    - itsm-ng
