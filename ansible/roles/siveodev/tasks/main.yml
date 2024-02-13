@@ -96,19 +96,19 @@
   - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Python311\\Lib\\site-packages        /root/{{ ansible_hostname }}-win-10-1/site-packages        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0
   - pulseuser@{{ ansible_hostname }}-win-10-1.siveo.lan:c:\\Program\ Files\\Pulse        /root/{{ ansible_hostname }}-win-10-1/pulse        fuse.sshfs        port={{ CLIENTS_SSH_PORT }},user,noauto,noatime     0 0
 
-- name: SIVEODEV - Créer le répertoire du plugin Vim
-  file:
+- name: SIVEODEV - Create vim plugin directory
+  ansible.builtin.file:
     path: ~/.vim/pack/vendor/start
     state: directory
 
-- name: SIVEODEV - Cloner le référentiel du plugin Vim AnsiEsc
-  git:
+- name: SIVEODEV - Clone Vim AnsiEsc plugin from git
+  ansible.builtin.git:
     repo: https://github.com/powerman/vim-plugin-AnsiEsc.git
     dest: ~/.vim/pack/vendor/start/AnsiEsc
-  notify: Recharger la configuration Vim
+  notify: Reload Vim
 
-- name: SIVEODEV - Configurer le fichier .vimrc pour activer AnsiEsc par défaut
-  lineinfile:
+- name: SIVEODEV - Configure .vimrc to activate AnsiEsc by default
+  ansible.builtin.lineinfile:
     path: ~/.vimrc
     line: 'autocmd BufRead * AnsiEsc'
-  notify: Recharger la configuration Vim
+  notify: Reload Vim

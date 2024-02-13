@@ -1,2 +1,2 @@
-- name: Recharger la configuration Vim 
-  command: vim -E -s -u NONE -c "helptags ALL" -c q
+- name: Reload Vim 
+  ansible.builtin.command: vim -E -s -u NONE -c "helptags ALL" -c q
