@@ -105,10 +105,10 @@
   ansible.builtin.git:
     repo: https://github.com/powerman/vim-plugin-AnsiEsc.git
     dest: ~/.vim/pack/vendor/start/AnsiEsc
-  notify: Reload Vim
+  notify: SIVEODEV - Reload Vim
 
 - name: SIVEODEV - Configure .vimrc to activate AnsiEsc by default
   ansible.builtin.lineinfile:
     path: ~/.vimrc
     line: 'autocmd BufRead * AnsiEsc'
-  notify: Reload Vim
+  notify: SIVEODEV - Reload Vim
