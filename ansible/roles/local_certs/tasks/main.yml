@@ -71,7 +71,7 @@
 - name: CERT - Fetch ca-chain.cert.pem from pki server
   ansible.builtin.fetch:
     src: '{{ PKI_PATH }}/ca-chain.cert.pem'
-    dest: /tmp/pulse-ca-chain.cert.pem
+    dest: /tmp/pulse-ca-chain.{{ ansible_hostname }}.cert.pem
     flat: yes
   delegate_to: '{{ PKI_SERVER }}'
   when:
@@ -79,7 +79,7 @@
 
 - name: CERT - Copy pulse-ca-chain.cert.pem to add to ca certs
   ansible.builtin.copy:
-    src: /tmp/pulse-ca-chain.cert.pem
+    src: /tmp/pulse-ca-chain.{{ ansible_hostname }}.cert.pem
     dest: '{{ CACERTS_PATH }}/pulse-ca-chain.crt'
   when:
     - PKI_SERVER != 'localhost'
