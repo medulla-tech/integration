@@ -38,6 +38,14 @@
   ansible.builtin.set_fact:
     STAPIKEY: '{{ xmlres.matches[0].apikey }}'
 
+- name: ST_SHARE_FOLDER - Make sure folder is writable by syncthing
+  ansible.posix.acl:
+    path: '{{ SHARE_PATH }}'
+    entity: syncthing
+    etype: user
+    permissions: rwx
+    state: present
+
 - name: ST_SHARE_FOLDER - Create syncthing special folder
   ansible.builtin.file:
     path: '{{ SHARE_PATH }}/.stfolder'
