@@ -24,8 +24,8 @@
     - mariadb
     - local_certs
     - ejabberd
-    - syncthing_discosrv
-    - syncthing_relay
+    - { role: syncthing_discosrv, when: (ansible_domain != 'siveo.net') }
+    - { role: syncthing_relay, when: (ansible_domain != 'siveo.net') }
     - syncthing
     - urbackup
     - ssh
