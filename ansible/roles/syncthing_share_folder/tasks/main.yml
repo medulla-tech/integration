@@ -55,6 +55,8 @@
     etype: user
     permissions: rwx
     state: present
+    default: true
+    recursive: true
 
 - name: ST_SHARE_FOLDER - Copy stignore file to share path if exists
   ansible.builtin.copy:
