@@ -55,6 +55,15 @@
     etype: user
     permissions: rwx
     state: present
+    recursive: true
+
+- name: ST_SHARE_FOLDER - Make sure share folder is writable by syncthing by default
+  ansible.posix.acl:
+    path: '{{ SHARE_PATH }}'
+    entity: syncthing
+    etype: user
+    permissions: rwx
+    state: present
     default: true
     recursive: true
 
