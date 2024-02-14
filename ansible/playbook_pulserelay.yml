@@ -23,7 +23,6 @@
     - syncthing
     - ssh
     - tomcat
-    - mariadb
     - guacamole
     - nfs
     - pulse_packageserver
