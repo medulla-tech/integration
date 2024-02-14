@@ -16,6 +16,7 @@
     state: latest
     pkg:
       - python3-lxml
+      - acl
   when:
     - ansible_distribution == 'CentOS'
 
@@ -24,6 +25,7 @@
     state: latest
     pkg:
       - python3-lxml
+      - acl
   when:
     - ansible_distribution == 'Debian'
 
