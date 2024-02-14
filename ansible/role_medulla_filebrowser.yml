@@ -1,0 +1,16 @@
+- name: Medulla File Browser feature
+  gather_facts: true
+  hosts: mmc
+  remote_user: root
+  roles:
+    - apache
+    - php
+    - { role: 'mariadb', when: DBHOST == 'localhost' }
+    - ldap
+    - { role: glpi, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'glpi') }
+    - { role: itsm-ng, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'itsm-ng') }
+    - local_certs
+    - ejabberd
+    - grafana
+    - samba
+    - pulse_file_browser

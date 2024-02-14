@@ -1,0 +1,10 @@
+- name: Medulla PXE Registration feature
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - apache
+    - syncthing
+    - local_certs
+    - pulse_packageserver
+    - pxe_registration

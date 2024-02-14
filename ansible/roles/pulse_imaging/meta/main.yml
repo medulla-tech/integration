@@ -1,7 +1,0 @@
-dependencies:
-  - role: nfs
-  - role: pxe_registration
-  - role: pulse_packageserver
-  - { role: syncthing_share_folder, SHARE_NAME: 'bootmenus', SHARE_PATH: '/var/lib/pulse2/imaging/bootmenus/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'sendreceive' }
-  - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
-  - role: samba

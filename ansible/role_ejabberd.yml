@@ -1,0 +1,7 @@
+- name: ejabberd XMPP server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - local_certs
+    - ejabberd

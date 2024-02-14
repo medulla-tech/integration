@@ -1,0 +1,9 @@
+- name: GLPI server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - apache
+    - php
+    - mariadb
+    - glpi

@@ -1,8 +1,16 @@
-- name: SIVEO environments
+- name: SIVEO environments - MMC
   gather_facts: true
-  hosts: all
   remote_user: root
-  serial: 1
+  hosts: mmc
+  roles:
+    - security
+    - siveodev
+    - siveotest
+
+- name: SIVEO environments - ARS
+  gather_facts: true
+  remote_user: root
+  hosts: ars
   roles:
     - security
     - siveodev
