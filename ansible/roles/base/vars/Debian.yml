@@ -1,2 +1,0 @@
-PULSE4REPO_DEST: /etc/apt/sources.list.d/pulse4.list
-NTP_DAEMON: ntp
