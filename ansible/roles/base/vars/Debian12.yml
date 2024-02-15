@@ -1,0 +1,2 @@
+PULSE4REPO_DEST: /etc/apt/sources.list.d/medulla.sources
+NTP_DAEMON: ntp

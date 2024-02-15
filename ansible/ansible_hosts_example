@@ -83,8 +83,7 @@ all:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_python_interpreter: /usr/bin/python3
     ansible_user: root
-    PULSE4REPO_URL: https://git.siveo.net/py3.list
-    PULSE4REPOKEY_URL: https://git.siveo.net/pubkey.txt
+    PULSE4REPO_URL: https://git.siveo.net/py3.sources
     XMPP_MASTER_PASSWORD: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       64633938623638393532656132343462363433313165383065396565343966636233656166356262
