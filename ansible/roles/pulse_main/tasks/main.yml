@@ -74,9 +74,6 @@
     body:
       input:
         name: '{{ ENTITY }}'
-        completename: '{{ ORGANISATION }} > {{ ENTITY }}'
-        level: 2
-        ancestors_cache: '[0]'
     return_content: yes
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
