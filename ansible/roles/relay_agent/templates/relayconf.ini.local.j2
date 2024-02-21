@@ -1,5 +1,9 @@
 [connection]
+{% if PUBLIC_IP != '' %}
+server = {{ PUBLIC_IP }}
+{% else %}
 server = {{ IP_ADDRESS }}
+{% endif %}
 password = {{ XMPP_MASTER_PASSWORD }}
 
 [chat]
