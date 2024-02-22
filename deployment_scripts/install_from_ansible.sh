@@ -8,7 +8,7 @@
 
 
 # Variables initialisation
-PLAYBOOK_URL='https://github.com/medulla-tech/integration/archive/refs/tags/1.0.1.tar.gz'
+PLAYBOOK_URL='https://github.com/medulla-tech/integration/archive/refs/tags/1.0.2.tar.gz'
 TIMEZONE='Europe/Paris'
 
 # Internal functions
