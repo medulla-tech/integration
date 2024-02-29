@@ -5,10 +5,14 @@
 # - either by the main installer to install Medulla in a docker container or in a VirtualBox VM (--nostandalone must be specified)
 # - or as a standalone script to install Medulla on an existing server 
 #
+# The server must match the following pre-requisites:
+# •	A machine running an up-to-date Debian 12 OS;
+# •	The machine must have at least 8GB of RAM;
+# •	The machine must have access to the Internet;
+# •	The machine name must be defined and resolvable on the machine itself either via the hosts file or from the DNS.
 
 
 # Variables initialisation
-PLAYBOOK_URL='https://github.com/medulla-tech/integration/archive/refs/tags/1.0.2.tar.gz'
 TIMEZONE='Europe/Paris'
 
 # Internal functions
@@ -223,7 +227,7 @@ install_script_dependencies() {
     # Install dependencies needed (apg) to run this script
     #
     colored_echo blue "Installing dependencies required to run this script..."
-    local CMD="apt -yq install apg &> /dev/null"
+    local CMD="apt -yq install apg jq &> /dev/null"
     eval ${CMD}
     if [ $? -ne 0 ]; then
         display_error_message "The dependencies could not be installed" "${CMD}"
@@ -265,6 +269,9 @@ define_minimum_vars() {
     colored_echo blue "Defining working directory..."
     WORKDIR=$(mktemp -d -p /tmp/)
     colored_echo green "Defining working directory... DONE"
+    colored_echo blue "Finding out latest PLAYBOOK_URL value..."
+    PLAYBOOK_URL=$(curl -s https://api.github.com/repos/medulla-tech/integration/releases/latest | jq '.assets[] | select(.name|endswith("tar.gz")).browser_download_url'
+    colored_echo green "Finding out latest PLAYBOOK_URL value... DONE"
 }
 
 check_machine_resolution() {
