@@ -30,15 +30,12 @@
     - ansible_distribution == 'Debian'
 
 - name: ST_SHARE_FOLDER - Get Syncthing API Key
-  community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
-    xpath: /configuration/gui/apikey
-    content: text
-  register: xmlres
+  command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+  register: apikey
 
 - name: ST_SHARE_FOLDER - Set STAPIKEY variable
-  ansible.builtin.set_fact:
-    STAPIKEY: '{{ xmlres.matches[0].apikey }}'
+  set_fact:
+    STAPIKEY: "{{ apikey.stdout }}"
 
 - name: ST_SHARE_FOLDER - Create syncthing special folder
   ansible.builtin.file:
@@ -118,21 +115,18 @@
   when:
     - PULSEMAIN_IP != ''
 
-- name: ST_SHARE_FOLDER - Get Pulsemain Syncthing API Key
-  community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
-    xpath: /configuration/gui/apikey
-    content: text
-  register: xmlres
+- name: ST_SHARE_FOLDER - Get Syncthing API Key
+  command: xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml
+  register: apikey
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP != ''
 
-- name: ST_SHARE_FOLDER - Set MAINSTAPIKEY variable
-  ansible.builtin.set_fact:
-    MAINSTAPIKEY: '{{ xmlres.matches[0].apikey }}'
+- name: ST_SHARE_FOLDER - Set STAPIKEY variable
+  set_fact:
+    MAINSTAPIKEY: "{{ apikey.stdout }}"
   when:
     - PULSEMAIN_IP != ''
 
