@@ -13,7 +13,7 @@ $vault: The name of the variable we want to vault
 ```
 exemple:
 
-
+```bash
 ansible-vault encrypt_string --vault-password-file ~/thefile 'medulla' --name ROOT_PASSWORD
     ROOT_PASSWORD: !vault |
           $ANSIBLE_VAULT;1.1;AES256
@@ -22,7 +22,7 @@ ansible-vault encrypt_string --vault-password-file ~/thefile 'medulla' --name RO
           36323539386366363136323133663930316265646531323365343637626465303531346132313864
           3133626638386336310a653538643834393837303266323939623661356237333937613138313032
           3162
-
+```
 https://docs.ansible.com/ansible/latest/vault_guide/index.html
 
 ## Contents :
