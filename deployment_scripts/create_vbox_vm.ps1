@@ -149,6 +149,14 @@ function Show-ErrorMessage {
     }
 }
 
+function Get-SSHPubKey {
+    if ((Test-Path '$HOME/.ssh/id_rsa_medulla', '$HOME/.ssh/id_rsa_medulla.pub') -notcontains $false) {
+        ssh-keygen -f $HOME/.ssh/id_rsa_medulla -N '""' -b 2048 -t rsa -q
+    }
+    $id_rsa_pub = Get-Content -Path $HOME/.ssh/id_rsa_medulla.pub -Raw
+    return $id_rsa_pub
+}
+
 function New-TempFolder {
     if ($IsMacOS){
         $script:DEST_PATH = Join-Path $Env:TMPDIR $(New-Guid)
@@ -225,20 +233,26 @@ function Edit-PreseedFile {
     elseif ($IsLinux) {
         # TBD $script:PreseedFile = 'C:\Progra~1\Oracle\VirtualBox\UnattendedTemplates\debian_preseed.cfg'
     }
+    $PUBKEY = Get-SSHPubKey
     #$PreseedFile = $DEST + '/Medulla/Unattended-' + $UUID + '-preseed.cfg'
     Copy-Item "$PreseedFile" -Destination "$PreseedFile + '.bak'"
     $NewContent = Get-Content -Path $PreseedFile | ForEach-Object {
         # Output the existing line to the pipeline in any case
         $_
     
-        # If the line matches the regex for the target line
-        if ($_ -match ('^' + [regex]::Escape('# Network'))) {
-            'd-i netcfg/disable_autoconfig boolean true'
-            'd-i netcfg/get_ipaddress string 192.168.10.100'
-            'd-i netcfg/get_netmask string 255.255.255.0'
-            'd-i netcfg/get_gateway string 192.168.10.1'
-            'd-i netcfg/get_nameservers string 192.168.10.1'
-            'd-i netcfg/confirm_static boolean true'
+        # # If the line matches the regex for the Network line
+        # if ($_ -match ('^' + [regex]::Escape('# Network'))) {
+        #     'd-i netcfg/disable_autoconfig boolean true'
+        #     'd-i netcfg/get_ipaddress string 192.168.10.100'
+        #     'd-i netcfg/get_netmask string 255.255.255.0'
+        #     'd-i netcfg/get_gateway string 192.168.10.1'
+        #     'd-i netcfg/get_nameservers string 192.168.10.1'
+        #     'd-i netcfg/confirm_static boolean true'
+        # }
+
+        # If the line matches the regex for the Custom Commands line
+        if ($_ -match ('^' + [regex]::Escape('# Custom Commands.'))) {
+            'd-i preseed/late_command string in-target mkdir -p /root/.ssh; in-target /bin/sh -c "echo \"$PUBKEY\" >> /root/.ssh/authorized_keys"; in-target chown -R root:root /root/.ssh/; in-target chmod 644 /root/.ssh/authorized_keys; in-target chmod 700 /root/.ssh/'
         }
     }
     $NewContent | Out-File -FilePath $PreseedFile -Encoding Default -Force
@@ -275,19 +289,45 @@ function New-VBOXVM {
         Show-ErrorMessage "Error setting the VM resources" "$CMD"
         Exit
     }
-    $CMD = "$VBOXMANAGE natnetwork add --netname NATMedulla --network '192.168.10.0/24' --dhcp off --enable"
-    Invoke-Expression $CMD
-    if (-not $?) {
-        Show-ErrorMessage "Error creating the NAT network" "$CMD"
-        Exit
-    }
-    $CMD = "$VBOXMANAGE natnetwork start --netname NATMedulla"
-    Invoke-Expression $CMD
-    if (-not $?) {
-        Show-ErrorMessage "Error starting the NAT network" "$CMD"
-        Exit
-    }
-    $CMD = "$VBOXMANAGE modifyvm Medulla --nic1 natnetwork --nat-network1 NATMedulla"
+    # NAT
+    # $CMD = "$VBOXMANAGE natnetwork add --netname NATMedulla --network '192.168.10.0/24' --dhcp off --enable"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error creating the NAT network" "$CMD"
+    #     Exit
+    # }
+    # $CMD = "$VBOXMANAGE natnetwork start --netname NATMedulla"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error starting the NAT network" "$CMD"
+    #     Exit
+    # }
+    # $CMD = "$VBOXMANAGE modifyvm Medulla --nic1 natnetwork --nat-network1 NATMedulla"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error creating the VM network settings" "$CMD"
+    #     Exit
+    # }
+    # $CMD = "$VBOXMANAGE natnetwork modify --netname NATMedulla --port-forward-4 'ssh:tcp:[]:2222:[192.168.10.100]:22'"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error forwarding SSH" "$CMD"
+    #     Exit
+    # }
+    # $CMD = "$VBOXMANAGE natnetwork modify --netname NATMedulla --port-forward-4 'xmpp:tcp:[]:5222:[192.168.10.100]:5222'"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error forwarding XMPP" "$CMD"
+    #     Exit
+    # }
+    # $CMD = "$VBOXMANAGE natnetwork modify --netname NATMedulla --port-forward-4 'http:tcp:[]:8000:[192.168.10.100]:80'"
+    # Invoke-Expression $CMD
+    # if (-not $?) {
+    #     Show-ErrorMessage "Error forwarding HTTP" "$CMD"
+    #     Exit
+    # }
+    # Bridge
+    $CMD = "$VBOXMANAGE modifyvm Medulla --nic1 bridged --bridge-adapter1 '$INTERFACE'"
     Invoke-Expression $CMD
     if (-not $?) {
         Show-ErrorMessage "Error creating the VM network settings" "$CMD"
@@ -324,15 +364,61 @@ function New-VBOXVM {
         Exit
     }
     Edit-PreseedFile -DEST $DEST_PATH -UUID $VM_UUID
-    $CMD = "$VBOXMANAGE unattended install Medulla --iso=$ISO_PATH --user=medulla --password=$ROOT_PASSWORD --country=FR --hostname=medulla.local --install-additions --language=en-US --start-vm=gui"
+    $CMD = "$VBOXMANAGE unattended install Medulla --iso=$ISO_PATH --user=medulla --password=$ROOT_PASSWORD --country=FR --hostname=medulla.local --package-selection-adjustment=minimal --install-additions --language=en-US --start-vm=gui"
     #$CMD = "$VBOXMANAGE unattended install Medulla --iso=$ISO_PATH --user=medulla --password=$ROOT_PASSWORD --country=FR --hostname=medulla.local --package-selection-adjustment=minimal --install-additions --language=en-US --start-vm=headless"
     Invoke-Expression $CMD
     if (-not $?) {
         Show-ErrorMessage "Error starting the unattended installation of the OS" "$CMD"
         Exit
     }
-    #VBoxManage natnetwork modify --netname NATNetwork101 \
-    #--port-forward-4 "ssh:tcp:[]:1022:[192.168.10.5]:22"
+    Write-Host "Root password is $ROOT_PASSWORD"
+}
+
+function Test-VMUp {
+    param (
+        [int]$MaxAttempts = 10,
+        [int]$RetryIntervalSeconds = 120
+    )
+
+    $attempt = 0
+    while ($attempt -lt $MaxAttempts) {
+        try {
+            $CMD = "$VBOXMANAGE guestproperty get Medulla '/VirtualBox/GuestInfo/Net/0/V4/IP'"
+            $VM_IP = $(Invoke-Expression $CMD)
+            if ([bool]($VM_IP -as [ipaddress])) {
+                Write-Host "VM IP is $VM_IP. Trying to ssh into VM."
+                $CMD = "ssh -i $HOME/.ssh/id_rsa_medulla -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null medulla@$VM_IP ip -o addr"
+                $IP_A = Invoke-Expression $CMD
+                if ($?) {
+                    Write-Host "IP addresses are: $IP_A"
+                    break
+                }
+            }
+        } catch {
+            Write-Host "Connection to VM failed. Retrying..."
+        }
+
+        Start-Sleep -Seconds $RetryIntervalSeconds
+        $attempt++
+    }
+
+    if ($attempt -ge $MaxAttempts) {
+        Write-Host "Max retry attempts reached. Connection to VM failed."
+    }
+}
+
+
+function Set-VMNetwork {
+    # Get VM details
+    $CMD = "$VBOXMANAGE guestproperty get Medulla '/VirtualBox/GuestInfo/Net/0/V4/IP'"
+    $VM_IP = $(Invoke-Expression $CMD)
+    if ([string]::IsNullOrEmpty($VM_IP)) {
+        Show-ErrorMessage "Error obtaining the IP address of the VM" "$CMD"
+        Exit
+    }
+    else {
+        Write-Host "VM IP is $VM_IP"
+    }
 }
 
 function Install-Medulla {
@@ -340,11 +426,14 @@ function Install-Medulla {
     #ssh ${USERNAME}@$1 -p ${PORT} -i ${SSHKEY} -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null 'bash -s' < /var/lib/pulse2/clients/lin/Medulla-Agent-linux-MINIMAL-latest.sh
 }
 
+
+
 Invoke-InPowerShellVersion
 Invoke-VboxManage
 New-TempFolder
 Get-OSIso -URL $DEBIAN_ISO_BASEURL -DEST $DEST_PATH
 New-VBOXVM -ISO_PATH $ISOFILE_DEST -DEST $DEST_PATH
+Test-VMUp
 Install-Medulla
 
 
