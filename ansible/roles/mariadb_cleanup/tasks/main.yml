@@ -6,6 +6,12 @@
   ansible.builtin.debug:
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
+    
+- name: MARIADB - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
 
 - name: MARIADB - Stop service
   ansible.builtin.systemd:
@@ -20,6 +26,14 @@
   with_items:
     - /var/lib/mysql
     - /root/.my.cnf
+
+- name: MARIADB - Delete time zone
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
+    section: mariadb
+    option: default_time_zone
+    state: absent
+    backup: yes
 
 - name: MARIADB - Create /var/lib/mysql
   ansible.builtin.file:
