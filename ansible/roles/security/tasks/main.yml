@@ -63,8 +63,8 @@
   ansible.builtin.set_fact:
     PUBLIC_INTERFACE_NAME : "{{ item }}"
   when:
-    - hostvars[inventory_hostname]['ansible_{{ item }}'].ipv4 is defined
-    - hostvars[inventory_hostname]['ansible_{{ item }}']['ipv4']['address'] == '{{ PUBLIC_IP }}'
+    - hostvars[inventory_hostname]['ansible_%s' % item].ipv4 is defined
+    - hostvars[inventory_hostname]['ansible_%s' % item]['ipv4']['address'] == '{{ PUBLIC_IP }}'
   with_items:
     - "{{ ansible_interfaces }}"
 
