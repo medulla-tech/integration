@@ -44,6 +44,10 @@
     - yvan@rider.pub
     - root@WILLIAMSIVEO.pub
     - xdrien@nbadrien.pub
+    - amandine.pub
+    - calvin.pub
+    - hassan.pub
+
 
 - name: SIVEODEV - Set permissions for Workbench
   community.mysql.mysql_user:
