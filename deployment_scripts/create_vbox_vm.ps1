@@ -9,11 +9,11 @@
 # •	VirtualBox version 7 or higher
 # If these requirements are not met, they will be installed. 
 # NB: To install Powershell Core version 6 or higher, run the following:
-#       powershell.exe -File .\create_vbox_vm.sh
+#       powershell.exe -File .\create_vbox_vm.ps1
 #     then follow the instructions given
 #
 # To create a VM and install Medulla in it, the following command must be run:
-#   pwsh.exe -File .\create_vbox_vm.sh
+#   pwsh.exe -File .\create_vbox_vm.ps1
 
 
 $NB_CPU = 2
@@ -426,7 +426,7 @@ function Restart-VMNetwork{
         [parameter(mandatory=$true)] $VM_IP
     )
     # Restart network
-    $CMD = "ssh -f -i $HOME/.ssh/id_rsa_medulla -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null root@$VM_IP ""nohup systemctl restart networking &"""
+    $CMD = "ssh -f -i $HOME/.ssh/id_rsa_medulla -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null root@$VM_IP ""nohup systemctl restart systemd-networkd &"""
     $CMD
     try {
         Invoke-Expression $CMD
