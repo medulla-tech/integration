@@ -442,7 +442,7 @@ all:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_python_interpreter: /usr/bin/python3
     ansible_user: root
-    PULSE4REPO_URL: https://git.siveo.net/integration.sources
+    PULSE4REPO_URL: https://apt.siveo.net/stable.sources
     XMPP_MASTER_PASSWORD: ${XMPP_MASTER_PASSWORD_VAULTED}
     DBPASSWORD: ${DBPASSWORD_VAULTED}
     ITSM_DBPASSWD: ${ITSM_DBPASSWD_VAULTED}
