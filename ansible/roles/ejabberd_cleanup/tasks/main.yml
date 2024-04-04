@@ -25,3 +25,9 @@
     mode: '0755'
     owner: ejabberd
     group: ejabberd
+
+- name: EJABBERD - Reset ERLANG_NODE to ejabberd@localhost
+  ansible.builtin.lineinfile:
+    dest: /etc/default/ejabberd
+    line: ERLANG_NODE=ejabberd@localhost
+    regexp: '^#?ERLANG_NODE=.*$'
