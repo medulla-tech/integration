@@ -1,0 +1,59 @@
+##########################################################
+#                  Join ejabberd cluster                 #
+##########################################################
+
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
+- name: EJABBERD_CLUSTER - Get initial server node name
+  ansible.builtin.command: grep -m1 -ir '^ERLANG_NODE=' /etc/default/ejabberd
+  register: grep_output
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
+  failed_when: ('localhost' in grep_output.stdout) or (grep_output.stdout == '')
+
+- name: EJABBERD_CLUSTER - Check if the initial server is in the correct domain
+  ansible.builtin.set_fact:
+    hosts: "{{ (lookup('file', '/etc/ejabberd/ejabberd.yml')|from_yaml).hosts }}"
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
+  failed_when: (XMPP_DOMAIN not in hosts)
+
+- name: EJABBERD_CLUSTER - Fetch a few files from initial server
+  ansible.builtin.fetch:
+    src: '{{ item.src }}'
+    dest: /tmp/{{ item.dest_filename }}
+    flat: yes
+  with_items:
+    - { src: '/var/lib/ejabberd/.erlang.cookie', dest_filename: 'erlang.cookie' }
+    - { src: '/etc/ejabberd/{{ XMPP_DOMAIN }}.pem', dest_filename: '{{ XMPP_DOMAIN }}.pem' }
+    - { src: '/etc/ejabberd/ejabberd.yml', dest_filename: 'ejabberd.yml' }
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
+
+- name: EJABBERD_CLUSTER - Copy files over to new cluster member
+  ansible.builtin.copy:
+    src: /tmp/{{ item.src_filename }}
+    dest: '{{ item.dest }}'
+    backup: yes
+  with_items:
+    - { src_filename: 'erlang.cookie', dest: '/var/lib/ejabberd/.erlang.cookie' }
+    - { src_filename: '{{ XMPP_DOMAIN }}.pem', dest: '/etc/ejabberd/{{ XMPP_DOMAIN }}.pem' }
+    - { src_filename: 'ejabberd.yml', dest: '/etc/ejabberd/ejabberd.yml' }
+  notify:
+    - EJABBERD_CLUSTER - Restart ejabberd
+
+- name: EJABBERD_CLUSTER - Restart ejabberd with the new config files
+  ansible.builtin.meta: flush_handlers
+
+- name: EJABBERD_CLUSTER - Join cluster
+  ansible.builtin.command: ejabberdctl --no-timeout join_cluster '{{ grep_output.stdout.split("=")[1] }}'

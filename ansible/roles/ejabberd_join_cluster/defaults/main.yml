@@ -1,0 +1,4 @@
+# XMPP_DOMAIN must be set to the XMPP domain name we want to clusterise
+XMPP_DOMAIN: pulse
+# INITIAL_CLUSTER_SERVER must be set to the IP or FQDN of the initial server of the cluster to be joined
+INITIAL_CLUSTER_SERVER: ''
