@@ -41,13 +41,13 @@
   ansible.builtin.lineinfile:
     dest: /etc/default/ejabberd
     line: ERLANG_NODE=ejabberd@{{ ansible_hostname }}
-    regexp: '^?ERLANG_NODE=.*$'
+    regexp: '^#?ERLANG_NODE=.*$'
   register: nodename
   notify:
     - EJABBERD - Restart ejabberd
 
 - name: EJABBERD - Backup mnesia data
-  ansible.builtin.command: ejabberdctl backup /tmp/ejabberd_localhost.backup
+  ansible.builtin.command: ejabberdctl --node ejabberd@localhost backup /tmp/ejabberd_localhost.backup
   when:
     - nodename.changed
 
@@ -65,7 +65,7 @@
     file_type: any
     excludes:
       - '.erlang.cookie'
-    register: delete_mnesia_files
+  register: delete_mnesia_files
   when:
     - nodename.changed
 
