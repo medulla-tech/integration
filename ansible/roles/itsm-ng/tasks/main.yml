@@ -57,7 +57,7 @@
 - name: ITSM-NG - Install Fusion Inventory
   ansible.builtin.apt:
     pkg:
-      - fusioninventory-for-itsm-ng={{ GLPI_VERSION }}+*
+      - fusioninventory-for-itsm-ng={{ GLPI_VERSION }}*+
   when:
     - ansible_distribution == 'Debian'
     - ITSMNG_PLUGIN == 'fusioninventory'
