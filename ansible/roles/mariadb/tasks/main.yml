@@ -161,6 +161,9 @@
   notify:
     - MARIADB - Restart mariadb
 
+- name: MARIADB - Restart mariadb with the new parameters
+  ansible.builtin.meta: flush_handlers
+
 - name: MARIADB - Ensure mariadb is running
   ansible.builtin.systemd:
     name: mariadb
