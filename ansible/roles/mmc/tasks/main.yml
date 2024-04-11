@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.3'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -271,6 +271,30 @@
     state: touch
   when:
     - PULSEDB_CHANGED | bool
+
+- name: MMC/ITSM - Create federated server connection to ITSM DB
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE SERVER itsm_federated FOREIGN DATA WRAPPER 'mysql' OPTIONS ( HOST %(itsm_dbhost)s, PORT %(itsm_dbport)s, USER %(itsm_dbuser)s, PASSWORD %(itsm_dbpasswd)s, DATABASE %(itsm_dbname)s )
+    named_args:
+      itsm_dbhost: '{{ ITSM_DBHOST }}'
+      itsm_dbport: '{{ ITSM_DBPORT }}'
+      itsm_dbuser: '{{ ITSM_DBUSER }}'
+      itsm_dbpasswd: '{{ ITSM_DBPASSWD }}'
+      itsm_dbname: '{{ ITSM_DBNAME }}'
+
+- name: MMC/ITSM - Create local federated table for ITSM version
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE TABLE local_{{ ITSM_TYPE }}_configs (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(150) DEFAULT NULL, `value` text DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 CONNECTION='itsm_federated/glpi_configs'
 
 - name: MMC - Update database schemas
   ansible.builtin.command: 'pulse2-dbupdate --user={{ DBADMINUSER }} --password={{ DBADMINPASSWD }} --host={{ DBHOST }} --port={{ DBPORT }} --db={{ item }}'
