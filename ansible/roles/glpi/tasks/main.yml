@@ -264,7 +264,7 @@
         locations_id: 0
     return_content: yes
   register: result
-  failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
+  failed_when: ('Duplicate entry' not in result.content) and (result.status != 200) and (result.status != 201)
 
 - name: GLPI - Enable {{ GLPI_PLUGIN }} plugin after db init
   ansible.builtin.command: php /usr/share/glpi/bin/console {{ item }} {{ GLPI_PLUGIN }}
