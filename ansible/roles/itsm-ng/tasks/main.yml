@@ -183,6 +183,9 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: ITSM-NG - Force apache restart
+  ansible.builtin.meta: flush_handlers
+
 - name: ITSM-NG - Initialise session to API
   ansible.builtin.uri:
     url: "http://localhost/itsm-ng/apirest.php/initSession"
