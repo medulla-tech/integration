@@ -176,6 +176,13 @@
     path: /usr/share/itsm-ng/files/_log/php-errors.log
     mode: '0666'
 
+- name: ITSM-NG/APACHE - Enable itsm-ng  module
+  ansible.builtin.command: a2enconf itsm-ng
+  notify:
+    - ITSM-NG - Restart apache
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: ITSM-NG - Initialise session to API
   ansible.builtin.uri:
     url: "http://localhost/itsm-ng/apirest.php/initSession"
