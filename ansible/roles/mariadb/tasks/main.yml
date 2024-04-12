@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.1.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -160,6 +160,9 @@
     backup: yes
   notify:
     - MARIADB - Restart mariadb
+
+- name: MARIADB - Restart mariadb with the new parameters
+  ansible.builtin.meta: flush_handlers
 
 - name: MARIADB - Ensure mariadb is running
   ansible.builtin.systemd:
