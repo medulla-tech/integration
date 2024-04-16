@@ -172,6 +172,7 @@
     - { path: '/tftpboot/nbi_img', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/bootloader' }
     - { path: '/home/partimag', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/masters' }
     - { path: '/var/lib/pulse2/imaging/bootloader/grub', state: 'directory', mode: '0755', src: '' }
+    - { path: '/var/lib/pulse2/clients/davos', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/davos' }
 
 - name: PULSE_IMAGING - Add fake grub.cfg file
   ansible.builtin.copy:
