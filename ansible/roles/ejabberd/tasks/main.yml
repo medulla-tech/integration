@@ -46,11 +46,6 @@
   notify:
     - EJABBERD - Restart ejabberd
 
-- name: EJABBERD - Backup mnesia data
-  ansible.builtin.command: ejabberdctl --node ejabberd@localhost backup /tmp/ejabberd_localhost.backup
-  when:
-    - nodename.changed
-
 - name: EJABBERD - Stop ejabberd for renaming node
   ansible.builtin.systemd:
     name: ejabberd
@@ -79,33 +74,6 @@
 
 - name: EJABBERD - Restart ejabberd with the new node name
   ansible.builtin.meta: flush_handlers
-  when:
-    - nodename.changed
-
-- name: EJABBERD - Convert the backup to the new node name
-  ansible.builtin.command: ejabberdctl mnesia_change_nodename ejabberd@localhost ejabberd@{{ ansible_hostname }} /tmp/ejabberd_localhost.backup /tmp/ejabberd_{{ ansible_hostname }}.backup
-  when:
-    - nodename.changed
-
-- name: EJABBERD - Install the backup file as a fallback
-  ansible.builtin.command: ejabberdctl install_fallback /tmp/ejabberd_{{ ansible_hostname }}.backup
-  when:
-    - nodename.changed
-  notify:
-    - EJABBERD - Restart ejabberd
-
-- name: EJABBERD - Finally restart ejabberd
-  ansible.builtin.meta: flush_handlers
-  when:
-    - nodename.changed
-
-- name: EJABBERD - Delete mnesia backup files
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  with_items:
-    - /tmp/ejabberd_localhost.backup
-    - /tmp/ejabberd_{{ ansible_hostname }}.backup
   when:
     - nodename.changed
 
