@@ -29,7 +29,7 @@
       - php-mysql
     state: absent
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
     - phpfpm_exists.stat == false
 
 - name: PHP - Install php
@@ -40,7 +40,7 @@
       - php-mysqlnd
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PHP - Install php
   ansible.builtin.apt:
