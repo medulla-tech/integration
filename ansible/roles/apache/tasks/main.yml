@@ -23,7 +23,7 @@
     pkg:
       - httpd
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: APACHE - Install Apache
   ansible.builtin.apt:
