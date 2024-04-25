@@ -49,7 +49,7 @@
       - openldap-servers
       - openldap-clients
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Install tools needed for the setup
   ansible.builtin.yum:
@@ -57,7 +57,7 @@
     pkg:
       - python3-ldap
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Install tools needed for the setup
   ansible.builtin.apt:
@@ -86,7 +86,7 @@
     dest: /var/lib/ldap/DB_CONFIG
     remote_src: yes 
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Change owner and group for ldap directory
   ansible.builtin.file:
@@ -94,7 +94,7 @@
     owner: ldap
     group: ldap   
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Start service
   ansible.builtin.systemd:
@@ -125,7 +125,7 @@
   - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
   - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Ensure ldap server is running
   ansible.builtin.systemd:
