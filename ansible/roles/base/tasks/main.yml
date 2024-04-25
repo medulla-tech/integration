@@ -46,6 +46,48 @@
     state: disabled
   ignore_errors: true
 
+- name: BASE - Install apt-transport-https and gpg
+  ansible.builtin.apt:
+    state: latest
+    update_cache: yes
+    pkg:
+      - apt-transport-https
+      - gpg
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: BASE - Download packages repository file from {{ PULSE4REPO_URL }}
+  ansible.builtin.get_url:
+    url: '{{ PULSE4REPO_URL }}'
+    dest: '{{ PULSE4REPO_DEST }}'
+
+- name: BASE - Find out URL of SIVEO public key
+  ansible.builtin.command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
+  register: grep_output
+  ignore_errors: true
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: BASE - Import SIVEO public key
+  ansible.builtin.rpm_key:
+    state: present
+    key: '{{ grep_output.stdout.split("=")[1] }}'
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: BASE - Import SIVEO public key
+  ansible.builtin.apt_key:
+    state: present
+    url: '{{ PULSE4REPOKEY_URL }}'
+  when:
+    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
+
+- name: BASE - Run apt update
+  ansible.builtin.apt:
+    update_cache: yes
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: BASE - Configure posix queues limits
   ansible.builtin.copy:
     src: 99-pulse.conf
@@ -66,7 +108,7 @@
     - metadata
     - all
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: BASE - Configure locales
   ansible.builtin.lineinfile:
@@ -111,7 +153,7 @@
     pkg:
       - ntp
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: BASE - Install ntp
   ansible.builtin.apt:
@@ -183,48 +225,6 @@
     - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: PULSEMAIN_IP != '' }
     - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: ansible_hostname != 'pulse' }
 
-- name: BASE - Install apt-transport-https and gpg
-  ansible.builtin.apt:
-    state: latest
-    update_cache: yes
-    pkg:
-      - apt-transport-https
-      - gpg
-  when:
-    - ansible_distribution == 'Debian'
-
-- name: BASE - Download packages repository file from {{ PULSE4REPO_URL }}
-  ansible.builtin.get_url:
-    url: '{{ PULSE4REPO_URL }}'
-    dest: '{{ PULSE4REPO_DEST }}'
-
-- name: BASE - Find out URL of SIVEO public key
-  ansible.builtin.command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
-  register: grep_output
-  ignore_errors: true
-  when:
-    - ansible_distribution == 'CentOS'
-
-- name: BASE - Import SIVEO public key
-  ansible.builtin.rpm_key:
-    state: present
-    key: '{{ grep_output.stdout.split("=")[1] }}'
-  when:
-    - ansible_distribution == 'CentOS'
-
-- name: BASE - Import SIVEO public key
-  ansible.builtin.apt_key:
-    state: present
-    url: '{{ PULSE4REPOKEY_URL }}'
-  when:
-    - ansible_distribution == 'Debian' and ansible_distribution_major_version == '9'
-
-- name: BASE - Run apt update
-  ansible.builtin.apt:
-    update_cache: yes
-  when:
-    - ansible_distribution == 'Debian'
-
 - name: BASE - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
@@ -232,7 +232,7 @@
       - python3-PyMySQL
       - xmlstarlet
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: BASE - Install tools needed for the setup
   ansible.builtin.apt:
