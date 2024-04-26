@@ -56,4 +56,4 @@
   ansible.builtin.meta: flush_handlers
 
 - name: EJABBERD_CLUSTER - Join cluster
-  ansible.builtin.command: ejabberdctl --no-timeout join_cluster '{{ grep_output.stdout.split("=")[1] }}'
+  ansible.builtin.command: ejabberdctl join_cluster '{{ grep_output.stdout.split("=")[1] }}'
