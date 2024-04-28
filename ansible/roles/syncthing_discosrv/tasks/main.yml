@@ -24,7 +24,7 @@
       - syncthing-systemd-addons
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS'  or ansible_distribution == 'RedHat'
 
 - name: STDISCOSRV - Install syncthing discovery server
   ansible.builtin.apt:
