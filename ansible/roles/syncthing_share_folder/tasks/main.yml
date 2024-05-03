@@ -31,7 +31,7 @@
 
 - name: ST_SHARE_FOLDER - Get Syncthing API Key
   community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
@@ -107,7 +107,7 @@
     - PULSEMAIN_IP != ''
 
 - name: ST_SHARE_FOLDER - Get local device id for sharing from main
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   register: localdeviceid
   when:
     - PULSEMAIN_IP != ''
@@ -120,7 +120,7 @@
 
 - name: ST_SHARE_FOLDER - Get Pulsemain Syncthing API Key
   community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
@@ -186,7 +186,7 @@
   until: ('status' in result) and result.status == 200
 
 - name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
