@@ -110,14 +110,6 @@
     name: '{{ DBADMINUSER }}'
     password: '{{ DBADMINPASSWD }}'
   when:
-    - ansible_distribution != 'RedHat'
-
-- name: MARIADB - Define root password
-  community.mysql.mysql_user:
-    login_unix_socket: /var/run/mysqld/mysqld.sock
-    name: '{{ DBADMINUSER }}'
-    password: '{{ DBADMINPASSWD }}'
-  when:
     - ansible_distribution == 'Centos' or ansible_distribution == 'Debian'
 
 - name: MARIADB - Define root password
@@ -127,7 +119,6 @@
     password: '{{ DBADMINPASSWD }}'
   when:
     - ansible_distribution == 'RedHat'
-
 
 - name: MARIADB - Create .my.cnf
   ansible.builtin.template:
