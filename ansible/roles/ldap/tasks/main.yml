@@ -105,7 +105,7 @@
 - name: LDAP - Add entry basedn
   community.general.ldap_entry:
     dn: '{{ LDAP_BASEDN }}'
-    server_uri: ldap://localhost/
+    server_uri: ldapi:///
     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
     bind_pw: '{{ LDAPADMINPASSWD }}'
     objectClass:
@@ -126,6 +126,17 @@
   - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
   when:
     - ansible_distribution == 'CentOS'
+
+- name: LDAP - Configure ldaps
+  ansible.builtin.lineinfile:
+    path: '{{ SLAPD_D_PATH }}/cn=config.ldif'
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+    state: 'present'
+  with_items:
+  - { regexp: '^olcTLSCertificateFile: .*$' , line: 'olcTLSCertificateFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
+  - { regexp: '^olcTLSCertificateKeyFile: .*$', line: 'olcTLSCertificateKeyFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
+  - { regexp: '^olcTLSCACertificateFile: .*$', line: 'olcTLSCACertificateFile: {{ PKI_PATH }}/ca-chain.cert.pem' }
 
 - name: LDAP - Ensure ldap server is running
   ansible.builtin.systemd:
