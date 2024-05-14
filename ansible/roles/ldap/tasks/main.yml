@@ -141,14 +141,14 @@
     mode: '0644'
 
 - name: LDAP - Import certificates configuration to cn=config
-  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /tmp/certificates_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/certificates_modify.ldif'
   notify:
     - LDAP - Restart slapd
 
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/default/slapd
-    line: 'SLAPD_SERVICES="ldaps:/// ldap:/// ldapi:///"'
+    line: 'SLAPD_SERVICES="ldaps:/// ldap://127.0.0.1:389/ ldapi:///"'
     regexp: '^SLAPD_SERVICES=.*$'
   notify:
     - LDAP - Restart slapd
@@ -164,6 +164,14 @@
     - LDAP - Restart slapd
   when:
     - ansible_distribution == 'Centos'
+
+- name: LDAP - Configure LDAP client
+  ansible.builtin.lineinfile:
+    dest: '{{ LDAP_CONF }}'
+    line: TLS_CACERTDIR /etc/ssl/certs/
+    mode: '0644'
+    create: true
+    backup: true
 
 - name: LDAP - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
