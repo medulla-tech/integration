@@ -1,1 +1,2 @@
 SLAPD_D_PATH: /etc/ldap/slapd.d
+SLAPD_CERTS_PATH: /etc/ldap/certs

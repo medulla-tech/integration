@@ -1,0 +1,10 @@
+dn: cn=config
+changetype: modify
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/{{ SLAPD_CERTS_PATH }}/{{ SERVER_FQDN }}.pem
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/{{ SLAPD_CERTS_PATH }}/{{ SERVER_FQDN }}.pem
+-
+replace: olcTLSCACertificatePath
+olcTLSCACertificatePath: /etc/ssl/certs/

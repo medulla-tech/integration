@@ -128,16 +128,20 @@
   when:
     - ansible_distribution == 'CentOS'
 
-- name: LDAP - Configure ldaps
-  ansible.builtin.lineinfile:
-    path: '{{ SLAPD_D_PATH }}/cn=config.ldif'
-    regexp: '{{ item.regexp }}'
-    line: '{{ item.line }}'
-    state: 'present'
-  with_items:
-  - { regexp: '^olcTLSCertificateFile: .*$' , line: 'olcTLSCertificateFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
-  - { regexp: '^olcTLSCertificateKeyFile: .*$', line: 'olcTLSCertificateKeyFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
-  - { regexp: '^olcTLSCACertificateFile: .*$', line: 'olcTLSCACertificateFile: {{ PKI_PATH }}/ca-chain.cert.pem' }
+- name: LDAP - Copy certificate to /etc/{{ CERTS_PATH }}/{{ SERVER_FQDN }}.pem
+  ansible.builtin.copy:
+    src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
+    dest: "/etc/{{ SLAPD_CERTS_PATH }}/"
+    remote_src: yes
+
+- name: LDAP - Copy certificates_modify.ldif to /tmp
+  ansible.builtin.template:
+    src: certificates_modify.ldif.j2
+    dest: /tmp/certificates_modify.ldif
+    mode: '0644'
+
+- name: LDAP - Import certificates configuration to cn=config
+  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /tmp/certificates_modify.ldif'
   notify:
     - LDAP - Restart slapd
 
