@@ -16,8 +16,8 @@
   roles:
     - base
     - security
-    - mariadb
     - local_certs
+    - mariadb
     - ejabberd
     - apache
     - syncthing

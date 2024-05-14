@@ -18,11 +18,11 @@
     - base
     - security
     - pki
+    - local_certs
     - apache
     - php
     - ldap
     - mariadb
-    - local_certs
     - ejabberd
     - { role: syncthing_discosrv, when: (ansible_domain != 'siveo.net') }
     - { role: syncthing_relay, when: (ansible_domain != 'siveo.net') }
