@@ -77,6 +77,8 @@
   - { regexp: '^olcSuffix: .*$' , line: 'olcSuffix: {{ LDAP_BASEDN }}' }
   - { regexp: '^olcRootDN: .*$', line: 'olcRootDN: cn=admin,{{ LDAP_BASEDN }}' }
   - { regexp: '^olcRootPW: .*$', line: 'olcRootPW: {{ LDAPADMINPASSWD }}' }
+  notify:
+    - LDAP - Restart slapd
   when:
     - ansible_distribution == 'CentOS'
 
@@ -84,7 +86,9 @@
   ansible.builtin.copy:
     src: /usr/share/openldap-servers/DB_CONFIG.example
     dest: /var/lib/ldap/DB_CONFIG
-    remote_src: yes 
+    remote_src: yes
+  notify:
+    - LDAP - Restart slapd
   when:
     - ansible_distribution == 'CentOS'
 
@@ -92,15 +96,12 @@
   ansible.builtin.file:
     path: /var/lib/ldap/
     owner: ldap
-    group: ldap   
+    group: ldap
   when:
     - ansible_distribution == 'CentOS'
 
-- name: LDAP - Start service
-  ansible.builtin.systemd:
-    enabled: yes
-    state: restarted
-    name: slapd
+- name: LDAP - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
 
 - name: LDAP - Add entry basedn
   community.general.ldap_entry:
@@ -137,6 +138,31 @@
   - { regexp: '^olcTLSCertificateFile: .*$' , line: 'olcTLSCertificateFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
   - { regexp: '^olcTLSCertificateKeyFile: .*$', line: 'olcTLSCertificateKeyFile: {{ PKI_PATH }}/{{ SERVER_FQDN }}.pem' }
   - { regexp: '^olcTLSCACertificateFile: .*$', line: 'olcTLSCACertificateFile: {{ PKI_PATH }}/ca-chain.cert.pem' }
+  notify:
+    - LDAP - Restart slapd
+
+- name: LDAP - Enable ldaps
+  ansible.builtin.lineinfile:
+    dest: /etc/default/slapd
+    line: 'SLAPD_SERVICES="ldaps:/// ldap:/// ldapi:///"'
+    regexp: '^SLAPD_SERVICES=.*$'
+  notify:
+    - LDAP - Restart slapd
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: LDAP - Enable ldaps
+  ansible.builtin.lineinfile:
+    dest: /etc/sysconfig/slapd
+    line: 'SLAPD_URLS="ldaps:/// ldap:/// ldapi:///"'
+    regexp: '^SLAPD_URLS=.*$'
+  notify:
+    - LDAP - Restart slapd
+  when:
+    - ansible_distribution == 'Centos'
+
+- name: LDAP - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
 
 - name: LDAP - Ensure ldap server is running
   ansible.builtin.systemd:

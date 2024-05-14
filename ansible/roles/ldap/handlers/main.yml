@@ -1,0 +1,5 @@
+- name: LDAP - Restart slapd
+  ansible.builtin.systemd:
+    name: slapd
+    state: restarted
+    daemon_reload: yes
