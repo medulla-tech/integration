@@ -42,7 +42,7 @@
 - name: CREATE_USERS - Add entry basedn
   community.general.ldap_entry:
     dn: 'uid={{ USER_USERNAME }},ou=Users,{{ LDAP_BASEDN }}'
-    server_uri: ldap://localhost/
+    server_uri: ldapi:///
     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
     bind_pw: '{{ LDAPADMINPASSWD }}'
     objectClass:
@@ -70,7 +70,7 @@
 - name: CREATE_USERS - Add entry basedn
   community.general.ldap_entry:
     dn: 'uid={{ USER_USERNAME }},ou=Users,{{ LDAP_BASEDN }}'
-    server_uri: ldap://localhost/
+    server_uri: ldapi:///
     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
     bind_pw: '{{ LDAPADMINPASSWD }}'
     objectClass:

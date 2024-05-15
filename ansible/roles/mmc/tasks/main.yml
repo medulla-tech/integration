@@ -168,7 +168,7 @@
 - name: MMC/LDAP - Add MedullaUsers group to local LDAP directory
   community.general.ldap_entry:
     dn: '{{ item.dn }},{{ LDAP_BASEDN }}'
-    server_uri: ldap://localhost/
+    server_uri: ldapi:///
     bind_dn: 'cn=admin,{{ LDAP_BASEDN }}'
     bind_pw: '{{ LDAPADMINPASSWD }}'
     objectClass: '{{ item.class }}'
