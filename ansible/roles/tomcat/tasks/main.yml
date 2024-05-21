@@ -23,7 +23,7 @@
     pkg:
       - tomcat
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: TOMCAT - Install Tomcat
   ansible.builtin.apt:
