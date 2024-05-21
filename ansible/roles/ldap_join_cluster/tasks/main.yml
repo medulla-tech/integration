@@ -1,0 +1,44 @@
+##########################################################
+#                   Join LDAP cluster                    #
+##########################################################
+
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.0.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
+- name: LDAP_CLUSTER - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  ignore_errors: true
+
+- name: LDAP_CLUSTER - Create a list from CLUSTER_SERVERS variable
+  ansible.builtin.set_fact: 
+    CLUSTER_SERVERS_LIST: "{{ CLUSTER_SERVERS.split(',') }}"
+
+- name: LDAP_CLUSTER - Copy synch_modify.ldif to /tmp
+  ansible.builtin.template:
+    src: synch_modify.ldif.j2
+    dest: /tmp/synch_modify.ldif
+    mode: '0644'
+
+- name: LDAP_CLUSTER - Enable replication of cn=config database
+  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/synch_modify.ldif'
+  notify:
+    - LDAP_CLUSTER - Restart slapd
+
+- name: LDAP_CLUSTER - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: LDAP_CLUSTER - Ensure ldap server is running
+  ansible.builtin.systemd:
+    name: 'slapd'
+    state: started
+    enabled: yes
+    masked: no

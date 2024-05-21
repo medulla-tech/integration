@@ -148,7 +148,7 @@
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/default/slapd
-    line: 'SLAPD_SERVICES="ldaps:/// ldap://127.0.0.1:389/ ldapi:///"'
+    line: 'SLAPD_SERVICES="ldaps:/// ldap://{{ SERVER_FQDN }}/ ldapi:///"'
     regexp: '^SLAPD_SERVICES=.*$'
   notify:
     - LDAP - Restart slapd
@@ -164,6 +164,28 @@
     - LDAP - Restart slapd
   when:
     - ansible_distribution == 'Centos'
+
+- name: LDAP - Copy syncprov_modify.ldif to /tmp
+  ansible.builtin.copy:
+    src: syncprov_modify.ldif
+    dest: /tmp/syncprov_modify.ldif
+    mode: '0644'
+
+- name: LDAP - Enable syncprov module for cn=config database
+  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/syncprov_modify.ldif'
+  notify:
+    - LDAP - Restart slapd
+
+- name: LDAP - Copy serverid_modify.ldif to /tmp
+  ansible.builtin.template:
+    src: serverid_modify.ldif.j2
+    dest: /tmp/serverid_modify.ldif
+    mode: '0644'
+
+- name: LDAP - Import olcServerID configuration to cn=config
+  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/serverid_modify.ldif'
+  notify:
+    - LDAP - Restart slapd
 
 - name: LDAP - Configure LDAP client
   ansible.builtin.lineinfile:

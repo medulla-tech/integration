@@ -1,0 +1,8 @@
+- name: New ldap cluster member
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - local_certs
+    - ldap
+    - ldap_join_cluster
