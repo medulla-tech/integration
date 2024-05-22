@@ -25,6 +25,15 @@
   when:
     - ansible_distribution == 'CentOS'
 
+
+- name: GUACAMOLE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-PyMySQL
+  when:
+    - ansible_distribution == 'RedHat'
+
 - name: GUACAMOLE - Install tools needed for the setup
   ansible.builtin.apt:
     state: latest
@@ -45,7 +54,7 @@
       - mysql-connector-java
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: GUACAMOLE - Guacamole tomcat restart server true
   ansible.builtin.debconf:
