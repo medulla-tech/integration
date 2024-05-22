@@ -172,9 +172,12 @@
     mode: '0644'
 
 - name: LDAP - Enable syncprov module for cn=config database
-  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/syncprov_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/syncprov_modify.ldif'
+  register: command_result
   notify:
     - LDAP - Restart slapd
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80)
 
 - name: LDAP - Copy serverid_modify.ldif to /tmp
   ansible.builtin.template:
@@ -183,9 +186,12 @@
     mode: '0644'
 
 - name: LDAP - Import olcServerID configuration to cn=config
-  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/serverid_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/serverid_modify.ldif'
+  register: command_result
   notify:
     - LDAP - Restart slapd
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80)
 
 - name: LDAP - Configure LDAP client
   ansible.builtin.lineinfile:
