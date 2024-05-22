@@ -1,4 +1,4 @@
 dn: cn=config
 changetype: modify
 add: olcServerID
-olcServerID: {{ 4095 | random }} ldap://{{ SERVER_FQDN }}/
+olcServerID: {{ 4095 | random }} ldaps://{{ SERVER_FQDN }}/

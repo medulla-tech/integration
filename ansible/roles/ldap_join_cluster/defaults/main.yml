@@ -1,4 +1,5 @@
 LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
-# CLUSTER_SERVERS is a comma separated list of the other members of the cluster in the format <id> <url>
+# CLUSTER_SERVERS is a comma separated list of the other members of the cluster
+# in the format <id> <url> obtained from parameter olcServerID from cn=config.ldif
 CLUSTER_SERVERS: ''
