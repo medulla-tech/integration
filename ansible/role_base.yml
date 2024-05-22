@@ -1,0 +1,7 @@
+- name: Base settings
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - base
+    - security

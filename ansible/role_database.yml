@@ -1,0 +1,6 @@
+- name: Database server
+  gather_facts: true
+  hosts: all
+  remote_user: root
+  roles:
+    - mariadb
