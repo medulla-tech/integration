@@ -148,7 +148,7 @@
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/default/slapd
-    line: 'SLAPD_SERVICES="ldaps:/// ldap:/// ldapi:///"'
+    line: 'SLAPD_SERVICES="ldaps:/// ldap://127.0.0.1/ ldap://{{ SERVER_FQDN }}/ ldapi:///"'
     regexp: '^SLAPD_SERVICES=.*$'
   notify:
     - LDAP - Restart slapd
@@ -158,7 +158,7 @@
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/sysconfig/slapd
-    line: 'SLAPD_URLS="ldaps:/// ldap:/// ldapi:///"'
+    line: 'SLAPD_URLS="ldaps:/// ldap://127.0.0.1/ ldap://{{ SERVER_FQDN }}/ ldapi:///"'
     regexp: '^SLAPD_URLS=.*$'
   notify:
     - LDAP - Restart slapd
