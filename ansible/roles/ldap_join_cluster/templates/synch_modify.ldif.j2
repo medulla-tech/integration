@@ -1,6 +1,6 @@
 dn: cn=config
 changetype: modify
-replace: olcServerID
+add: olcServerID
 {% for item in CLUSTER_SERVERS_LIST %}
 olcServerID: {{ item }}
 {% endfor %}

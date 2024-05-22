@@ -29,9 +29,12 @@
     mode: '0644'
 
 - name: LDAP_CLUSTER - Enable replication of cn=config database
-  ansible.builtin.command: 'ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /tmp/synch_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/synch_modify.ldif'
+  register: command_result
   notify:
     - LDAP_CLUSTER - Restart slapd
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80)
 
 - name: LDAP_CLUSTER - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
