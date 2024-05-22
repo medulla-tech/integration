@@ -148,7 +148,7 @@
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/default/slapd
-    line: 'SLAPD_SERVICES="ldaps:/// ldap://127.0.0.1/ ldapi:///"'
+    line: 'SLAPD_SERVICES="ldaps:/// ldap:/// ldapi:///"'
     regexp: '^SLAPD_SERVICES=.*$'
   notify:
     - LDAP - Restart slapd
@@ -158,12 +158,15 @@
 - name: LDAP - Enable ldaps
   ansible.builtin.lineinfile:
     dest: /etc/sysconfig/slapd
-    line: 'SLAPD_URLS="ldaps:/// ldap://127.0.0.1/ ldapi:///"'
+    line: 'SLAPD_URLS="ldaps:/// ldap:/// ldapi:///"'
     regexp: '^SLAPD_URLS=.*$'
   notify:
     - LDAP - Restart slapd
   when:
     - ansible_distribution == 'Centos'
+
+- name: LDAP - Force restart of service after configuration
+  ansible.builtin.meta: flush_handlers
 
 - name: LDAP - Copy syncprov_modify.ldif to /tmp
   ansible.builtin.copy:
