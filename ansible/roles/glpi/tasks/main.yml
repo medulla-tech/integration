@@ -351,4 +351,4 @@
     login_password: '{{ GLPI_DBPASSWD }}'
     login_db: '{{ GLPI_DBNAME }}'
     query:
-    - UPDATE glpi_configs SET value = 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}/' WHERE name='url_base';
+    - UPDATE glpi_configs SET value = 'http://{{ SERVER_FQDN }}/glpi/' WHERE name='url_base';
