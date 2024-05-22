@@ -54,7 +54,21 @@
       - mysql-connector-java
     state: latest
   when:
-    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    - ansible_distribution == 'CentOS'
+
+- name: GUACAMOLE - Install guacamole
+  ansible.builtin.yum:
+    pkg:
+      - guacamole
+      - guacd
+      - libguac-client-vnc
+      - libguac-client-ssh
+      - libguac-client-rdp
+      - guacamole-auth-mysql
+      - mysql-connector-j
+    state: latest
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: GUACAMOLE - Guacamole tomcat restart server true
   ansible.builtin.debconf:
