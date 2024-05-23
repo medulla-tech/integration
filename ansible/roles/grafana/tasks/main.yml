@@ -28,6 +28,16 @@
     - ansible_distribution == 'CentOS'
 
 - name: GRAFANA - Install grafana
+  ansible.builtin.yum:
+    pkg:
+      - grafana
+      - grafana-image-renderer
+      - python3.11-jmespath
+    state: latest
+  when:
+    - ansible_distribution == 'RedHat'
+
+- name: GRAFANA - Install grafana
   ansible.builtin.apt:
     pkg:
       - grafana
