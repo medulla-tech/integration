@@ -322,10 +322,10 @@
 
 - name: ITSM-NG - Set url_base in glpi_configs
   community.mysql.mysql_query:
-    login_host: '{{ GLPI_DBHOST }}'
-    login_port: '{{ GLPI_DBPORT }}'
-    login_user: '{{ GLPI_DBUSER }}'
-    login_password: '{{ GLPI_DBPASSWD }}'
-    login_db: '{{ GLPI_DBNAME }}'
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
     query:
     - UPDATE glpi_configs SET value = 'http://{{ SERVER_FQDN }}/itsm-ng/' WHERE name='url_base';
