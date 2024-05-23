@@ -59,7 +59,7 @@
     method: GET
   register: json_session
   when:
-    - ITSM_DBHOST == 'localhost'
+    - ITSM_WRITEABLE
 
 - name: PULSE/GLPI - Create entity in GLPI
   ansible.builtin.uri:
@@ -78,7 +78,7 @@
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
   when:
-    - ITSM_DBHOST == 'localhost'
+    - ITSM_WRITEABLE
     
 - name: PULSE/GLPI - Define created entity as default entity for fusioninventory
   community.mysql.mysql_query:
@@ -92,7 +92,7 @@
     - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'tag', 0, '*')
     - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', '1')
   when:
-    - ITSM_DBHOST == 'localhost'
+    - ITSM_WRITEABLE
     - result.status == 201
 
 - name: PULSE/AGENT - Configure the agent updatebackupclient plugin

@@ -31,6 +31,7 @@ DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 # For using GLPI/ITSM-NG on another server, redefine following ITSM_* variables. The following defaults are for local GLPI/ITSM-NG.
 ITSM_TYPE: glpi # can be glpi or itsm-ng
+ITSM_WRITEABLE: true
 ITSM_DBHOST: localhost
 ITSM_DBPORT: 3306
 ITSM_DBNAME: glpi
