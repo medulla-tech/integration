@@ -1,0 +1,3 @@
+# Configuration needed to generate the bootmenus from machines connected to a relay
+ProxyPass "/mmc/imaging/"  "http://{{ PULSEMAIN_FQDN }}/mmc/imaging/"
+ProxyPassReverse "/mmc/imaging/"  "http://{{ PULSEMAIN_FQDN }}/mmc/imaging/"

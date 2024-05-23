@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -172,6 +172,7 @@
     - { path: '/tftpboot/nbi_img', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/bootloader' }
     - { path: '/home/partimag', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/masters' }
     - { path: '/var/lib/pulse2/imaging/bootloader/grub', state: 'directory', mode: '0755', src: '' }
+    - { path: '/var/lib/pulse2/clients/davos', state: 'link', mode: '0777', src: '/var/lib/pulse2/imaging/davos' }
 
 - name: PULSE_IMAGING - Add fake grub.cfg file
   ansible.builtin.copy:
@@ -191,3 +192,21 @@
     dest: /var/lib/pulse2/imaging/bootloader/
     mode: '0644'
 
+- name: PULSE_IMAGING - Setup local apache for bootmenu generation
+  ansible.builtin.template:
+    src: medulla-imaging.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/medulla-imaging.conf'
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE_IMAGING - Restart apache
+  when:
+    - PULSEMAIN_IP != ''
+
+- name: PULSE_IMAGING - Enable medulla-imaging module in apache
+  ansible.builtin.command: a2enconf medulla-imaging
+  notify:
+    - PULSE_IMAGING - Restart apache
+  when:
+    - PULSEMAIN_IP != ''
+    - ansible_distribution == 'Debian'

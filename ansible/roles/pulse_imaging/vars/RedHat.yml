@@ -5,3 +5,5 @@ SYSLINUX_UEFI32_PATH: /usr/share/syslinux
 SYSLINUX_UEFI64_PATH: /usr/share/syslinux/efi64
 SYSLINUX_EFI32: /usr/share/syslinux/syslinux.com
 SYSLINUX_EFI64: /usr/share/syslinux/efi64/syslinux.efi
+APACHE_DAEMON: httpd
+APACHE_CONF_PATH: /etc/httpd/conf.d

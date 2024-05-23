@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -26,6 +26,14 @@
     - ansible_distribution == 'CentOS'
 
 - name: MARIADB - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-PyMySQL
+  when:
+    - ansible_distribution == 'RedHat'
+
+- name: MARIADB - Install tools needed for the setup
   ansible.builtin.apt:
     state: latest
     pkg:
@@ -42,6 +50,16 @@
       - MySQL-python
   when:
     - ansible_distribution == 'CentOS'
+
+- name: MARIADB - Install mariadb
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - mariadb
+      - mariadb-server
+      - python3.11-mysqlclient
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: MARIADB - Install mariadb
   ansible.builtin.apt:
@@ -91,6 +109,16 @@
     login_unix_socket: /var/run/mysqld/mysqld.sock
     name: '{{ DBADMINUSER }}'
     password: '{{ DBADMINPASSWD }}'
+  when:
+    - ansible_distribution == 'Centos' or ansible_distribution == 'Debian'
+
+- name: MARIADB - Define root password
+  community.mysql.mysql_user:
+    login_unix_socket: /var/lib/mysql/mysql.sock
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: MARIADB - Create .my.cnf
   ansible.builtin.template:
@@ -160,6 +188,9 @@
     backup: yes
   notify:
     - MARIADB - Restart mariadb
+
+- name: MARIADB - Restart mariadb with the new parameters
+  ansible.builtin.meta: flush_handlers
 
 - name: MARIADB - Ensure mariadb is running
   ansible.builtin.systemd:

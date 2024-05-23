@@ -1,6 +1,6 @@
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -27,9 +27,9 @@
     path: '{{ item }}'
     state: absent
   with_items:
-    - '/var/lib/syncthing/.config'
+    - '/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}'
     - '/var/lib/syncthing/Sync'
-    - '/var/lib/syncthing-depl/.config'
+    - '/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}'
     - '/var/lib/syncthing-depl/Sync'
 
 - name: SYNCTHING - Delete configuration initialisation marker

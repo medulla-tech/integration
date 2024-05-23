@@ -3,3 +3,9 @@
     name: '{{ NFS_DAEMON }}'
     state: restarted
     daemon_reload: yes
+
+- name: PULSE_IMAGING - Restart apache
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: restarted
+    daemon_reload: yes

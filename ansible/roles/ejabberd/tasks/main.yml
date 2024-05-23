@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -17,7 +17,7 @@
     pkg:
       - ejabberd
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: EJABBERD - Install ejabberd
   ansible.builtin.apt:

@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -49,7 +49,7 @@
       - openldap-servers
       - openldap-clients
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Install tools needed for the setup
   ansible.builtin.yum:
@@ -57,7 +57,7 @@
     pkg:
       - python3-ldap
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Install tools needed for the setup
   ansible.builtin.apt:
@@ -90,7 +90,7 @@
   notify:
     - LDAP - Restart slapd
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Change owner and group for ldap directory
   ansible.builtin.file:
@@ -98,7 +98,7 @@
     owner: ldap
     group: ldap
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
@@ -126,7 +126,7 @@
   - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
   - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Copy certificate to /etc/{{ CERTS_PATH }}/{{ SERVER_FQDN }}.pem
   ansible.builtin.copy:

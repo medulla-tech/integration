@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -26,6 +26,16 @@
     state: latest
   when:
     - ansible_distribution == 'CentOS'
+
+- name: GRAFANA - Install grafana
+  ansible.builtin.yum:
+    pkg:
+      - grafana
+      - grafana-image-renderer
+      - python3.11-jmespath
+    state: latest
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: GRAFANA - Install grafana
   ansible.builtin.apt:

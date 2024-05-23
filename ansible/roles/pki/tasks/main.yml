@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -52,6 +52,16 @@
       - python-cryptography
   when:
     - ansible_distribution == 'CentOS'
+
+- name: PKI - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-pyOpenSSL
+      - python3.11-cryptography
+  when:
+    - ansible_distribution == 'RedHat'
+
 
 - name: PKI - Install tools needed for the setup
   ansible.builtin.apt:
@@ -160,7 +170,7 @@
 - name: PKI - Add pulse ca to ca certs
   ansible.builtin.command: update-ca-trust extract
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PKI - Remove csr files
   ansible.builtin.file:

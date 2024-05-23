@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.0.0'
+    ROLE_VERSION: '1.1.0'
 
 - name: Display version
   ansible.builtin.debug:
@@ -23,7 +23,7 @@
       - syncthing
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: SYNCTHING - Install syncthing
   ansible.builtin.apt:
@@ -95,14 +95,14 @@
 
 - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
   ansible.builtin.wait_for:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
 
 - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing-depl start
   ansible.builtin.wait_for:
-    path: /var/lib/syncthing-depl/.config/syncthing/config.xml
+    path: /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
 
 - name: SYNCTHING - Get local device id for syncthing
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   register: localdeviceid
 
 - name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
@@ -110,7 +110,7 @@
     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
 - name: SYNCTHING - Get local device id for syncthing-depl
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   register: localdepldeviceid
 
 - name: SYNCTHING - Set LOCALDEPL_DEVICE_ID for syncthing-depl
@@ -118,7 +118,7 @@
     LOCALDEPL_DEVICE_ID: "{{ localdepldeviceid.stdout }}"
 
 - name: SYNCTHING - Find pulsemain device id for syncthing
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -136,7 +136,7 @@
     - PULSEMAIN_IP != ''
 
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/.config/syncthing/ -device-id
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -171,7 +171,7 @@
 - name: SYNCTHING - Configure syncthing
   ansible.builtin.template:
     src: '{{ item.src }}'
-    dest: /var/lib/{{ item.inst }}/.config/syncthing/config.xml
+    dest: /var/lib/{{ item.inst }}/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     mode: '0644'
     owner: '{{ item.inst }}'
     backup: yes
@@ -202,7 +202,7 @@
 
 - name: SYNCTHING - Get Pulsemain Syncthing API Key
   community.general.xml:
-    path: /var/lib/syncthing/.config/syncthing/config.xml
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
@@ -220,7 +220,7 @@
 
 - name: SYNCTHING - Get Pulsemain Syncthing-depl API Key
   community.general.xml:
-    path: /var/lib/syncthing-depl/.config/syncthing/config.xml
+    path: /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
@@ -237,7 +237,7 @@
     - PULSEMAIN_IP != ''
 
 - name: SYNCTHING - Get device id for relayserver
-  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing/.config/syncthing/config.xml
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
   vars:
@@ -266,7 +266,7 @@
   until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING - Get device id for relayserver
-  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/.config/syncthing/config.xml
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
   vars:

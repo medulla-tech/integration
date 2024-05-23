@@ -1,2 +1,2 @@
 STDISCOSRV_DAEMON: syncthing-discosrv
-STDISCOSRV_PATH: /var/lib/syncthing/.config/syncthing/
+STDISCOSRV_PATH: /var/lib/syncthing/.local/state/syncthing/
