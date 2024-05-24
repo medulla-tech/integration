@@ -1,5 +1,0 @@
-- name: LDAP_CLUSTER - Restart slapd
-  ansible.builtin.systemd:
-    name: slapd
-    state: restarted
-    daemon_reload: yes
