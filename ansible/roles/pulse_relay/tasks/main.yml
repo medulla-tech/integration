@@ -5,7 +5,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.1.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -95,7 +95,7 @@
 
 - name: PULSE/GLPI - Initialise session to API
   ansible.builtin.uri:
-    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
     url_username: '{{ ITSM_API_USER }}'
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
@@ -105,11 +105,11 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - ITSM_DBHOST == PULSEMAIN_IP
+    - ITSM_WRITEABLE
 
 - name: PULSE/GLPI - Create entity in GLPI if it does not exist
   ansible.builtin.uri:
-    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
+    url: "{{ ITSM_BASEURL }}/apirest.php/Entity/"
     url_username: '{{ ITSM_API_USER }}'
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
@@ -127,7 +127,7 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - ITSM_DBHOST == PULSEMAIN_IP
+    - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
 - name: PULSE/GLPI - Create rules in GLPI if entity does not exist
@@ -146,7 +146,7 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - ITSM_DBHOST == PULSEMAIN_IP
+    - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
 - name: PULSE/SHARE - Allow user to connect to db from relay
