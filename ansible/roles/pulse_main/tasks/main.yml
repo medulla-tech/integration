@@ -5,7 +5,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.1.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -52,7 +52,7 @@
 
 - name: PULSE/GLPI - Initialise session to API
   ansible.builtin.uri:
-    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
     url_username: '{{ ITSM_API_USER }}'
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
@@ -63,7 +63,7 @@
 
 - name: PULSE/GLPI - Create entity in GLPI
   ansible.builtin.uri:
-    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/Entity/"
+    url: "{{ ITSM_BASEURL }}/apirest.php/Entity/"
     url_username: '{{ ITSM_API_USER }}'
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes

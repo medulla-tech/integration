@@ -13,3 +13,5 @@ USER_USERNAME: 'aclark'
 USER_FIRSTNAME: 'Amy'
 USER_LASTNAME: 'Clark'
 USER_PASSWORD: '' # 12 character string. Must be vaulted
+SERVER_FQDN: '{{ ansible_fqdn }}'
+ITSM_BASEURL: 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}'

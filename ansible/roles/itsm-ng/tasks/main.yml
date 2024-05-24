@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.1.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -67,6 +67,7 @@
     state: latest
     pkg:
       - python3-PyMySQL
+      - python3-netaddr
   when:
     - ansible_distribution == 'CentOS'
 
@@ -75,6 +76,7 @@
     state: latest
     pkg:
       - python3-pymysql
+      - python3-netaddr
   when:
     - ansible_distribution == 'Debian'
 
@@ -165,11 +167,25 @@
     - UPDATE glpi_users SET password = MD5('{{ ITSMNG_ADMINPASSWD }}') where name = 'root'
     - UPDATE glpi_users SET api_token = '{{ ITSMNG_ROOTUSER_APITOKEN }}' where name = 'root'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api'
-    - UPDATE glpi_configs SET value='http://localhost/itsm-ng/apirest.php/' WHERE name='url_base_api'
+    - UPDATE glpi_configs SET value='http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/' WHERE name='url_base_api'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials'
     - UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token'
+    - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
     single_transaction: yes
   no_log: True
+
+- name: GLPI - Define access to API when a public IP is set
+  community.mysql.mysql_query:
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
+    query:
+    - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ PUBLIC_IP }}', 1, {{ PUBLIC_IP | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ PUBLIC_IP | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
+    single_transaction: yes
+  when:
+    - PUBLIC_IP != ''
 
 - name: ITSM-NG - Make log file writable for all
   ansible.builtin.file:
@@ -188,7 +204,7 @@
 
 - name: ITSM-NG - Initialise session to API
   ansible.builtin.uri:
-    url: "http://localhost/itsm-ng/apirest.php/initSession"
+    url: "http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/initSession"
     url_username: root
     url_password: '{{ ITSMNG_ADMINPASSWD }}'
     force_basic_auth: yes
@@ -197,7 +213,7 @@
 
 - name: ITSM-NG - Delete all initially created users apart from glpi/root
   ansible.builtin.uri:
-    url: "http://localhost/itsm-ng/apirest.php/User/{{ item }}"
+    url: "http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/User/{{ item }}"
     url_username: root
     url_password: '{{ ITSMNG_ADMINPASSWD }}'
     force_basic_auth: yes
@@ -214,7 +230,7 @@
 
 - name: ITSM-NG - Delete all initially associated profiles apart from glpi/root
   ansible.builtin.uri:
-    url: "http://localhost/itsm-ng/apirest.php/Profile_User/{{ item }}"
+    url: "http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/Profile_User/{{ item }}"
     url_username: root
     url_password: '{{ ITSMNG_ADMINPASSWD }}'
     force_basic_auth: yes
@@ -231,7 +247,7 @@
 
 - name: ITSM-NG - Rename first entity in ITSM-NG
   ansible.builtin.uri:
-    url: "http://localhost/itsm-ng/apirest.php/Entity/0"
+    url: "http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/Entity/0"
     url_username: root
     url_password: '{{ ITSMNG_ADMINPASSWD }}'
     force_basic_auth: yes
@@ -249,7 +265,7 @@
 
 - name: ITSM-NG - Create location in ITSM-NG
   ansible.builtin.uri:
-    url: "http://localhost/itsm-ng/apirest.php/Location/"
+    url: "http://{{ SERVER_FQDN }}/itsm-ng/apirest.php/Location/"
     url_username: root
     url_password: '{{ ITSMNG_ADMINPASSWD }}'
     force_basic_auth: yes

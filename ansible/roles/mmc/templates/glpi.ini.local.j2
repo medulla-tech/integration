@@ -9,11 +9,7 @@ glpi_computer_uri = {{ ITSM_BASEURL }}/front/computer.form.php?id=
 
 [webservices]
 purge_machine = 1
-{% if ITSM_DBHOST == 'localhost' %}
-glpi_base_url = http://localhost/{{ ITSM_TYPE }}/apirest.php/
-{% else %}
-glpi_base_url = http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}/apirest.php/
-{% endif %}
+glpi_base_url = {{ ITSM_BASEURL }}/apirest.php/
 glpi_username = {{ ITSM_API_USER }}
 glpi_password = {{ ITSM_API_PASSWORD }}
 

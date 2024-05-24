@@ -11,6 +11,7 @@ ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
+ITSM_BASEURL: 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}'
 ENTITY: Public
 ORGANISATION: Siveo Medulla
 IMAGING_SERVER_NAME: '{{ ENTITY }}'

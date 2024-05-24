@@ -4,7 +4,7 @@
 
 - name: Set version for this playbook
   ansible.builtin.set_fact:
-    ROLE_VERSION: '1.1.0'
+    ROLE_VERSION: '1.1.1'
 
 - name: Display version
   ansible.builtin.debug:
@@ -97,7 +97,7 @@
 
 - name: CREATE_USERS - Provision user in ITSM
   ansible.builtin.uri:
-    url: "http://localhost/{{ ITSM_TYPE }}/apirest.php/initSession"
+    url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
     url_username: '{{ USER_USERNAME }}'
     url_password: '{{ USER_PASSWORD }}'
     force_basic_auth: yes
