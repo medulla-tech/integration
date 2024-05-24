@@ -2,3 +2,4 @@ LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
 PKI_PATH: /var/lib/pulse2/pki
 SERVER_FQDN: '{{ ansible_fqdn }}'
+ID_IN_LDAPCLUSTER: 1
