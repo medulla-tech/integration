@@ -180,7 +180,7 @@
   notify:
     - LDAP - Restart slapd
   failed_when:
-    - (command_result.rc != 0) and (command_result.rc != 80)
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
 
 - name: LDAP - Copy serverid_modify.ldif to /tmp
   ansible.builtin.template:
@@ -194,7 +194,7 @@
   notify:
     - LDAP - Restart slapd
   failed_when:
-    - (command_result.rc != 0) and (command_result.rc != 80)
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
 
 - name: LDAP - Configure LDAP client
   ansible.builtin.lineinfile:
