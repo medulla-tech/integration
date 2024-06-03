@@ -3,7 +3,8 @@ PKI_SERVER: localhost
 SERVER_FQDN: '{{ ansible_fqdn }}'
 XMPP_DOMAIN: pulse
 XMPP_MASTER_PASSWORD: '' # 12 character string. Must be vaulted
-LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
+LDAP_DOMAIN: '{{ ansible_domain }}'
+LDAP_BASEDN: 'dc={{ LDAP_DOMAIN.split(".") | join(",dc=")}}'
 LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
 # For authenticating to external LDAP. Examples:
 # EXTERNAL_LDAP_URL: ldap://ldap.siveo.local:389 

@@ -27,7 +27,7 @@
   with_items:
     - { question: slapd/password1, vtype: password, value: '{{ LDAPADMINPASSWD }}' }
     - { question: slapd/password2, vtype: password, value: '{{ LDAPADMINPASSWD }}' }
-    - { question: slapd/domain, vtype: string, value: '{{ ansible_domain }}' }
+    - { question: slapd/domain, vtype: string, value: '{{ LDAP_DOMAIN }}' }
     - { question: slapd/purge_database, vtype: boolean, value: 'True' }
     - { question: slapd/move_old_database, vtype: boolean, value: 'True' }
   when:
@@ -114,8 +114,8 @@
       - dcObject
       - organization
     attributes:
-      dc: '{{ ansible_domain.split(".", 1)[0] }}'
-      o: '{{ ansible_domain }}'
+      dc: '{{ LDAP_DOMAIN.split(".", 1)[0] }}'
+      o: '{{ LDAP_DOMAIN }}'
   when:
     - ansible_distribution == 'CentOS'
 

@@ -9,7 +9,8 @@ ITSMNG_PLUGIN: fusioninventory
 ITSMNG_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
 ITSMNG_ROOTUSER_APITOKEN: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=40') }}"
 ORGANISATION: Siveo Medulla
-LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
+LDAP_DOMAIN: '{{ ansible_domain }}'
+LDAP_BASEDN: 'dc={{ LDAP_DOMAIN.split(".") | join(",dc=")}}'
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 SERVER_FQDN: '{{ ansible_fqdn }}'
