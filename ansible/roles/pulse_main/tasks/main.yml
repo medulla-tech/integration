@@ -69,7 +69,7 @@
     - ansible_distribution == 'Debian'
     - ITSM_DBHOST != 'localhost'
 
-- name: PULSE/GLPI - Initialise session to API
+- name: PULSE/ITSM - Initialise session to API
   ansible.builtin.uri:
     url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
     url_username: '{{ ITSM_API_USER }}'
@@ -80,7 +80,7 @@
   when:
     - ITSM_WRITEABLE
 
-- name: PULSE/GLPI - Create entity in GLPI
+- name: PULSE/ITSM - Create entity in ITSM
   ansible.builtin.uri:
     url: "{{ ITSM_BASEURL }}/apirest.php/Entity/"
     url_username: '{{ ITSM_API_USER }}'
@@ -99,7 +99,7 @@
   when:
     - ITSM_WRITEABLE
     
-- name: PULSE/GLPI - Define created entity as default entity for fusioninventory
+- name: PULSE/ITSM - Define created entity as default entity for fusioninventory
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
     login_port: '{{ ITSM_DBPORT }}'
