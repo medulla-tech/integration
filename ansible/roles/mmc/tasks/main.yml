@@ -198,6 +198,13 @@
   notify:
     - MMC - Restart mmc-agent
 
+- name: MMC - Set marker for database initialisation if INITIALISE_DB is false
+  ansible.builtin.file:
+    path: /var/lib/mmc/.dbinitialised
+    state: touch
+  when:
+    - not INITIALISE_DB
+
 - name: MMC - Reset PULSEDB_CHANGED variable
   ansible.builtin.set_fact:
     PULSEDB_CHANGED: False
