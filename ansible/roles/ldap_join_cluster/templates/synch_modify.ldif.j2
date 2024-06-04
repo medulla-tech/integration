@@ -1,10 +1,10 @@
 dn: olcDatabase={0}config,cn=config
 changetype: modify
 replace: olcRootDN
-olcRootDN: cn=admin,cn=config
+olcRootDN: cn=admin,{{ LDAP_BASEDN }}
 -
 replace: olcRootPW
-olcRootPW: {{ LDAPSYNCHADMINPASSWD_ENCR }}
+olcRootPW: {{ LDAPADMINPASSWD_ENCR }}
 
 {% for item in CLUSTER_SERVERS_LIST %}
 dn: cn=config
@@ -22,8 +22,8 @@ olcSyncRepl:
     rid=00{{ item.split(' ')[0] }}
     provider={{ item.split(' ')[1] }}
     bindmethod=simple
-    binddn="cn=admin,cn=config"
-    credentials={{ LDAPSYNCHADMINPASSWD }}
+    binddn="cn=admin,{{ LDAP_BASEDN }}"
+    credentials={{ LDAPADMINPASSWD }}
     searchbase="cn=config"
     type=refreshAndPersist
     retry="5 5 300 5"
