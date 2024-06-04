@@ -18,6 +18,17 @@
     - "{{ ansible_os_family }}.yml"
   ignore_errors: true
 
+- name: LDAP_CLUSTER - Check if .dbinitialised is present
+  ansible.builtin.stat:
+    path: /var/lib/ldap/.dbinitialised
+  register: resdbinitialised
+
+- name: LDAP_CLUSTER - Set DBREPL_INITIALISED if .dbinitialised is present
+  ansible.builtin.set_fact:
+    DBREPL_INITIALISED: True
+  when:
+    - resdbinitialised.stat.exists
+
 - name: LDAP_CLUSTER - Get contents of cn=config.ldif file from main server
   ansible.builtin.slurp:
     src: '{{ SLAPD_D_PATH }}/cn=config.ldif'
@@ -50,6 +61,8 @@
 - name: LDAP_CLUSTER - Append local olcServerID to CLUSTER_SERVERS_LIST
   ansible.builtin.set_fact:
     CLUSTER_SERVERS_LIST: "{{ CLUSTER_SERVERS_LIST + LOCAL_CLUSTER_SERVER }}"
+  when:
+    - DBREPL_INITIALISED is not defined
 
 - name: LDAP_CLUSTER - Copy config_synch.ldif to /tmp on main server
   ansible.builtin.template:
@@ -81,20 +94,28 @@
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20)
 
-- name: LDAP_CLUSTER - Copy bd_synch.ldif to /tmp on main server
+- name: LDAP_CLUSTER - Copy db_synch.ldif to /tmp on main server
   ansible.builtin.template:
-    src: bd_synch.ldif.j2
-    dest: /tmp/bd_synch.ldif
+    src: db_synch.ldif.j2
+    dest: /tmp/db_synch.ldif
     mode: '0644'
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Enable replication of database on main server
-  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/bd_synch.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/db_synch.ldif'
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20)
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
+  register: dbrepl_init
+
+- name: LDAP_CLUSTER - Set marker for database replication initialisation
+  ansible.builtin.file:
+    path: /var/lib/ldap/.dbinitialised
+    state: touch
+  when:
+    - dbrepl_init.changed | bool
