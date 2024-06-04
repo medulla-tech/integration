@@ -80,3 +80,21 @@
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20)
+
+- name: LDAP_CLUSTER - Copy bd_synch.ldif to /tmp on main server
+  ansible.builtin.template:
+    src: bd_synch.ldif.j2
+    dest: /tmp/bd_synch.ldif
+    mode: '0644'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+
+- name: LDAP_CLUSTER - Enable replication of database on main server
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/bd_synch.ldif'
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 20)
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
