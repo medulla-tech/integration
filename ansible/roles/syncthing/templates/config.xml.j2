@@ -1,5 +1,5 @@
 <configuration version="37">
-    <device id="{{ LOCAL_DEVICE_ID }}" name="{{ XMPP_DOMAIN }}" compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy="">
+    <device id="{{ LOCAL_DEVICE_ID }}" name="{{ DEVICE_NAME }}" compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy="">
         <address>dynamic</address>
         <paused>false</paused>
         <autoAcceptFolders>false</autoAcceptFolders>
@@ -9,7 +9,7 @@
         <untrusted>false</untrusted>
         <remoteGUIPort>0</remoteGUIPort>
     </device>
-{% if PULSEMAIN_IP != '' %}
+{% if STMAIN_HOST != '' %}
     <device id="{{ PULSEMAIN_DEVICE_ID }}" name="pulse" compression="metadata" introducer="true" skipIntroductionRemovals="false" introducedBy="">
         <address>dynamic</address>
         <paused>false</paused>

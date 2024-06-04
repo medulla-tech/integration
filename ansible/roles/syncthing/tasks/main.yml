@@ -121,37 +121,37 @@
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindeviceid
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindepldeviceid
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set PULSEMAINDEPL_DEVICE_ID for syncthing-depl
   ansible.builtin.set_fact:
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Reset STCONF_CHANGED variable
   ansible.builtin.set_fact:
@@ -208,15 +208,15 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set MAINSTAPIKEY variable
   ansible.builtin.set_fact:
     MAINSTAPIKEY: '{{ xmlres.matches[0].apikey }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Get Pulsemain Syncthing-depl API Key
   community.general.xml:
@@ -226,25 +226,25 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set MAINSTDEPLAPIKEY variable
   ansible.builtin.set_fact:
     MAINSTDEPLAPIKEY: '{{ xmlres.matches[0].apikey }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Get device id for relayserver
-  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Delete relayserver device from pulsemain syncthing waiting up to 5 minutes
   ansible.builtin.uri:
@@ -256,9 +256,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
     - not relay_device_id.failed
   register: result
   retries: 10
@@ -266,14 +266,14 @@
   until: ('status' in result) and result.status == 200
 
 - name: SYNCTHING - Get device id for relayserver
-  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ XMPP_DOMAIN }}']/@id" /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+  ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Delete relayserver device from pulsemain syncthing-depl waiting up to 5 minutes
   ansible.builtin.uri:
@@ -285,9 +285,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
     - not relay_device_id.failed
   register: result
   retries: 10
@@ -303,15 +303,15 @@
     body_format: json
     body:
       deviceID: "{{ LOCAL_DEVICE_ID }}"
-      name: "{{ XMPP_DOMAIN }}"
+      name: "{{ DEVICE_NAME }}"
       introducer: false
     status_code: 200
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
   register: result
   retries: 10
   delay: 30
@@ -326,15 +326,15 @@
     body_format: json
     body:
       deviceID: "{{ LOCALDEPL_DEVICE_ID }}"
-      name: "{{ XMPP_DOMAIN }}"
+      name: "{{ DEVICE_NAME }}"
       introducer: false
     status_code: 200
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
   register: result
   retries: 10
   delay: 30
@@ -358,26 +358,26 @@
 - name: SYNCTHING/APACHE - Setup pulsemain apache for relay syncthing
   ansible.builtin.template:
     src: syncthing.conf.j2
-    dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ XMPP_DOMAIN }}.conf'
+    dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ DEVICE_NAME }}.conf'
     mode: '0644'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING/APACHE - Enable syncthing configuration
-  ansible.builtin.command: a2enconf syncthing-{{ XMPP_DOMAIN }}
+  ansible.builtin.command: a2enconf syncthing-{{ DEVICE_NAME }}
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:
     - ansible_distribution == 'Debian'
-    - PULSEMAIN_IP != ''
+    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Ensure syncthing is running
   ansible.builtin.systemd:
