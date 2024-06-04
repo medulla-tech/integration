@@ -3,6 +3,5 @@ STRELAYSRV_URL: '' # STRELAYSRV_URL needs to be forced if not installed as part 
 STAPIKEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
 STROOTPASSWD: '{{ ROOT_PASSWORD }}'
 STROOTPASSWD_HASHED: "{{ STROOTPASSWD | password_hash('bcrypt') }}"
-XMPP_DOMAIN: '{{ ansible_hostname }}'
-SERVER_FQDN: '{{ ansible_fqdn }}'
-PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
+DEVICE_NAME: '{{ ansible_hostname }}'
+STMAIN_HOST: '{{ PULSEMAIN_IP }}' # STMAIN_HOST must be set on relays and cluster members
