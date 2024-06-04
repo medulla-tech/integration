@@ -46,3 +46,4 @@ URBACKUP_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
 URBACKUP_API_PASSWORD: '' # URBACKUP_API_PASSWORD comes from urbackup role
 PYTHON_VERSION: 3
 MASTER_TOKEN: '' # 32 character string. Must be vaulted
+INITIALISE_DB: true

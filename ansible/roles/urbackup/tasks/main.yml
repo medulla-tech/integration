@@ -124,3 +124,7 @@
     state: started
     enabled: yes
     masked: no
+
+- name: BACKUP - Print URBACKUP_API_PASSWORD variable
+  ansible.builtin.debug:
+    var: URBACKUP_API_PASSWORD
