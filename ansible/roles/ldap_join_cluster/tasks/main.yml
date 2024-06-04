@@ -39,13 +39,13 @@
   ansible.builtin.set_fact:
     LOCAL_CLUSTER_SERVER: "{{ configldif['content'] | b64decode | regex_findall('olcServerID: ([0-9]+ .+)', multiline=True, ignorecase=True) }}"
 
-- name: LDAP_CLUSTER - Define admin password
-  ansible.builtin.command: slappasswd -s {{ LDAPADMINPASSWD }}
+- name: LDAP_CLUSTER - Define synch admin password
+  ansible.builtin.command: slappasswd -s {{ LDAPSYNCHADMINPASSWD }}
   register: command_result
 
-- name: LDAP_CLUSTER - Set LDAPADMINPASSWD_ENCR for syncthing
+- name: LDAP_CLUSTER - Set LDAPSYNCHADMINPASSWD_ENCR for syncthing
   ansible.builtin.set_fact:
-    LDAPADMINPASSWD_ENCR: "{{ command_result.stdout }}"
+    LDAPSYNCHADMINPASSWD_ENCR: "{{ command_result.stdout }}"
 
 - name: LDAP_CLUSTER - Append local olcServerID to CLUSTER_SERVERS_LIST
   ansible.builtin.set_fact:
