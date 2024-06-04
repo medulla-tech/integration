@@ -51,17 +51,17 @@
   ansible.builtin.set_fact:
     CLUSTER_SERVERS_LIST: "{{ CLUSTER_SERVERS_LIST + LOCAL_CLUSTER_SERVER }}"
 
-- name: LDAP_CLUSTER - Copy synch_modify.ldif to /tmp on main server
+- name: LDAP_CLUSTER - Copy config_synch.ldif to /tmp on main server
   ansible.builtin.template:
-    src: synch_modify.ldif.j2
-    dest: /tmp/synch_modify.ldif
+    src: config_synch.ldif.j2
+    dest: /tmp/config_synch.ldif
     mode: '0644'
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Enable replication of cn=config database on main server
-  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/synch_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/config_synch.ldif'
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20)
@@ -69,14 +69,14 @@
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
-- name: LDAP_CLUSTER - Copy synch_modify.ldif to /tmp
+- name: LDAP_CLUSTER - Copy config_synch.ldif to /tmp
   ansible.builtin.template:
-    src: synch_modify.ldif.j2
-    dest: /tmp/synch_modify.ldif
+    src: config_synch.ldif.j2
+    dest: /tmp/config_synch.ldif
     mode: '0644'
 
 - name: LDAP_CLUSTER - Enable replication of cn=config database
-  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/synch_modify.ldif'
+  ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/config_synch.ldif'
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20)
