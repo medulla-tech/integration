@@ -253,6 +253,14 @@
     backup: yes
   when:
     - SUBS_LONG_TYPE == 'deployment'
+    
+- name: SUBSTITUTE_AGENT - Disable initial service
+  ansible.builtin.systemd:
+    name: pulse-xmpp-master-substitute-{{ SUBS_LONG_TYPE }}
+    enabled: false
+    state: stopped
+  when:
+    - DISABLE_INITIAL_SERVICE
 
 - name: SUBSTITUTE_AGENT - Create service if needed
   ansible.builtin.copy:
