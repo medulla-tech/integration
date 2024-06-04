@@ -32,8 +32,6 @@ olcSyncRepl:
     tls_reqcert=demand
     tls_cacertdir=/etc/ssl/certs/
 {% endfor %}
-
-dn: olcDatabase={0}config,cn=config
-changetype: modify
+-
 add: olcMultiProvider
 olcMultiProvider: TRUE
