@@ -1,5 +1,5 @@
-ProxyPass /ITSM_TYPE/ {{ ITSM_BASEURL }}/
-<Location /ITSM_TYPE/>
+ProxyPass /{{ ITSM_TYPE }}/ {{ ITSM_BASEURL }}/
+<Location /{{ ITSM_TYPE }}/>
     ProxyPassReverse {{ ITSM_BASEURL }}/
     Require all granted
 </Location>

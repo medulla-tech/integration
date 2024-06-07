@@ -23,6 +23,9 @@
     state: latest
     pkg:
       - python3-PyMySQL
+      - cron
+      - mariadb-client
+      - crudini
   when:
     - ansible_distribution == 'CentOS'
 
@@ -31,6 +34,9 @@
     state: latest
     pkg:
       - python3-pymysql
+      - cron
+      - mariadb-client
+      - crudini
   when:
     - ansible_distribution == 'Debian'
 
@@ -339,3 +345,20 @@
     dest: '/var/lib/pulse2/clients/win/install-agent.ps1'
     mode: '0644'
     backup: yes
+
+- name: PULSE/EJABBERD - Copy maintenance script
+  ansible.builtin.copy:
+    src: maintenance_ejabberd.sh
+    dest: /var/lib/pulse2/maintenance/
+    mode: '0755'
+    owner: root
+
+- name: PULSE/EJABBERD - Cron for maintenance jobs on ejabberd
+  ansible.builtin.cron:
+    name: "ejabberd maintenance"
+    cron_file: ejabberd_maintenance
+    day: "*"
+    minute: "0"
+    hour: "*/4"
+    user: root
+    job: "/var/lib/pulse2/maintenance/maintenance_ejabberd.sh &> /dev/null"
