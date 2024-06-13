@@ -136,18 +136,3 @@
   when:
     - PULSEMAIN_IP == ''
     - res_queryprofileid.rowcount[0] == 0
-        
-- name: CREATE_USERS - Authenticate user to baseldap
-  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_baseldap authonly '{{ USER_USERNAME }}'
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: CREATE_USERS - Exlude user from externalldap authentication
-  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/base.ini.local authentication_externalldap exclude '{{ USER_USERNAME }}'
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: CREATE_USERS - Exlude user from glpi provisioning
-  ansible.builtin.command: crudini --set --list --list-sep=' ' /etc/mmc/plugins/glpi.ini.local provisioning_glpi exclude '{{ USER_USERNAME }}'
-  when:
-    - PULSEMAIN_IP == ''
