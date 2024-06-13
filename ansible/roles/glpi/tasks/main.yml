@@ -106,13 +106,20 @@
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ GLPI_DBUSER }}'
     password: '{{ GLPI_DBPASSWD }}'
-    host: '{{ item }}'
+    host: '{{ item.host }}'
     state: present
     priv:
       '{{ GLPI_DBNAME }}.*:ALL'
   with_items:
     - localhost
     - '{{ IP_ADDRESS }}'
+  when: "item.when"
+  with_items:
+    - { host: 'localhost', when: true }
+    - { host: '{{ GLPI_DBHOST }}', when: (GLPI_DBHOST != 'localhost') }
+    - { host: '{{ IP_ADDRESS }}', when: true }
+    - { host: '{{ SERVER_FQDN }}', when: true }
+    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
   no_log: True
 
 - name: GLPI - Reset GLPI_CHANGED variable

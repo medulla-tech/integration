@@ -75,6 +75,23 @@
     - ansible_distribution == 'Debian'
     - ITSM_DBHOST != 'localhost'
 
+- name: PULSE/ITSM - Allow access to ITSM API
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+    - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
+    single_transaction: yes
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ ITSM_DBHOST }}'
+  when:
+    - ITSM_WRITEABLE
+    - ITSM_DBHOST != 'localhost'
+
 - name: PULSE/ITSM - Initialise session to API
   ansible.builtin.uri:
     url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
