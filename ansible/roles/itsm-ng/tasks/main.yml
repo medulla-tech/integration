@@ -97,13 +97,17 @@
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ ITSMNG_DBUSER }}'
     password: '{{ ITSMNG_DBPASSWD }}'
-    host: '{{ item }}'
+    host: '{{ item.host }}'
     state: present
     priv:
       '{{ ITSMNG_DBNAME }}.*:ALL'
+  when: "item.when"
   with_items:
-    - localhost
-    - '{{ IP_ADDRESS }}'
+    - { host: 'localhost', when: true }
+    - { host: '{{ ITSMNG_DBHOST }}', when: (ITSMNG_DBHOST != 'localhost') }
+    - { host: '{{ IP_ADDRESS }}', when: true }
+    - { host: '{{ SERVER_FQDN }}', when: true }
+    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
   no_log: True
 
 - name: ITSM-NG - Reset ITSMNG_CHANGED variable

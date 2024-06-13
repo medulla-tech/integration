@@ -220,6 +220,25 @@
   when:
     - resdbinitialised.stat.exists
 
+- name: MMC - Make sure {{ DBADMINUSER }} can connect to db server remotely
+  community.mysql.mysql_user:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+    host: '{{ IP_ADDRESS }}'
+    state: present
+    priv:
+      '*.*:ALL'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ DBHOST }}'
+  when:
+    - DBHOST != 'localhost'
+  no_log: True
+
 - name: MMC - Create databases
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
@@ -259,6 +278,7 @@
     name: '{{ DBUSER }}'
     password: "{{ DBPASSWORD }}"
     state: present
+    host: '{{ item.host }}'
     priv:
       'dyngroup.*': 'ALL'
       'msc.*': 'ALL'
@@ -270,6 +290,13 @@
       'kiosk.*': 'ALL'
       'urbackup.*': 'ALL'
       'updates.*': 'ALL'
+  when: "item.when"
+  with_items:
+    - { host: 'localhost', when: true }
+    - { host: '{{ DBHOST }}', when: (DBHOST != 'localhost') }
+    - { host: '{{ IP_ADDRESS }}', when: true }
+    - { host: '{{ SERVER_FQDN }}', when: true }
+    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
   no_log: True
 
 - name: MMC - Set marker for database initialisation
