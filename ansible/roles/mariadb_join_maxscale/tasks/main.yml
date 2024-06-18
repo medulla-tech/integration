@@ -1,0 +1,91 @@
+##########################################################
+#                  Join Maxscale cluster                 #
+##########################################################
+
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.1.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
+- name: MAXSCALE_CLUSTER - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: MAXSCALE_CLUSTER - Get service facts
+  ansible.builtin.service_facts:
+
+- name: MAXSCALE_CLUSTER - Stop if maxscale is not running
+  ansible.builtin.fail:
+  when: 
+    - (ansible_facts.services["maxscale.service"] is not defined) and (ansible_facts.services["maxscale.service"].state != 'running')
+
+- name: MAXSCALE - Create maxscale database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ MAXSCALE_USER }}'
+    password: '{{ MAXSCALE_USER_PASSWORD }}'
+    host_all: true
+    state: present
+    priv:
+      'mysql.user': 'SELECT'
+      'mysql.db': 'SELECT'
+      'mysql.tables_priv': 'SELECT'
+      'mysql.columns_priv': 'SELECT'
+      'mysql.procs_priv': 'SELECT'
+      'mysql.proxies_priv': 'SELECT'
+      'mysql.roles_mapping': 'SELECT'
+      '*.*': 'SHOW DATABASES'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MARIADB_SERVER_FQDN }}'
+  no_log: True
+
+- name: MAXSCALE - Create maxscale monitor database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ MAXSCALE_MONITOR_USER }}'
+    password: '{{ MAXSCALE_MONITOR_USER_PASSWORD }}'
+    host_all: true
+    state: present
+    priv:
+      '*.*': 'REPLICATION CLIENT, SUPER, RELOAD'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MARIADB_SERVER_FQDN }}'
+  no_log: True
+
+- name: MAXSCALE_CLUSTER - Get current list of servers in MariaDB-Monitor section
+  ansible.builtin.set_fact:
+    MARIADB_MONITOR_SERVERS: '{{ lookup('ansible.builtin.ini', 'servers', section='MariaDB-Monitor', file='/etc/maxscale.cnf.d/medulla_master.cnf') }}"'
+
+- name: MAXSCALE_CLUSTER - Get current list of servers in Read-Only-Service section
+  ansible.builtin.set_fact:
+    READONLY_SERVICE_SERVERS: '{{ lookup('ansible.builtin.ini', 'servers', section='Read-Only-Service', file='/etc/maxscale.cnf.d/medulla_master.cnf') }}"'
+
+- name: MAXSCALE_CLUSTER - Configure mariadb server in maxscale
+  community.general.ini_file:
+    path: /etc/maxscale.cnf.d/medulla_master.cnf
+    section: '{{ item.section }}'
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'type', value: 'server' }
+    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'address', value: '{{ MARIADB_SERVER_FQDN }}' }
+    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'port', value: '{{ MARIADB_SERVER_PORT }}' }
+    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'protocol', value: 'MariaDBBackend' }
+    - { section: 'MariaDB-Monitor', parameter: 'servers', value: '{{ MARIADB_MONITOR_SERVERS }}, {{ MARIADB_SERVER_FQDN.split(".")[0] }}' }
+    - { section: 'Read-Only-Service', parameter: 'servers', value: '{{ READONLY_SERVICE_SERVERS }}, {{ MARIADB_SERVER_FQDN.split(".")[0] }}' }
+  notify:
+    - MAXSCALE_CLUSTER - Restart maxscale
+
+- name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
+  ansible.builtin.meta: flush_handlers

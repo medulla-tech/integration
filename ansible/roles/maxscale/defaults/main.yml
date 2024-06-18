@@ -1,0 +1,8 @@
+MASTER_FQDN: '{{ ansible_fqdn }}'
+MASTER_PORT: 3306
+DBADMINUSER: root
+DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+MAXSCALE_USER: maxscale
+MAXSCALE_USER_PASSWORD: '' # 16 character string. Must be vaulted
+MAXSCALE_MONITOR_USER: maxscale_monitor_user
+MAXSCALE_MONITOR_USER_PASSWORD: '' # 16 character string. Must be vaulted

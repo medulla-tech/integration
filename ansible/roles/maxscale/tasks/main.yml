@@ -1,0 +1,113 @@
+##########################################################
+#                     Maxscale setup                     #
+##########################################################
+
+- name: Set version for this playbook
+  ansible.builtin.set_fact:
+    ROLE_VERSION: '1.1.0'
+
+- name: Display version
+  ansible.builtin.debug:
+    msg:
+    - "{{role_name}} version: {{ ROLE_VERSION }}"
+
+- name: MAXSCALE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: MAXSCALE - Install maxscale
+  ansible.builtin.yum:
+    pkg:
+      - maxscale
+      - mariadb
+    state: latest
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MAXSCALE - Install maxscale
+  ansible.builtin.yum:
+    pkg:
+      - maxscale
+      - mariadb
+    state: latest
+  when:
+    - ansible_distribution == 'RedHat'
+
+- name: MAXSCALE - Install maxscale
+  ansible.builtin.apt:
+    pkg:
+      - maxscale
+      - mariadb-client
+    state: latest
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MAXSCALE - Create maxscale database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ MAXSCALE_USER }}'
+    password: '{{ MAXSCALE_USER_PASSWORD }}'
+    host_all: true
+    state: present
+    priv:
+      'mysql.user': 'SELECT'
+      'mysql.db': 'SELECT'
+      'mysql.tables_priv': 'SELECT'
+      'mysql.columns_priv': 'SELECT'
+      'mysql.procs_priv': 'SELECT'
+      'mysql.proxies_priv': 'SELECT'
+      'mysql.roles_mapping': 'SELECT'
+      '*.*': 'SHOW DATABASES'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MASTER_FQDN }}'
+  no_log: True
+
+- name: MAXSCALE - Create maxscale monitor database user
+  community.mysql.mysql_user:
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ MAXSCALE_MONITOR_USER }}'
+    password: '{{ MAXSCALE_MONITOR_USER_PASSWORD }}'
+    host_all: true
+    state: present
+    priv:
+      '*.*': 'REPLICATION CLIENT, SUPER, RELOAD'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MASTER_FQDN }}'
+  no_log: True
+
+- name: MAXSCALE - Remove sections that will be present in medulla_master.cnf
+  community.general.ini_file:
+    path: /etc/maxscale.cnf
+    section: '{{ item }}'
+    state: absent
+    backup: yes
+  with_items:
+    - MariaDB-Monitor
+    - Read-Write-Service
+    - Read-Only-Service
+
+- name: MAXSCALE - Configure maxscale
+  ansible.builtin.template:
+    src: medulla_master.cnf.j2
+    dest: /etc/maxscale.cnf.d/medulla_master.cnf
+    mode: '0644'
+    backup: yes
+  notify:
+    - MAXSCALE - Restart maxscale
+
+- name: MAXSCALE - Restart maxscale with the new parameters
+  ansible.builtin.meta: flush_handlers
+
+- name: MAXSCALE - Ensure maxscale is running
+  ansible.builtin.systemd:
+    name: maxscale
+    state: started
+    enabled: yes
+    masked: no
+

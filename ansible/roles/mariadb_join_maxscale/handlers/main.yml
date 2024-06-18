@@ -1,0 +1,5 @@
+- name: MAXSCALE_CLUSTER - Restart maxscale
+  ansible.builtin.systemd:
+    name: 'maxscale'
+    state: restarted
+    daemon_reload: yes
