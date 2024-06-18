@@ -1,5 +1,6 @@
 - name: Maxscale
   gather_facts: true
+  hosts: all
   remote_user: root
 
   pre_tasks:

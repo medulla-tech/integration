@@ -1,5 +1,6 @@
 - name: Mariadb Server
   gather_facts: true
+  hosts: all
   remote_user: root
 
   pre_tasks:

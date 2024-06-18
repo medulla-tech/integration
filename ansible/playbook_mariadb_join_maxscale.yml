@@ -1,6 +1,7 @@
 - name: Maxscale cluster - Add mariadb slave
   gather_facts: true
   remote_user: root
+  hosts: all
   serial: 1
 
   pre_tasks:
