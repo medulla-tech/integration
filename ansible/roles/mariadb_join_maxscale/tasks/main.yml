@@ -51,7 +51,7 @@
 
 - name: MAXSCALE_CLUSTER - Append server to list of servers in MariaDB-Monitor section
   ansible.builtin.set_fact:
-    MARIADB_MONITOR_SERVERS: "{{ MARIADB_MONITOR_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}"
+    MARIADB_MONITOR_SERVERS: '{{ MARIADB_MONITOR_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}'
 
 - name: MAXSCALE_CLUSTER - Get current list of servers in Read-Only-Service section
   ansible.builtin.set_fact:
@@ -62,7 +62,7 @@
 
 - name: MAXSCALE_CLUSTER - Append server to list of servers in Read-Only-Service section
   ansible.builtin.set_fact:
-    READONLY_SERVICE_SERVERS: "{{ READONLY_SERVICE_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}"
+    READONLY_SERVICE_SERVERS: '{{ READONLY_SERVICE_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}'
 
 - name: MAXSCALE_CLUSTER - Configure mariadb server in maxscale
   community.general.ini_file:
