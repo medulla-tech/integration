@@ -17,14 +17,6 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
-- name: MAXSCALE_CLUSTER - Get service facts
-  ansible.builtin.service_facts:
-
-- name: MAXSCALE_CLUSTER - Stop if maxscale is not running
-  ansible.builtin.fail:
-  when: 
-    - (ansible_facts.services["maxscale.service"] is not defined) and (ansible_facts.services["maxscale.service"].state != 'running')
-
 - name: MAXSCALE - Create maxscale database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
@@ -42,9 +34,6 @@
       'mysql.proxies_priv': 'SELECT'
       'mysql.roles_mapping': 'SELECT'
       '*.*': 'SHOW DATABASES'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ MARIADB_SERVER_FQDN }}'
   no_log: True
 
 - name: MAXSCALE - Create maxscale monitor database user
@@ -57,18 +46,29 @@
     state: present
     priv:
       '*.*': 'REPLICATION CLIENT, SUPER, RELOAD'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ MARIADB_SERVER_FQDN }}'
   no_log: True
 
 - name: MAXSCALE_CLUSTER - Get current list of servers in MariaDB-Monitor section
   ansible.builtin.set_fact:
-    MARIADB_MONITOR_SERVERS: '{{ lookup('ansible.builtin.ini', 'servers', section='MariaDB-Monitor', file='/etc/maxscale.cnf.d/medulla_master.cnf') }}"'
+    MARIADB_MONITOR_SERVERS: "{{ lookup('ansible.builtin.ini', 'servers', section='MariaDB-Monitor', file='/etc/maxscale.cnf.d/medulla_master.cnf') | split }}"
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MAXSCALE_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Append server to list of servers in MariaDB-Monitor section
+  ansible.builtin.set_fact:
+    MARIADB_MONITOR_SERVERS: "{{ MARIADB_MONITOR_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}"
 
 - name: MAXSCALE_CLUSTER - Get current list of servers in Read-Only-Service section
   ansible.builtin.set_fact:
-    READONLY_SERVICE_SERVERS: '{{ lookup('ansible.builtin.ini', 'servers', section='Read-Only-Service', file='/etc/maxscale.cnf.d/medulla_master.cnf') }}"'
+    READONLY_SERVICE_SERVERS: "{{ lookup('ansible.builtin.ini', 'servers', section='Read-Only-Service', file='/etc/maxscale.cnf.d/medulla_master.cnf') | split }}"
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MAXSCALE_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Append server to list of servers in Read-Only-Service section
+  ansible.builtin.set_fact:
+    READONLY_SERVICE_SERVERS: "{{ READONLY_SERVICE_SERVERS | combine([SERVER_FQDN.split(".")[0]]) }}"
 
 - name: MAXSCALE_CLUSTER - Configure mariadb server in maxscale
   community.general.ini_file:
@@ -78,14 +78,20 @@
     value: '{{ item.value }}'
     backup: yes
   with_items:
-    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'type', value: 'server' }
-    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'address', value: '{{ MARIADB_SERVER_FQDN }}' }
-    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'port', value: '{{ MARIADB_SERVER_PORT }}' }
-    - { section: '{{ MARIADB_SERVER_FQDN.split(".")[0] }}', parameter: 'protocol', value: 'MariaDBBackend' }
-    - { section: 'MariaDB-Monitor', parameter: 'servers', value: '{{ MARIADB_MONITOR_SERVERS }}, {{ MARIADB_SERVER_FQDN.split(".")[0] }}' }
-    - { section: 'Read-Only-Service', parameter: 'servers', value: '{{ READONLY_SERVICE_SERVERS }}, {{ MARIADB_SERVER_FQDN.split(".")[0] }}' }
+    - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'type', value: 'server' }
+    - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'address', value: '{{ SERVER_FQDN }}' }
+    - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'port', value: '{{ MARIADB_SERVER_PORT }}' }
+    - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'protocol', value: 'MariaDBBackend' }
+    - { section: 'MariaDB-Monitor', parameter: 'servers', value: '{{ MARIADB_MONITOR_SERVERS | join(,) }}' }
+    - { section: 'Read-Only-Service', parameter: 'servers', value: '{{ READONLY_SERVICE_SERVERS | join(,) }}' }
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ MAXSCALE_FQDN }}'

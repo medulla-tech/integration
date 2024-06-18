@@ -1,0 +1,17 @@
+- name: Maxscale cluster - Add mariadb slave
+  gather_facts: true
+  remote_user: root
+  serial: 1
+
+  pre_tasks:
+    - name: MAXSCALE_CLUSTER - Set version for this playbook
+      ansible.builtin.set_fact:
+        PLAYBOOK_VERSION: '5.0.0'
+
+    - name: MAXSCALE_CLUSTER - Display version
+      ansible.builtin.debug:
+        msg:
+        - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
+  roles:
+    - mariadb_join_maxscale
