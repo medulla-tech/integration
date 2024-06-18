@@ -11,13 +11,13 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
-- name: MAXSCALE - Create maxscale database user
+- name: MAXSCALE_CLUSTER - Create maxscale database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ MAXSCALE_USER }}'
     password: '{{ MAXSCALE_USER_PASSWORD }}'
-    host_all: true
+    host: '%'
     state: present
     priv:
       'mysql.user': 'SELECT'
@@ -30,13 +30,13 @@
       '*.*': 'SHOW DATABASES'
   no_log: True
 
-- name: MAXSCALE - Create maxscale monitor database user
+- name: MAXSCALE_CLUSTER - Create maxscale monitor database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ MAXSCALE_MONITOR_USER }}'
     password: '{{ MAXSCALE_MONITOR_USER_PASSWORD }}'
-    host_all: true
+    host: '%'
     state: present
     priv:
       '*.*': 'REPLICATION CLIENT, SUPER, RELOAD'
