@@ -69,7 +69,7 @@
     host: '%'
     state: present
     priv:
-      '*.*': 'REPLICATION CLIENT, SUPER, RELOAD'
+      '*.*': 'REPLICATION CLIENT,SUPER,RELOAD'
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ MASTER_FQDN }}'
