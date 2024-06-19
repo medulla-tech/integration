@@ -11,22 +11,6 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
-- name: MAXSCALE_CLUSTER - Install tools needed for the setup
-  ansible.builtin.yum:
-    state: latest
-    pkg:
-      - crudini
-  when:
-    - ansible_distribution == 'CentOS'
-
-- name: MAXSCALE_CLUSTER - Install tools needed for the setup
-  ansible.builtin.apt:
-    state: latest
-    pkg:
-      - crudini
-  when:
-    - ansible_distribution == 'Debian'
-
 - name: MAXSCALE_CLUSTER - Create maxscale database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'

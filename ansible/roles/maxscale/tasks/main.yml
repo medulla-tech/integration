@@ -11,6 +11,22 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: MAXSCALE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - crudini
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: MAXSCALE - Install tools needed for the setup
+  ansible.builtin.apt:
+    state: latest
+    pkg:
+      - crudini
+  when:
+    - ansible_distribution == 'Debian'
+
 - name: MAXSCALE - Install maxscale
   ansible.builtin.yum:
     pkg:
@@ -85,6 +101,7 @@
     - MariaDB-Monitor
     - Read-Write-Service
     - Read-Only-Service
+    - server1
 
 - name: MAXSCALE - Configure maxscale
   ansible.builtin.template:
