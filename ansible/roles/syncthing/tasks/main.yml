@@ -168,6 +168,62 @@
   when:
     - resdbinitialised.stat.exists
 
+- name: SYNCTHING - Get Syncthing relay server URL from main server
+  community.general.xml:
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+    xpath: /configuration/options/listenAddress
+    content: text
+  register: relayres
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ STMAIN_HOST }}'
+  when:
+    - STRELAYSRV_URL == ''
+    - STMAIN_HOST != ''
+
+- name: SYNCTHING - Set STRELAYSRV_URL variable
+  ansible.builtin.set_fact:
+    STRELAYSRV_URL: '{{ relayres.matches[0].listenAddress }}'
+  when:
+    - STRELAYSRV_URL == ''
+    - STMAIN_HOST != ''
+    - relayres.matches[0].listenAddress is regex('^relay://.*')
+
+- name: SYNCTHING - Check value of globalAnnounceEnabled from main server
+  community.general.xml:
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+    xpath: /configuration/options/globalAnnounceEnabled
+    content: text
+  register: globalannounceres
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ STMAIN_HOST }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - STMAIN_HOST != ''
+
+- name: SYNCTHING - Get Syncthing discovery server URL from main server
+  community.general.xml:
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+    xpath: /configuration/options/globalAnnounceServer
+    content: text
+  register: discores
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ STMAIN_HOST }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - STMAIN_HOST != ''
+    - globalannounceres.matches[0].globalAnnounceEnabled == 'true'
+
+- name: SYNCTHING - Set STDISCOSRV_URL variable
+  ansible.builtin.set_fact:
+    STDISCOSRV_URL: '{{ discores.matches[0].globalAnnounceServer }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - STMAIN_HOST != ''
+    - globalannounceres.matches[0].globalAnnounceEnabled == 'true'
+
 - name: SYNCTHING - Configure syncthing
   ansible.builtin.template:
     src: '{{ item.src }}'
