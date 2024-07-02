@@ -9,6 +9,7 @@ GUACAMOLE_ROOT_PASSWORD: '' # 40 character string. Must be vaulted
 GUACDBPASSWD: '' # 12 character string. Must be vaulted
 CLIENTS_SSH_PORT: 22
 CLIENTS_VNC_PORT: 5900
+CLIENTS_VNC_PASSWORD: '' # 8 character string. Must be vaulted
 REVERSE_SSH_PORT: 22
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'

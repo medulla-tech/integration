@@ -51,6 +51,8 @@
     src: grafana-cli
     dest: /usr/sbin/grafana-cli
     mode: '0755'
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: GRAFANA/APACHE - Enable apache module
   community.general.apache2_module:

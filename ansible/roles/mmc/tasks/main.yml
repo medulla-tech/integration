@@ -45,7 +45,7 @@
       - pulse-xmpp-master-substitute
       - pulse-debug-tools
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: MMC - Install mmc packages
   ansible.builtin.apt:

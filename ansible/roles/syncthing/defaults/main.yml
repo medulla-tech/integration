@@ -1,5 +1,5 @@
-STDISCOSRV_URL: '' # STDISCOSRV_URL needs to be forced if not installed as part of the playbook (eg relay server)
-STRELAYSRV_URL: '' # STRELAYSRV_URL needs to be forced if not installed as part of the playbook (eg relay server)
+STDISCOSRV_URL: '' # STDISCOSRV_URL can be forced otherwise will be obtained from main server if STMAIN_HOST is defined
+STRELAYSRV_URL: '' # STRELAYSRV_URL can be forced otherwise will be obtained from main server if STMAIN_HOST is defined
 STAPIKEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
 STROOTPASSWD: '{{ ROOT_PASSWORD }}'
 STROOTPASSWD_HASHED: "{{ STROOTPASSWD | password_hash('bcrypt') }}"

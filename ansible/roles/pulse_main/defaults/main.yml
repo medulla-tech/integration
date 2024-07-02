@@ -20,6 +20,7 @@ NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 CLIENTS_SSH_PORT: 22
 CLIENTS_VNC_PORT: 5900
+CLIENTS_VNC_PASSWORD: '' # 8 character string. Must be vaulted
 DBHOST: localhost
 DBPORT: 3306
 DBUSER: mmc

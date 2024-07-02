@@ -23,7 +23,7 @@
       - nfs-utils
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: NFS - Install nfs
   ansible.builtin.apt:
