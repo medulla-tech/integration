@@ -103,6 +103,26 @@
 - name: RELAY_AGENT - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
 
+- name: RELAY_AGENT - Allow user to connect to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    host: '{{ XMPP_DOMAIN }}'
+    state: present
+    append_privs: true
+    priv:
+      'xmppmaster.*': 'ALL'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP != ''
+  no_log: True
+
 - name: RELAY_AGENT - Get cluster id for relay if it exists
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
@@ -115,26 +135,6 @@
     named_args:
       name: '{{ CLUSTER_NAME }}'
   register: res_queryclusterid
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: RELAY_AGENT - Get cluster id for relay if it exists
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT id from cluster_ars where name = %(name)s
-    named_args:
-      name: '{{ CLUSTER_NAME }}'
-  register: res_queryclusterid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Get MAX_ID FROM cluster_ars when cluster does not exist
   community.mysql.mysql_query:
@@ -146,25 +146,7 @@
     query:
       - SELECT MAX(id) as id FROM cluster_ars
   register: res_querymaxclusterid
-  when:
-    - PULSEMAIN_IP == ''
-    - res_queryclusterid.rowcount[0] == 0
-
-- name: RELAY_AGENT - Get MAX_ID FROM cluster_ars when cluster does not exist
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT MAX(id) as id FROM cluster_ars
-  register: res_querymaxclusterid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
+  when: 
     - res_queryclusterid.rowcount[0] == 0
 
 - name: RELAY_AGENT - Set id for cluster update when domain is pulse
@@ -196,23 +178,6 @@
     login_db: 'xmppmaster'
     query:
       - INSERT INTO cluster_ars (id, name, description) VALUES({{ id_clusterars }}, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}') ON DUPLICATE KEY UPDATE name='{{ CLUSTER_NAME }}', description='{{ CLUSTER_NAME }}'
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: RELAY_AGENT - Create or update cluster
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - INSERT INTO cluster_ars (id, name, description) VALUES({{ id_clusterars }}, '{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}') ON DUPLICATE KEY UPDATE name='{{ CLUSTER_NAME }}', description='{{ CLUSTER_NAME }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Get MAX_ID FROM has_cluster_ars
   community.mysql.mysql_query:
@@ -224,24 +189,6 @@
     query:
       - SELECT MAX(id) as id FROM has_cluster_ars
   register: res_querymaxhasclusterarsid
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: RELAY_AGENT - Get MAX_ID FROM has_cluster_ars
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT MAX(id) as id FROM has_cluster_ars
-  register: res_querymaxhasclusterarsid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
   community.mysql.mysql_query:
@@ -255,29 +202,6 @@
     named_args:
       jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
   register: res_queryrelayserverid
-  when:
-    - PULSEMAIN_IP == ''
-  retries: 10
-  delay: 30
-  until: res_queryrelayserverid.rowcount[0] != 0
-
-- name: RELAY_AGENT - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
-    named_args:
-      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
-  register: res_queryrelayserverid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
   retries: 10
   delay: 30
   until: res_queryrelayserverid.rowcount[0] != 0
@@ -294,26 +218,6 @@
     named_args:
       id_ars: '{{ res_queryrelayserverid.query_result[0][0].id }}'
   register: res_queryhasclusterarsid
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: RELAY_AGENT - Get has_cluster_ars id for relay if it has already been inserted in its cluster
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT id from has_cluster_ars where has_cluster_ars.id_ars = %(id_ars)s
-    named_args:
-      id_ars: '{{ res_queryrelayserverid.query_result[0][0].id }}'
-  register: res_queryhasclusterarsid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Set query for cluster update when domain is pulse
   ansible.builtin.set_fact:
@@ -353,23 +257,6 @@
     login_db: 'xmppmaster'
     query:
       - '{{ query_hasclusterars }}'
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: RELAY_AGENT - Insert or update relay in its cluster
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - '{{ query_hasclusterars }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Create substituteconf records
   community.mysql.mysql_query:
@@ -389,32 +276,23 @@
     - { type: 'monitoring', jid: 'master_mon@pulse' }
     - { type: 'deployment', jid: 'master_depl@pulse' }
     - { type: 'updates', jid: 'master_upd@pulse' }
-  when:
-    - PULSEMAIN_IP == ''
 
-- name: RELAY_AGENT - Create substituteconf records
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
+- name: RELAY_AGENT - Remove user connection to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ res_queryrelayserverid.query_result[0][0].id }})
-  with_items:
-    - { type: 'assessor', jid: 'master_asse@pulse' }
-    - { type: 'subscription', jid: 'master_subs@pulse' }
-    - { type: 'registration', jid: 'master_reg@pulse' }
-    - { type: 'inventory', jid: 'master_inv@pulse' }
-    - { type: 'logger', jid: 'master_log@pulse' }
-    - { type: 'monitoring', jid: 'master_mon@pulse' }
-    - { type: 'deployment', jid: 'master_depl@pulse' }
-    - { type: 'updates', jid: 'master_upd@pulse' }
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    host: '{{ XMPP_DOMAIN }}'
+    state: absent
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
+  register: res_queryclusterid
   when:
     - PULSEMAIN_IP != ''
+  no_log: True
 
 - name: RELAY_AGENT - Ensure relay service is running
   ansible.builtin.systemd:

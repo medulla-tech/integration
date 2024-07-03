@@ -166,18 +166,27 @@
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
-- name: PULSE/SHARE - Check if cluster share exists in database
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
+- name: PULSE/SHARE - Allow user to connect to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: pkgs
-    query:
-      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
-  register: res_queryshareexists
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    password: "{{ DBPASSWORD }}"
+    host: '{{ XMPP_DOMAIN }}'
+    state: present
+    append_privs: true
+    priv:
+      'xmppmaster.*': 'ALL'
+      'pkgs.*': 'ALL'
+      'imaging.*': 'ALL'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_IP != ''
+  no_log: True
 
 - name: PULSE/SHARE - Check if cluster share exists in database
   community.mysql.mysql_query:
@@ -189,11 +198,6 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
   register: res_queryshareexists
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: PULSE/SHARE - Get relay server id from db
   community.mysql.mysql_query:
@@ -208,26 +212,6 @@
       jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
   register: res_queryrelayserverid
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryshareexists.rowcount[0] == 0
-
-- name: PULSE/SHARE - Get relay server id from db
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
-    named_args:
-      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
-  register: res_queryrelayserverid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryshareexists.rowcount[0] == 0
 
 - name: PULSE/SHARE - Create cluster share in database if it did not exist
@@ -240,23 +224,6 @@
     query:
       - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryshareexists.rowcount[0] == 0
-
-- name: PULSE/SHARE - Create cluster share in database if it did not exist
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: pkgs
-    query:
-      - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryshareexists.rowcount[0] == 0
 
 - name: PULSE/SHARE - Find id of newly added share
@@ -269,24 +236,6 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
   register: res_querynewshare
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: PULSE/SHARE - Find id of newly added share
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: pkgs
-    query:
-      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
-  register: res_querynewshare
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
   community.mysql.mysql_query:
@@ -298,23 +247,6 @@
     query:
       - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryshareexists.rowcount[0] == 0
-
-- name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: pkgs
-    query:
-      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryshareexists.rowcount[0] == 0
 
 - name: PULSE/FILE_TRANSFER - Get relay ssh keys
@@ -355,26 +287,6 @@
     named_args:
       packageserver_uuid: '{{ ps_uuid }}'
   register: res_query
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: PULSE/IMAGING - Check if imaging server is registered
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - SELECT id FROM ImagingServer WHERE packageserver_uuid = %(packageserver_uuid)s
-    named_args:
-      packageserver_uuid: '{{ ps_uuid }}'
-  register: res_query
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: PULSE/IMAGING - Find Entity from GLPI
   community.mysql.mysql_query:
@@ -407,26 +319,6 @@
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryentityglpi.rowcount[0] != 0
-
-- name: PULSE/IMAGING - Find Entity from Imaging
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - SELECT id FROM Entity WHERE uuid = %(uuid)s
-    named_args:
-      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
-  register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryentityglpi.rowcount[0] != 0
 
 - name: PULSE/IMAGING - Insert entity in Imaging if it does not exist
@@ -439,23 +331,6 @@
     query:
       - INSERT INTO Entity (name, uuid) VALUES ('{{ ORGANISATION }} > {{ ENTITY }}', 'UUID{{ res_queryentityglpi.query_result[0][0].id }}')
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryentityimaging.rowcount[0] == 0
-
-- name: PULSE/IMAGING - Insert entity in Imaging if it does not exist
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - INSERT INTO Entity (name, uuid) VALUES ('{{ ORGANISATION }} > {{ ENTITY }}', 'UUID{{ res_queryentityglpi.query_result[0][0].id }}')
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryentityimaging.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update entity in Imaging if it already exists
@@ -468,23 +343,6 @@
     query:
       - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = {{ res_queryentityimaging.query_result[0][0].id }}
   when:
-    - PULSEMAIN_IP == ''
-    - res_queryentityimaging.rowcount[0] != 0
-
-- name: PULSE/IMAGING - Update entity in Imaging if it already exists
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = {{ res_queryentityimaging.query_result[0][0].id }}
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_queryentityimaging.rowcount[0] != 0
 
 - name: PULSE/IMAGING - Find Entity from Imaging
@@ -499,26 +357,6 @@
     named_args:
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
-  when:
-    - PULSEMAIN_IP == ''
-
-- name: PULSE/IMAGING - Find Entity from Imaging
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - SELECT id FROM Entity WHERE uuid = %(uuid)s
-    named_args:
-      uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
-  register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
 
 - name: PULSE/IMAGING - Insert imaging server in database if not registered
   community.mysql.mysql_query:
@@ -530,23 +368,6 @@
     query:
       - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
   when:
-    - PULSEMAIN_IP == ''
-    - res_query.rowcount[0] == 0
-
-- name: PULSE/IMAGING - Insert imaging server in database if not registered
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP != ''
     - res_query.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
@@ -559,21 +380,21 @@
     query:
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
-    - PULSEMAIN_IP == ''
     - res_query.rowcount[0] != 0
 
-- name: PULSE/IMAGING - Update imaging server in database if registered
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
+- name: PULSE/SHARE - Remove user connection to db from relay
+  community.mysql.mysql_user:
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: imaging
-    query:
-      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBUSER }}'
+    host: '{{ XMPP_DOMAIN }}'
+    state: absent
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
+  register: res_queryclusterid
   when:
     - PULSEMAIN_IP != ''
-    - res_query.rowcount[0] != 0
+  no_log: True
