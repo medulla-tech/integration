@@ -16,7 +16,7 @@
     state: latest
     pkg:
       - python3-PyMySQL
-      - python3-ldap
+      - python3.11-ldap
   when:
     - ansible_distribution == 'CentOS'
 

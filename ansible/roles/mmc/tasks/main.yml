@@ -21,7 +21,7 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - pulse2
+      - medulla
       - mmc-web-kiosk
       - python3-mmc-kiosk
       - mmc-web-urbackup
@@ -43,7 +43,7 @@
       - pulse-agent-installers
       - pulse2-uuid-resolver
       - pulse-xmpp-master-substitute
-      - pulse-debug-tools
+      - medulla-debug-tools
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
