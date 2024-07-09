@@ -59,6 +59,7 @@
     pkg:
       - python3.11-pyOpenSSL
       - python3.11-cryptography
+      - python3.11-cffi
   when:
     - ansible_distribution == 'RedHat'
 
