@@ -39,6 +39,7 @@
       - mmc-web-base
       - python3-mmc-xmppmaster
       - python3-mmc-guacamole
+      - python3-mmc-database
       - pulse-xmppmaster-agentplugins
       - pulse-agent-installers
       - pulse2-uuid-resolver
