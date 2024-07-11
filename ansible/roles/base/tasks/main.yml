@@ -62,7 +62,7 @@
     dest: '{{ PULSE4REPO_DEST }}'
 
 - name: BASE - Find out URL of SIVEO public key
-  ansible.builtin.command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
+  ansible.builtin.command: grep -m1 -ir 'gpgkey=' {{ PULSE4REPO_DEST }}
   register: grep_output
   ignore_errors: true
   when:
