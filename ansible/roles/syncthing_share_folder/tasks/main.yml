@@ -132,7 +132,7 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -154,7 +154,7 @@
   register: result
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
   retries: 10
@@ -183,7 +183,7 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
   register: result
@@ -195,7 +195,7 @@
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   register: pulsemaindeviceid
   when:
     - PULSEMAIN_IP != ''
@@ -205,7 +205,7 @@
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 

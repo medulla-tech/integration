@@ -184,7 +184,7 @@
     key: "{{ sshkey.ssh_public_key }}"
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -196,7 +196,7 @@
   register: pulsemain_sshkey
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 

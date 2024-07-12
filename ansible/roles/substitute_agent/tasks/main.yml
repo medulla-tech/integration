@@ -181,7 +181,7 @@
   with_items:
     - master-public-RSA.key
     - master-all-RSA.key
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
     - PYTHON_VERSION == 2

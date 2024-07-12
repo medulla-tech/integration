@@ -89,7 +89,7 @@
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -118,7 +118,7 @@
       'xmppmaster.*': 'ALL'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
   no_log: True
@@ -288,7 +288,7 @@
     state: absent
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   register: res_queryclusterid
   when:
     - PULSEMAIN_IP != ''
