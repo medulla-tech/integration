@@ -21,9 +21,9 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: MARIADB - Install tools needed for the setup
   ansible.builtin.yum:

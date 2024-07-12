@@ -22,7 +22,7 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
   when:
     - ansible_distribution == 'CentOS'
 
