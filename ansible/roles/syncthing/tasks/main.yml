@@ -63,6 +63,17 @@
     - { name: 'syncthing', home: '/var/lib/syncthing' }
     - { name: 'syncthing-depl', home: '/var/lib/syncthing-depl' }
 
+- name: SYNCTHING - Create config folder
+  ansible.builtin.file:
+    path: /var/lib/{{ item }}/{{ SYNCTHING_CONF_FOLDER }}
+    mode: 0755
+    state: directory
+    owner: '{{ item }}'
+    group: '{{ item }}'
+  with_items:
+    - syncthing
+    - syncthing-depl
+
 - name: SYNCTHING - Create log file
   ansible.builtin.file:
     path: /var/log/syncthing.log
@@ -85,29 +96,22 @@
     dest: /etc/logrotate.d/
     mode: '0644'
 
-- name: SYNCTHING - Force restart of service to generate config files
+- name: SYNCTHING - Make sure all services are stopped
   ansible.builtin.systemd:
     name: syncthing@{{ item }}
-    state: restarted
+    state: stopped
   with_items:
     - syncthing
     - syncthing-depl
 
-- name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
-  ansible.builtin.wait_for:
-    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+- name: SYNCTHING - Force restart of service to generate config files
+  ansible.builtin.systemd:
+    name: syncthing@syncthing-depl
+    state: restarted
 
 - name: SYNCTHING - Pause for up to 300 seconds to enable syncthing-depl start
   ansible.builtin.wait_for:
     path: /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
-
-- name: SYNCTHING - Get local device id for syncthing
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  register: localdeviceid
-
-- name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
-  ansible.builtin.set_fact:
-    LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
 
 - name: SYNCTHING - Get local device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
@@ -116,24 +120,6 @@
 - name: SYNCTHING - Set LOCALDEPL_DEVICE_ID for syncthing-depl
   ansible.builtin.set_fact:
     LOCALDEPL_DEVICE_ID: "{{ localdepldeviceid.stdout }}"
-
-- name: SYNCTHING - Find pulsemain device id for syncthing
-  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
-  register: pulsemaindeviceid
-  when:
-    - STMAIN_HOST != ''
-
-- name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
-  ansible.builtin.set_fact:
-    PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
-  when:
-    - STMAIN_HOST != ''
 
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
@@ -147,6 +133,57 @@
 - name: SYNCTHING - Set PULSEMAINDEPL_DEVICE_ID for syncthing-depl
   ansible.builtin.set_fact:
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  when:
+    - STMAIN_HOST != ''
+
+- name: SYNCTHING - Configure syncthing-depl
+  ansible.builtin.template:
+    src: config-depl.xml.j2
+    dest: /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+    mode: '0644'
+    owner: syncthing-depl
+    backup: yes
+  when:
+    - SYNCTHING_DBINITIALISED is not defined
+  register: conf_init
+  notify:
+    - SYNCTHING - Restart syncthing
+
+- name: SYNCTHING - Force restart of service to use new config files
+  ansible.builtin.meta: flush_handlers
+
+- name: SYNCTHING - Force restart of service to generate config files
+  ansible.builtin.systemd:
+    name: syncthing@syncthing
+    state: restarted
+
+- name: SYNCTHING - Pause for up to 300 seconds to enable syncthing start
+  ansible.builtin.wait_for:
+    path: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+
+- name: SYNCTHING - Get local device id for syncthing
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
+  register: localdeviceid
+
+- name: SYNCTHING - Set LOCAL_DEVICE_ID for syncthing
+  ansible.builtin.set_fact:
+    LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
+
+- name: SYNCTHING - Find pulsemain device id for syncthing
+  ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  register: pulsemaindeviceid
+  when:
+    - STMAIN_HOST != ''
+
+- name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
+  ansible.builtin.set_fact:
+    PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
@@ -226,14 +263,11 @@
 
 - name: SYNCTHING - Configure syncthing
   ansible.builtin.template:
-    src: '{{ item.src }}'
-    dest: /var/lib/{{ item.inst }}/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
+    src: config.xml.j2
+    dest: /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
     mode: '0644'
-    owner: '{{ item.inst }}'
+    owner: syncthing
     backup: yes
-  with_items:
-    - { src: config.xml.j2, inst: syncthing }
-    - { src: config-depl.xml.j2, inst: syncthing-depl }
   when:
     - SYNCTHING_DBINITIALISED is not defined
   register: conf_init
