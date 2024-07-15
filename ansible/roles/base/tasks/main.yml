@@ -242,3 +242,8 @@
       - xmlstarlet
   when:
     - ansible_distribution == 'Debian'
+
+- name: BASE - Make sure we use the right python version
+  ansible.builtin.command: alternatives --set python3 /usr/bin/python{{ PYTHON_VERSION }}
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
