@@ -99,6 +99,13 @@
 
 - name: GRAFANA - Reset admin password
   ansible.builtin.command: grafana-cli admin reset-admin-password '{{ GRAFANAADMINPASSWD }}'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: GRAFANA - Reset admin password
+  ansible.builtin.command: grafana-cli --homepath {{ GRAFANA_HOMEPATH }} admin reset-admin-password '{{ GRAFANAADMINPASSWD }}'
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: GRAFANA - Get adminkey api key if present
   ansible.builtin.uri:
