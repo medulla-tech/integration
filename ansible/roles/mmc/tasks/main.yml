@@ -156,15 +156,11 @@
   when:
     - ansible_distribution == 'Debian'
 
-- name: MMC/LDAP - Check if mmc schema is already present in directory
-  ansible.builtin.command: "ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config -LLL '(&(objectclass=olcSchemaConfig)(cn=*mmc))'"
-  register: res_ldapsearch
-  ignore_errors: true
-
 - name: MMC/LDAP - Import mmc schemas to ldap server
-  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
-  when:
-    - res_ldapsearch.stdout | length == 0
+  ansible.builtin.command: 'ldapadd -c -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
 
 - name: MMC/LDAP - Add MedullaUsers group to local LDAP directory
   community.general.ldap_entry:

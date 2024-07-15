@@ -136,11 +136,14 @@
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Add entry schema
-  ansible.builtin.command: '{{ item }}'
+  ansible.builtin.command: ldapadd -c -Q -Y EXTERNAL -H ldapi:/// -f '{{ item }}'
   with_items:
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+  - /etc/openldap/schema/cosine.ldif
+  - /etc/openldap/schema/nis.ldif
+  - /etc/openldap/schema/inetorgperson.ldif
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
