@@ -22,4 +22,4 @@
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
