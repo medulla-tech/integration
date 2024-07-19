@@ -30,7 +30,17 @@
   ansible.builtin.file:
     path: /etc/glpi/config/config_db.php
     state: absent
-    
+  when:
+    - ansible_distribution == 'Debian'
+
+
+- name: GLPI - Delete previous config file
+  ansible.builtin.file:
+    path: /etc/glpi/config_db.php
+    state: absent
+  when:
+    - ansible_distribution == 'RedHat'
+
 - name: GLPI - Delete marker set for database initialisation
   ansible.builtin.file:
     path: /var/lib/glpi/.dbinitialised
