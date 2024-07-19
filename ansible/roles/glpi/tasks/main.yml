@@ -346,17 +346,22 @@
   ansible.builtin.file:
     path: /usr/share/glpi/install/install.php
     state: absent
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: GLPI - Prevent glpi from begin automatically upgraded
   ansible.builtin.dpkg_selections:
     name: glpi
     selection: hold
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: GLPI - Prevent fusioninventory-for-glpi from begin automatically upgraded
   ansible.builtin.dpkg_selections:
     name: fusioninventory-for-glpi
     selection: hold
   when:
+    - ansible_distribution == 'Debian'
     - GLPI_PLUGIN == 'fusioninventory'
 
 - name: GLPI - Prevent glpi-inventory-plugin from begin automatically upgraded
@@ -364,6 +369,7 @@
     name: glpi-inventory-plugin
     selection: hold
   when:
+    - ansible_distribution == 'Debian'
     - GLPI_PLUGIN == 'glpiinventory'
 
 - name: GLPI - Set url_base in glpi_configs
