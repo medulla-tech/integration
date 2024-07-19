@@ -13,15 +13,14 @@
     state: stopped
   ignore_errors: true
 
-- name: EJABBERD - Delete /var/lib/ejabberd
-  ansible.builtin.file:
-    path: /var/lib/ejabberd
-    state: absent
+- name: EJABBERD - List mnesia files to be deleted
+  ansible.builtin.find:
+    paths: /var/lib/ejabberd
+    file_type: any
+  register: delete_mnesia_files
 
-- name: EJABBERD - Create /var/lib/ejabberd
+- name: EJABBERD - Delete mnesia files
   ansible.builtin.file:
-    path: /var/lib/ejabberd
-    state: directory
-    mode: '0755'
-    owner: ejabberd
-    group: ejabberd
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ delete_mnesia_files.files }}"
