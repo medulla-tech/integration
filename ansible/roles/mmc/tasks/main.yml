@@ -45,6 +45,7 @@
       - pulse2-uuid-resolver
       - pulse-xmpp-master-substitute
       - medulla-debug-tools
+      - python3.11-xlwt
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
