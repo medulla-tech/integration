@@ -26,6 +26,16 @@
   when:
     - ansible_distribution == 'CentOS'
 
+
+- name: RELAY_AGENT - Install relay server packages
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pulse-xmpp-agent-relay
+      - medulla-debug-tools
+  when:
+    - ansible_distribution == 'RedHat'
+
 - name: RELAY_AGENT - Install relay server packages
   ansible.builtin.apt:
     state: latest
