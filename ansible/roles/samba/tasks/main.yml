@@ -23,7 +23,7 @@
       - samba
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: SAMBA - Install samba
   ansible.builtin.apt:
