@@ -1,1 +1,2 @@
 PYTHON_BASEDIR: /usr/lib/python3/dist-packages
+SYNCTHING_CONF_FOLDER: '.config'
