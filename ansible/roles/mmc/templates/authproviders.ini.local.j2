@@ -1,0 +1,8 @@
+[{{ OIDC_PROVIDER }}]
+{% if OIDC_PROVIDER_LOGOURL != '' %}
+logoUrl = {{ OIDC_PROVIDER_LOGOURL }}
+{% endif %}
+urlProvider = {{ OIDC_PROVIDER_URL }}
+clientId = {{ OIDC_PROVIDER_CLIENTID }}
+clientSecret = {{ OIDC_PROVIDER_CLIENTSECRET }}
+lmcACL = {{ OIDC_DEFAULT_ACL }}
