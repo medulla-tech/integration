@@ -19,8 +19,11 @@ INTERFACE: '{{ ansible_default_ipv4.interface }}'
 NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 CLIENTS_SSH_PORT: 22
+CLIENTS_VNC_DISABLED: false
 CLIENTS_VNC_PORT: 5900
 CLIENTS_VNC_PASSWORD: '' # 8 character string. Must be vaulted
+CLIENTS_RDP_DISABLED: false
+CLIENTS_FUSIONINVENTORY_DISABLED: false
 DBHOST: localhost
 DBPORT: 3306
 DBUSER: mmc
@@ -28,3 +31,5 @@ DBPASSWORD: '' # 12 character string. Must be vaulted
 URBACKUP_SERVERADDRESS: '{{ ansible_fqdn }}'
 URBACKUP_SERVERPORT: 55415
 LINUX_DISTROS_AGENT_SUPPORT: 'debian-stretch,debian-bookworm'
+IMAGING_DISABLED: false
+INTERNET_DISABLED: false
