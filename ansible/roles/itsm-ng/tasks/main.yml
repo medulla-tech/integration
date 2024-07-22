@@ -101,13 +101,13 @@
     state: present
     priv:
       '{{ ITSMNG_DBNAME }}.*:ALL'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ ITSMNG_DBHOST }}', when: (ITSMNG_DBHOST != 'localhost') }
+    - { host: '{{ ITSMNG_DBHOST }}', when: '{{ ITSMNG_DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: ITSM-NG - Reset ITSMNG_CHANGED variable

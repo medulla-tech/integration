@@ -85,13 +85,13 @@
     append_privs: true
     priv:
       'base_wsusscn2.*': 'ALL'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ DBHOST }}', when: (DBHOST != 'localhost') }
+    - { host: '{{ DBHOST }}', when: '{{ DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: MEDULLA_OSUPDATES - Create winupdates folder

@@ -288,13 +288,13 @@
       'kiosk.*': 'ALL'
       'urbackup.*': 'ALL'
       'updates.*': 'ALL'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ DBHOST }}', when: (DBHOST != 'localhost') }
+    - { host: '{{ DBHOST }}', when: '{{ DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: MMC - Set marker for database initialisation
