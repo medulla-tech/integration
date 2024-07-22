@@ -29,7 +29,19 @@
       - xxd
       - openssl
   when:
-    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-PyMySQL
+      - cronie
+      - crudini
+      - vim-common
+      - openssl
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: PULSE - Install tools needed for the setup
   ansible.builtin.apt:
