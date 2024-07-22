@@ -25,6 +25,9 @@ guacamole_baseurl = http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/cl
 request_type = public
 public_ip = {{ PUBLIC_IP }}
 {% endif %}
+{% if INTERNET_DISABLED %}
+geolocalisation = False
+{% endif %}
 
 [plugin]
 pluginlist = manage_scheduler_relay, guacamoleconf, applicationdeploymentjson, downloadfileexpert, downloadfile, guacamole, reverse_ssh_on
