@@ -81,6 +81,7 @@
   ansible.builtin.copy:
     src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
     dest: "/etc/ejabberd/{{ XMPP_DOMAIN }}.pem"
+    mode: '0644'
     remote_src: yes
 
 - name: EJABBERD - Force restart of service to build ejabberd domain

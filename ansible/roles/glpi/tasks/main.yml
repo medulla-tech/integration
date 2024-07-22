@@ -30,7 +30,7 @@
       - php-mbstring
       - php-intl
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: GLPI - Install glpi
   ansible.builtin.apt:
@@ -52,7 +52,7 @@
       - glpi-plugin-fusioninventory-{{ GLPI_VERSION }}*
       - glpi-plugin-fusioninventory
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
     - GLPI_PLUGIN == 'fusioninventory'
 
 - name: GLPI - Install Fusion Inventory
@@ -75,10 +75,10 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
-      - python3-netaddr
+      - python3.11-PyMySQL
+      - python3.11-netaddr
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: GLPI - Install tools needed for the setup
   ansible.builtin.apt:
@@ -113,13 +113,13 @@
   with_items:
     - localhost
     - '{{ IP_ADDRESS }}'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ GLPI_DBHOST }}', when: (GLPI_DBHOST != 'localhost') }
+    - { host: '{{ GLPI_DBHOST }}', when: '{{ GLPI_DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: GLPI - Reset GLPI_CHANGED variable
@@ -346,17 +346,22 @@
   ansible.builtin.file:
     path: /usr/share/glpi/install/install.php
     state: absent
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: GLPI - Prevent glpi from begin automatically upgraded
   ansible.builtin.dpkg_selections:
     name: glpi
     selection: hold
+  when:
+    - ansible_distribution == 'Debian'
 
 - name: GLPI - Prevent fusioninventory-for-glpi from begin automatically upgraded
   ansible.builtin.dpkg_selections:
     name: fusioninventory-for-glpi
     selection: hold
   when:
+    - ansible_distribution == 'Debian'
     - GLPI_PLUGIN == 'fusioninventory'
 
 - name: GLPI - Prevent glpi-inventory-plugin from begin automatically upgraded
@@ -364,6 +369,7 @@
     name: glpi-inventory-plugin
     selection: hold
   when:
+    - ansible_distribution == 'Debian'
     - GLPI_PLUGIN == 'glpiinventory'
 
 - name: GLPI - Set url_base in glpi_configs

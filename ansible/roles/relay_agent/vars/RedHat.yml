@@ -1,1 +1,2 @@
-PYTHON_BASEDIR: /usr/lib/python3/site-packages
+PYTHON_BASEDIR: /usr/lib/python3.11/site-packages
+SYNCTHING_CONF_FOLDER: '.local/state'

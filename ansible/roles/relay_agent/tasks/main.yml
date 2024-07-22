@@ -26,6 +26,16 @@
   when:
     - ansible_distribution == 'CentOS'
 
+
+- name: RELAY_AGENT - Install relay server packages
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - pulse-xmpp-agent-relay
+      - medulla-debug-tools
+  when:
+    - ansible_distribution == 'RedHat'
+
 - name: RELAY_AGENT - Install relay server packages
   ansible.builtin.apt:
     state: latest
@@ -39,9 +49,9 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: RELAY_AGENT - Install tools needed for the setup
   ansible.builtin.apt:
@@ -73,10 +83,10 @@
     dest: "/etc/hosts"
     line: "{{ item.line }}"
     regexp: "{{ item.regex }}"
-  when: "item.when"
+  when: item.when
   with_items:
-    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: PULSEMAIN_IP != '' }
-    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: ansible_hostname != 'pulse' }
+    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: '{{ PULSEMAIN_IP != "" }}' }
+    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: '{{ ansible_hostname != "pulse" }}' }
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
@@ -89,7 +99,7 @@
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -118,7 +128,7 @@
       'xmppmaster.*': 'ALL'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
   no_log: True
@@ -288,7 +298,7 @@
     state: absent
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   register: res_queryclusterid
   when:
     - PULSEMAIN_IP != ''

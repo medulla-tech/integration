@@ -1,5 +1,5 @@
 APACHE_DAEMON: httpd
 APACHE_CONF_PATH: /etc/httpd/conf.d
 CONTRIB_PATH: /usr/share/doc/pulse2/contrib
-ITSM_VIEW_PATH: /usr/share/doc/pulse2-common/contrib/
+ITSM_VIEW_PATH: /usr/share/doc/pulse2/contrib/
 ITSM_VERSION: '9.5'

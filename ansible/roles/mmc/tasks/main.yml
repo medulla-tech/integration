@@ -21,7 +21,7 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - pulse2
+      - medulla
       - mmc-web-kiosk
       - python3-mmc-kiosk
       - mmc-web-urbackup
@@ -39,11 +39,13 @@
       - mmc-web-base
       - python3-mmc-xmppmaster
       - python3-mmc-guacamole
+      - python3-mmc-database
       - pulse-xmppmaster-agentplugins
       - pulse-agent-installers
       - pulse2-uuid-resolver
       - pulse-xmpp-master-substitute
-      - pulse-debug-tools
+      - medulla-debug-tools
+      - python3.11-xlwt
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -112,7 +114,7 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
   when:
     - ansible_distribution == 'CentOS'
 
@@ -155,15 +157,11 @@
   when:
     - ansible_distribution == 'Debian'
 
-- name: MMC/LDAP - Check if mmc schema is already present in directory
-  ansible.builtin.command: "ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config -LLL '(&(objectclass=olcSchemaConfig)(cn=*mmc))'"
-  register: res_ldapsearch
-  ignore_errors: true
-
 - name: MMC/LDAP - Import mmc schemas to ldap server
-  ansible.builtin.command: 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
-  when:
-    - res_ldapsearch.stdout | length == 0
+  ansible.builtin.command: 'ldapadd -c -Q -Y EXTERNAL -H ldapi:/// -f {{ CONTRIB_PATH }}/base/mmc.ldif'
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
 
 - name: MMC/LDAP - Add MedullaUsers group to local LDAP directory
   community.general.ldap_entry:
@@ -290,13 +288,13 @@
       'kiosk.*': 'ALL'
       'urbackup.*': 'ALL'
       'updates.*': 'ALL'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ DBHOST }}', when: (DBHOST != 'localhost') }
+    - { host: '{{ DBHOST }}', when: '{{ DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: MMC - Set marker for database initialisation

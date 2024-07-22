@@ -66,10 +66,10 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
       - python3-netaddr
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: ITSM-NG - Install tools needed for the setup
   ansible.builtin.apt:
@@ -101,13 +101,13 @@
     state: present
     priv:
       '{{ ITSMNG_DBNAME }}.*:ALL'
-  when: "item.when"
+  when: item.when
   with_items:
     - { host: 'localhost', when: true }
-    - { host: '{{ ITSMNG_DBHOST }}', when: (ITSMNG_DBHOST != 'localhost') }
+    - { host: '{{ ITSMNG_DBHOST }}', when: '{{ ITSMNG_DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
-    - { host: '{{ PUBLIC_IP }}', when: (PUBLIC_IP != '') }
+    - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
 - name: ITSM-NG - Reset ITSMNG_CHANGED variable

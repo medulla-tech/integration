@@ -62,7 +62,7 @@
     dest: '{{ PULSE4REPO_DEST }}'
 
 - name: BASE - Find out URL of SIVEO public key
-  ansible.builtin.command: grep -m1 -ir 'gpgkey=' /etc/yum.repos.d/pulse4.repo
+  ansible.builtin.command: grep -m1 -ir 'gpgkey=' {{ PULSE4REPO_DEST }}
   register: grep_output
   ignore_errors: true
   when:
@@ -184,7 +184,7 @@
     key: "{{ sshkey.ssh_public_key }}"
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -196,7 +196,7 @@
   register: pulsemain_sshkey
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
   when:
     - PULSEMAIN_IP != ''
 
@@ -220,16 +220,16 @@
     dest: "/etc/hosts"
     line: "{{ item.line }}"
     regexp: "{{ item.regex }}"
-  when: "item.when"
+  when: item.when
   with_items:
-    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: PULSEMAIN_IP != '' }
-    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: ansible_hostname != 'pulse' }
+    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: '{{ PULSEMAIN_IP != "" }}' }
+    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: '{{ ansible_hostname != "pulse" }}' }
 
 - name: BASE - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-PyMySQL
+      - python3.11-PyMySQL
       - xmlstarlet
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
@@ -242,3 +242,8 @@
       - xmlstarlet
   when:
     - ansible_distribution == 'Debian'
+
+- name: BASE - Make sure we use the right python version
+  ansible.builtin.command: alternatives --set python3 /usr/bin/python{{ PYTHON_VERSION }}
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'

@@ -7,6 +7,12 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: SYNCTHING - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
 - name: SYNCTHING - Stop service for deleting any previous configuration
   ansible.builtin.systemd:
     name: syncthing@{{ item }}

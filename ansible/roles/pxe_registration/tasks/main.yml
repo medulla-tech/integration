@@ -26,7 +26,7 @@
       - pulse2-utilities
     state: latest
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PXE_REGISTRATION - Install tftp server and pulse2-register-pxe
   ansible.builtin.apt:

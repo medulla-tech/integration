@@ -55,7 +55,9 @@
   ansible.builtin.yum:
     state: latest
     pkg:
-      - python3-ldap
+      - python3.11-ldap
+      - python3.11-asn1
+      - python3.11-pyasn1-modules
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -81,6 +83,21 @@
     - LDAP - Restart slapd
   when:
     - ansible_distribution == 'CentOS'
+
+
+- name: LDAP - Configure ldap olcDatabase
+  ansible.builtin.lineinfile:
+    path: '/etc/openldap/slapd.d/cn=config/olcDatabase={2}mdb.ldif'
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+    state: 'present'
+  with_items:
+  - { regexp: '^olcSuffix: .*$' , line: 'olcSuffix: {{ LDAP_BASEDN }}' }
+  - { regexp: '^olcRootDN: .*$', line: 'olcRootDN: cn=admin,{{ LDAP_BASEDN }}' }
+  - { regexp: '^olcRootPW: .*$', line: 'olcRootPW: {{ LDAPADMINPASSWD }}' }
+  when:
+    - ansible_distribution == 'RedHat'
+
 
 - name: LDAP - Copy ldap dbconfig
   ansible.builtin.copy:
@@ -117,14 +134,17 @@
       dc: '{{ LDAP_DOMAIN.split(".", 1)[0] }}'
       o: '{{ LDAP_DOMAIN }}'
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Add entry schema
-  ansible.builtin.command: '{{ item }}'
+  ansible.builtin.command: ldapadd -c -Q -Y EXTERNAL -H ldapi:/// -f '{{ item }}'
   with_items:
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif'
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif'
-  - 'ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif'
+  - /etc/openldap/schema/cosine.ldif
+  - /etc/openldap/schema/nis.ldif
+  - /etc/openldap/schema/inetorgperson.ldif
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20)
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
