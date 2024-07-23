@@ -50,14 +50,6 @@
   when:
     - ansible_distribution == "Debian"
 
-- name: APACHE - Enable and disable apache modules
-  ansible.builtin.copy:
-    src: nopt.conf
-    dest: /etc/systemd/system/{{ APACHE_DAEMON }}.service.d/
-    mode: '0644'
-  notify:
-    - APACHE - Restart apache
-
 - name: APACHE - Ensure apache is running
   ansible.builtin.systemd:
     name: '{{ APACHE_DAEMON }}'
