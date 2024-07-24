@@ -25,3 +25,4 @@ IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 PUBLIC_IP: ''
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
+PACKAGES_FOLDER: /var/lib/pulse2/packages
