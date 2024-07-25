@@ -9,11 +9,20 @@
 
 # Send the inventory directly or via XMPP
 # via_xmpp = True
+{% if CLIENTS_CONF_INVENTORY_VIAXMPP != ''  %}
+via_xmpp = {{ CLIENTS_CONF_INVENTORY_VIAXMPP }}
+{% endif  %}
 # If via_xmpp = False, the url to send the inventory to
 # eg. urlinventory = http:\\pulse01:9999\
 # urlinventory =
+{% if CLIENTS_CONF_INVENTORY_URLINVENTORY != ''  %}
+urlinventory = {{ CLIENTS_CONF_INVENTORY_URLINVENTORY }}
+{% endif  %}
 # The collector can either be glpi or ocs (ocs supported on Windows clients only)
 # collector = glpi
+{% if CLIENTS_CONF_INVENTORY_COLLECTOR != ''  %}
+collector = {{ CLIENTS_CONF_INVENTORY_COLLECTOR }}
+{% endif  %}
 # If glpiagent, it will use techlib agent, if other or not provided it will use the old fusioninventory agent
 {% if GLPI_PLUGIN == 'glpiinventory' %}
 agent = glpiagent

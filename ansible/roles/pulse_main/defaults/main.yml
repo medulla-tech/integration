@@ -33,3 +33,7 @@ URBACKUP_SERVERPORT: 55415
 LINUX_DISTROS_AGENT_SUPPORT: 'debian-stretch,debian-bookworm'
 IMAGING_DISABLED: false
 INTERNET_DISABLED: false
+# The following settings will set a specific configuration for clients inventory plugin. 
+CLIENTS_CONF_INVENTORY_VIAXMPP: ''
+CLIENTS_CONF_INVENTORY_URLINVENTORY: ''
+CLIENTS_CONF_INVENTORY_COLLECTOR: ''
