@@ -59,7 +59,7 @@
   notify:
     - PXE_REGISTRATION - Restart tftp server
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PXE_REGISTRATION - Ensure tftp server is running
   ansible.builtin.systemd:

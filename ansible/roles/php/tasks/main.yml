@@ -74,6 +74,14 @@
   notify:
     - PHP - Restart php-fpm
 
+- name: PHP - Use /tmp for file uploads
+  ansible.builtin.copy:
+    src: nopt.conf
+    dest: /etc/systemd/system/{{ PHP_DAEMON }}.service.d/
+    mode: '0644'
+  notify:
+    - PHP - Restart php-fpm
+
 - name: PHP - Ensure php-fpm is running
   ansible.builtin.systemd:
     name: '{{ PHP_DAEMON }}'

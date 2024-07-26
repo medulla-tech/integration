@@ -1,5 +1,9 @@
 [main]
+{% if URBACKUP_DISABLED %}
+disable = 1
+{% else %}
 disable = 0
+{% endif %}
 
 [database]
 dbhost = {{ DBHOST }}

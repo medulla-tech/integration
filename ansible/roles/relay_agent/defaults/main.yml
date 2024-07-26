@@ -21,3 +21,4 @@ DBPASSWORD: '' # 12 character string. Must be vaulted
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
+INTERNET_DISABLED: false

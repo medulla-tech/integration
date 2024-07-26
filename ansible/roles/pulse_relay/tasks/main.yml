@@ -34,6 +34,49 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: PULSE/PACKAGES - Check if /var/lib/pulse2/packages is a symlink
+  ansible.builtin.stat:
+    path: /var/lib/pulse2/packages
+  register: packages_link
+  when:
+    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+
+- name: PULSE/PACKAGES - Create {{ PACKAGES_FOLDER }} folder
+  ansible.builtin.file:
+    path: '{{ PACKAGES_FOLDER }}'
+    state: directory
+    mode: '0755'
+  when:
+    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - packages_link.stat.islnk is not defined
+
+- name: PULSE/PACKAGES - Copy contents of /var/lib/pulse2/packages folder to {{ PACKAGES_FOLDER }}
+  ansible.builtin.copy:
+    src: /var/lib/pulse2/packages/
+    dest: '{{ PACKAGES_FOLDER }}'
+    remote_src: yes
+  when:
+    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - packages_link.stat.islnk is not defined
+
+- name: PULSE/PACKAGES - Delete copied packages
+  ansible.builtin.file:
+    path: /var/lib/pulse2/packages
+    state: absent
+  when:
+    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - packages_link.stat.islnk is not defined
+
+- name: PULSE/PACKAGES - Create /var/lib/pulse2/packages link pointing to {{ PACKAGES_FOLDER }}
+  ansible.builtin.file:
+    src: '{{ PACKAGES_FOLDER }}'
+    dest: /var/lib/pulse2/packages
+    state: link
+    force: yes
+  when:
+    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - packages_link.stat.islnk is not defined
+
 - name: PULSE/GUACAMOLE - Setup apache for guacamole on main pulse
   ansible.builtin.template:
     src: guacamole.conf.j2

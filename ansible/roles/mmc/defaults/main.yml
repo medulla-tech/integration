@@ -47,3 +47,12 @@ URBACKUP_API_PASSWORD: '' # URBACKUP_API_PASSWORD comes from urbackup role
 PYTHON_VERSION: 3
 MASTER_TOKEN: '' # 32 character string. Must be vaulted
 INITIALISE_DB: true
+# For adding a OIDC provider the following section must be defined. Leaving OIDC_PROVIDER empty will not setup any OIDC provider
+OIDC_PROVIDER: '' # Name given to the OIDC provider
+OIDC_PROVIDER_LOGOURL: '' # Can be left empty for default logo
+OIDC_PROVIDER_URL: ''
+OIDC_PROVIDER_CLIENTID: ''
+OIDC_PROVIDER_CLIENTSECRET: ''
+OIDC_DEFAULT_ACL: 'base#main#default/'
+URBACKUP_DISABLED: false
+IMAGING_DISABLED: false

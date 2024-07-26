@@ -29,7 +29,19 @@
       - xxd
       - openssl
   when:
-    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    - ansible_distribution == 'CentOS'
+
+- name: PULSE - Install tools needed for the setup
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-PyMySQL
+      - cronie
+      - crudini
+      - vim-common
+      - openssl
+  when:
+    - ansible_distribution == 'RedHat'
 
 - name: PULSE - Install tools needed for the setup
   ansible.builtin.apt:
@@ -151,14 +163,44 @@
     - updatebackupclient
     - inventory
 
+- name: PULSE/AGENT - Initial setup options
+  ansible.builtin.set_fact:
+    generation_options: '--conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --ssh-port={{ CLIENTS_SSH_PORT }}'
+
 - name: PULSE/AGENT - Generate DES-encrypted VNC password
   ansible.builtin.shell: echo -n {{ CLIENTS_VNC_PASSWORD }} | openssl enc -des-cbc -provider legacy --nopad --nosalt -K e84ad660c4721ae0 -iv 0000000000000000 | xxd -p
   register: vnc_password_des
+  when:
+    - not CLIENTS_VNC_DISABLED
+
+- name: PULSE/AGENT - Append VNC options to setup
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --vnc-port={{ CLIENTS_VNC_PORT }} --vnc-password={{ vnc_password_des.stdout }}' }}"
+  when:
+    - not CLIENTS_VNC_DISABLED
+
+- name: PULSE/AGENT - Append VNC options to setup 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --disable-vnc' }}"
+  when:
+    - CLIENTS_VNC_DISABLED
+
+- name: PULSE/AGENT - Append RDP options to setup 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --disable-rdp' }}"
+  when:
+    - CLIENTS_RDP_DISABLED
+
+- name: PULSE/AGENT - Append FusionInventory options to setup 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --disable-inventory' }}"
+  when:
+    - CLIENTS_FUSIONINVENTORY_DISABLED
 
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
   with_items:
-    - /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }} --vnc-password={{ vnc_password_des.stdout }}
+    - /var/lib/pulse2/clients/generate-pulse-agent.sh {{ generation_options }}
     - /var/lib/pulse2/clients/generate-agent-package
 
 - name: PULSE/AGENT - Create the quick action that will deploy updatebackupclient.ini to the machines
@@ -172,7 +214,7 @@
       - INSERT IGNORE INTO xmppmaster.qa_custom_command (user, os, namecmd, customcmd, description) VALUES ('allusers', 'windows', 'Deploy updatebackupclient.ini file', 'powershell.exe "$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ URBACKUP_SERVERADDRESS }} {0}backup_port = {{ URBACKUP_SERVERPORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent"', 'Copy urbackup installation config file to client machine')
 
 - name: PULSE/AGENT - Generate minimal agent
-  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --conf-xmppserver={{ SERVER_FQDN }} --conf-xmpppasswd={{ XMPP_MASTER_PASSWORD }} --aes-key={{ AES_KEY }} --xmpp-passwd={{ XMPP_MASTER_PASSWORD }} --chat-domain={{ XMPP_DOMAIN }} --base-url=http://{{ SERVER_FQDN }}/downloads --ssh-port={{ CLIENTS_SSH_PORT }} --vnc-port={{ CLIENTS_VNC_PORT }} --vnc-password={{ vnc_password_des.stdout }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --base-url=http://{{ SERVER_FQDN }}/downloads {{ generation_options }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
   ignore_errors: true
 
 - name: PULSE/PACKAGESERVER - Configure samba for package server
@@ -204,6 +246,8 @@
   ansible.builtin.user:
     name: drivers
     shell: /bin/false
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Configure samba for drivers
   ansible.builtin.blockinfile:
@@ -213,6 +257,8 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
   notify:
     - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Configure samba for postinst
   ansible.builtin.blockinfile:
@@ -222,6 +268,8 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK postinst"
   notify:
     - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Configure samba for tools
   ansible.builtin.blockinfile:
@@ -231,26 +279,29 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK tools"
   notify:
     - PULSE - Restart samba
-
-- name: PULSE/IMAGING - Create user drivers with no home and group
-  ansible.builtin.user:
-    name: drivers
-    shell: /bin/false
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Define Samba drivers Password
   ansible.builtin.shell: >
     (pdbedit --user=drivers 2>&1 > /dev/null)
     || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
     | smbpasswd -s -a drivers
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
     src: /etc/mmc/pulse2/package-server/package-server.ini.local
   register: psinifile
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Find Package Server UUID
   ansible.builtin.set_fact:
     ps_uuid: "{{ psinifile['content'] | b64decode | regex_search('uuid = (.+)', '\\1') | first }}"
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Check if imaging server is registered
   community.mysql.mysql_query:
@@ -264,6 +315,8 @@
     named_args:
       packageserver_uuid: '{{ ps_uuid }}'
   register: res_query
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Find Entity from GLPI
   community.mysql.mysql_query:
@@ -277,6 +330,8 @@
     named_args:
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
   register: res_queryentityglpi
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Update entity in Imaging if it already exists
   community.mysql.mysql_query:
@@ -288,6 +343,7 @@
     query:
       - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = 1
   when:
+    - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
 
 - name: PULSE/IMAGING - Find Entity from Imaging
@@ -303,6 +359,7 @@
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
   when:
+    - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
 
 - name: PULSE/IMAGING - Insert imaging server in database if not registered
@@ -315,6 +372,7 @@
     query:
       - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://pulse:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
   when:
+    - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
@@ -327,6 +385,7 @@
     query:
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://pulse:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
+    - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0
 
 - name: PULSE/AGENT - Install packages for deploying agent
@@ -357,6 +416,8 @@
     - Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
     - Install-Module -Name PSWSMan
     - Install-WSMan
+  when:
+    - not INTERNET_DISABLED
 
 - name: PULSE/AGENT - Copy agent deployment script
   ansible.builtin.copy:
