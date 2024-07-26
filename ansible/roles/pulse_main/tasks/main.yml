@@ -175,7 +175,7 @@
 
 - name: PULSE/AGENT - Append VNC options to setup
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --vnc-port={{ CLIENTS_VNC_PORT }} --vnc-password={{ vnc_password_des.stdout }}' }}"
+    generation_options: "{{ generation_options + ' --vnc-port=' + CLIENTS_VNC_PORT | string + ' --vnc-password=' + vnc_password_des.stdout }}"
   when:
     - not CLIENTS_VNC_DISABLED
 
