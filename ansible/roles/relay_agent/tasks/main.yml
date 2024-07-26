@@ -293,7 +293,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: 'xmppmaster'
     query:
-      - INSERT INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ res_queryrelayserverid.query_result[0][0].id }})
+      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ res_queryrelayserverid.query_result[0][0].id }})
   with_items:
     - { type: 'assessor', jid: 'master_asse@pulse' }
     - { type: 'subscription', jid: 'master_subs@pulse' }
