@@ -1,0 +1,92 @@
+relay:
+  children:
+    base:
+      hosts:
+        base:
+    mariadb:
+      hosts:
+        mariadb:
+    local_certs:
+      hosts:
+        local_certs:
+    ejabberd:
+      hosts:
+        ejabberd:
+    apache:
+      hosts:
+        apache:
+    syncthing:
+      hosts:
+        syncthing:
+    tomcat:
+      hosts:
+        tomcat:
+    guacamole:
+      hosts:
+        guacamole:
+    nfs:
+      hosts:
+        nfs:
+    pulse_packageserver:
+      hosts:
+        pulse_packageserver:
+    pxe_registration:
+      hosts:
+        pxe_registration:
+    samba:
+      hosts:
+        samba:
+    relay_agent:
+      hosts:
+        relay_agent:
+    pulse_relay:
+      hosts:
+        pulse_relay:
+    pulse_imaging:
+      hosts:
+        pulse_imaging:
+  vars:
+    ansible_user: root
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+
+all:
+  vars:
+    PULSEMAIN_IP: 172.18.0.18
+    PULSE4REPO_URL: https://apt.siveo.net/stable.sources
+    ROOT_PASSWORD: MedullaDocker
+    # ITSM_TYPE: glpi
+    # GLPI_VERSION: 9.5
+    # GLPI_PLUGIN: fusioninventory
+    # ITSM_WRITEABLE: false
+    AES_KEY: x8NrBRG0fCG8F6T0ANUCeEU8MeumbJhC
+    DRIVERS_PASSWORD: 5bmj2AB511oc
+    MASTER_TOKEN: bgbikyQ6s63d1s10eZvlF4zSxH1xzeFD
+    XMPP_DOMAIN: pulse
+    ENTITY: Root
+    USER_PASSWORD: q8u2THed38sN
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_user: root
+    XMPP_MASTER_PASSWORD: usACgt4mHpdw
+    DBPASSWORD: 00rzYnFk38W5
+    # ITSM_DBHOST: relay_glpi
+    # ITSM_DBPORT: 4059
+    # ITSM_DBUSER: useread
+    # ITSM_DBPASSWD: useread
+    # ITSM_BASEURL: http://127.0.0.1/
+    GUACDBPASSWD: T4RYa3KheTV6
+    GUACAMOLE_ROOT_PASSWORD: eepdshss1dOwvgEe5GSAUZYf3KpMlX7s6CkipAMj
+    INTERFACE: eth0
+    CLIENTS_VNC_PASSWORD: khR7K3c1
+    GRAFANA_ADMIN_KEY: zreYxS6ccmXJ9h9Dva8VtSn221WK1veiNxjEC8ItotSSSboSrcyU57MBf2kmUmnC0cASozDtu74gas0FpxO=
+    INTERNET_DISABLED: true
+    CLIENTS_VNC_DISABLED: true
+    CLIENTS_RDP_DISABLED: true
+    CLIENTS_FUSIONINVENTORY_DISABLED: true
+    IMAGING_DISABLED: true
+    URBACKUP_DISABLED: true
+    OIDC_PROVIDER: 'SSO'
+    OIDC_PROVIDER_URL: https://152101lpqq.csh-dijon.cnamts.fr/
+    OIDC_PROVIDER_CLIENTID: cnamtsTest
+    OIDC_PROVIDER_CLIENTSECRET: cnamtsTestcnamtsTestcnamtsTestcnamtsTest
+    PACKAGES_FOLDER: /telediffusion

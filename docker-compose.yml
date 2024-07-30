@@ -1,0 +1,157 @@
+version: '3'
+services:
+  master_ansible:
+    build:
+      context:  .
+      dockerfile: ./master.Dockerfile
+    working_dir: /root/playbooks
+    volumes:
+      - /home/floou/Documents/gitdocker/integration:/root/playbooks
+      - /home/floou/Documents/gitdocker/integration:/etc/ansible
+    command: tail -f /dev/null
+    hostname: master_ansible
+    container_name: master_ansible
+
+  base: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: base
+    container_name: base
+
+  security: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: security
+    container_name: security
+
+  mariadb: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: mariadb
+    container_name: mariadb
+    
+  local_certs: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile    
+    privileged: true
+    hostname: local_certs
+    container_name: local_certs
+    
+  ejabberd:
+    build:
+      context:  .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: ejabberd
+    container_name: ejabberd
+    
+  apache:
+    build:
+      context:  .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: apache
+    container_name: apache
+    
+  syncthing: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: syncthing
+    container_name: syncthing
+    
+  tomcat: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: tomcat
+    container_name: tomcat
+    
+  guacamole: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: guacamole
+    container_name: guacamole
+    
+  ssh: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: ssh
+    container_name: ssh
+    
+  nfs: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: nfs
+    container_name: nfs
+    
+  pulse_packageserver: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: pulse_packageserver
+    container_name: pulse_packageserver
+
+  pulse_main: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: pulse_main
+    container_name: pulse_main
+
+  pxe_registration: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: pxe_registration
+    container_name: pxe_registration
+    
+  samba: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: samba
+    container_name: samba
+    
+  relay_agent: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: relay_agent
+    container_name: relay_agent
+    
+  pulse_relay: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile    
+    privileged: true
+    hostname: pulse_relay
+    container_name: pulse_relay
+    
+  pulse_imaging: 
+    build:
+      context: .
+      dockerfile: ./server.Dockerfile
+    privileged: true
+    hostname: pulse_imaging
+    container_name: pulse_imaging

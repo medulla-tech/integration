@@ -1,0 +1,96 @@
+---
+- name: Copy SSH key to multiple servers
+  hosts: all
+  become: yes
+  vars:
+    ssh_public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  tasks:
+    - name: Ensure the SSH key is present
+      ansible.builtin.authorized_key:
+        user: root
+        state: present
+        key: "{{ ssh_public_key }}"
+
+- name: Install Base
+  hosts: base
+  remote_user: root
+  roles:
+   - base
+
+- name: Install Security
+  hosts: security
+  remote_user: root
+  roles:
+   - security
+
+- name: Install Mariadb
+  hosts: mariadb
+  remote_user: root
+  roles:
+   - mariadb
+
+- name: Install Local_Certs
+  hosts: local_certs
+  remote_user: root
+  roles:
+   - local_certs
+
+- name: Install Ejabberd
+  hosts: ejabberd
+  remote_user: root
+  roles:
+   - ejabberd
+
+- name: Install Apache
+  hosts: apache
+  remote_user: root
+  roles:
+   - apache
+
+- name: Install Syncthing
+  hosts: syncthing
+  remote_user: root
+  roles:
+   - syncthing
+
+- name: Install SSH
+  hosts: ssh
+  remote_user: root
+  roles:
+   - ssh
+
+- name: Install Tomcat
+  hosts: tomcat
+  remote_user: root
+  roles:
+   - tomcat
+
+- name: Install Guacamole
+  hosts: guacamole
+  remote_user: root
+  roles:
+   - guacamole
+
+- name: Install NFS
+  hosts: nfs
+  remote_user: root
+  roles:
+   - nfs
+
+- name: Install Medulla_PackageServer
+  hosts: medulla_packageserver
+  remote_user: root
+  roles:
+   - pulse_packageserver
+
+- name: Install PXE_Registration
+  hosts: pxe_registration
+  remote_user: root
+  roles:
+   - pxe_registration
+
+- name: Install Samba
+  hosts: samba
+  remote_user: root
+  roles:
+   - samba

@@ -163,12 +163,17 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: BASE - Check if NTP service exists
+  ansible.builtin.stat:
+    path: "/etc/init.d/{{ NTP_DAEMON }}"
+  register: ntp_service_check
+
 - name: BASE - Ensure ntp is running
-  ansible.builtin.systemd:
+  ansible.builtin.service:
     name: '{{ NTP_DAEMON }}'
     state: started
-    enabled: yes
-    masked: no
+    enabled: true
+  when: ntp_service_check.stat.exists
 
 - name: BASE - Make sure ssh key exists
   ansible.builtin.user:
@@ -177,36 +182,36 @@
     ssh_key_bits: 2048
   register: sshkey
 
-- name: BASE - Add relay ssh public key to authorized_keys on pulsemain
-  ansible.posix.authorized_key:
-    user: root
-    state: present
-    key: "{{ sshkey.ssh_public_key }}"
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
-  when:
-    - PULSEMAIN_IP != ''
+# - name: BASE - Add relay ssh public key to authorized_keys on pulsemain
+#   ansible.posix.authorized_key:
+#     user: root
+#     state: present
+#     key: "{{ sshkey.ssh_public_key }}"
+#   vars:
+#     ansible_ssh_user: root
+#   delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+#   when:
+#     - PULSEMAIN_IP != ''
 
-- name: BASE - Fetch ssh public key from pulsemain
-  ansible.builtin.user:
-    name: root
-    generate_ssh_key: yes
-    ssh_key_bits: 2048
-  register: pulsemain_sshkey
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
-  when:
-    - PULSEMAIN_IP != ''
+# - name: BASE - Fetch ssh public key from pulsemain
+#   ansible.builtin.user:
+#     name: root
+#     generate_ssh_key: yes
+#     ssh_key_bits: 2048
+#   register: pulsemain_sshkey
+#   vars:
+#     ansible_ssh_user: root
+#   delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+#   when:
+#     - PULSEMAIN_IP != ''
 
-- name: BASE - Add pulsemain ssh public key to authorized_keys on relay
-  ansible.posix.authorized_key:
-    user: root
-    state: present
-    key: "{{ pulsemain_sshkey.ssh_public_key }}"
-  when:
-    - PULSEMAIN_IP != ''
+# - name: BASE - Add pulsemain ssh public key to authorized_keys on relay
+#   ansible.posix.authorized_key:
+#     user: root
+#     state: present
+#     key: "{{ pulsemain_sshkey.ssh_public_key }}"
+#   when:
+#     - PULSEMAIN_IP != ''
 
 - name: BASE - Create rbash shell
   ansible.builtin.file:
@@ -215,15 +220,24 @@
     state: link
     force: yes
 
+- name: Get IP address
+  ansible.builtin.shell: "ip route get 1 | awk '{print $7;exit}'"
+  register: ip_address_result
+  changed_when: false
+
+- name: Set IP_ADDRESS fact
+  ansible.builtin.set_fact:
+    IP_ADDRESS: "{{ ip_address_result.stdout | trim }}"
+
 - name: BASE - Update /etc/hosts
   ansible.builtin.lineinfile:
     dest: "/etc/hosts"
     line: "{{ item.line }}"
     regexp: "{{ item.regex }}"
-  when: item.when
+  when: item.when | bool
   with_items:
-    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: '{{ PULSEMAIN_IP != "" }}' }
-    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: '{{ ansible_hostname != "pulse" }}' }
+    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: 'PULSEMAIN_IP | default("") != ""' }
+    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: 'ansible_hostname != "pulse"' }
 
 - name: BASE - Install tools needed for the setup
   ansible.builtin.yum:
