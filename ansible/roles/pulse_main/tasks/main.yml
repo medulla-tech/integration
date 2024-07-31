@@ -197,6 +197,12 @@
   when:
     - CLIENTS_FUSIONINVENTORY_DISABLED
 
+- name: PULSE/AGENT - Append geolocalisation options to setup 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --disable-geoloc' }}"
+  when:
+    - INTERNET_DISABLED
+
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
   with_items:
