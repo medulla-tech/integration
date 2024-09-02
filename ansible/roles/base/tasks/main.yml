@@ -56,6 +56,16 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: BASE - Disable http caching in yum
+  ansible.builtin.ini_file:
+    path: /etc/yum.conf
+    section: main
+    option: http_caching
+    value: none
+    backup: yes
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
 - name: BASE - Download packages repository file from {{ PULSE4REPO_URL }}
   ansible.builtin.get_url:
     url: '{{ PULSE4REPO_URL }}'

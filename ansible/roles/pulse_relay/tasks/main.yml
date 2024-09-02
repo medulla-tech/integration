@@ -151,7 +151,7 @@
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
-    - ITSM_DBHOST != 'localhost'
+    - ITSM_DBHOST != 'localhost' and ITSM_DBHOST != '127.0.0.1'
 
 - name: PULSE/ITSM - Initialise session to API
   ansible.builtin.uri:

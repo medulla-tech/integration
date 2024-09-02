@@ -81,7 +81,7 @@
   notify:
     - PULSE - Restart apache
   when:
-    - ITSM_DBHOST != 'localhost'
+    - ITSM_DBHOST != 'localhost' and ITSM_DBHOST != '127.0.0.1'
 
 - name: PULSE/ITSM - Enable itsm apache config
   ansible.builtin.command: a2enconf itsm
@@ -89,7 +89,7 @@
     - PULSE - Restart apache
   when:
     - ansible_distribution == 'Debian'
-    - ITSM_DBHOST != 'localhost'
+    - ITSM_DBHOST != 'localhost' and ITSM_DBHOST != '127.0.0.1'
 
 - name: PULSE/ITSM - Allow access to ITSM API
   community.mysql.mysql_query:
@@ -106,7 +106,7 @@
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
-    - ITSM_DBHOST != 'localhost'
+    - ITSM_DBHOST != 'localhost' and ITSM_DBHOST != '127.0.0.1'
 
 - name: PULSE/ITSM - Initialise session to API
   ansible.builtin.uri:
@@ -175,7 +175,7 @@
 
 - name: PULSE/AGENT - Append VNC options to setup
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --vnc-port={{ CLIENTS_VNC_PORT }} --vnc-password={{ vnc_password_des.stdout }}' }}"
+    generation_options: "{{ generation_options + ' --vnc-port=' + CLIENTS_VNC_PORT | string + ' --vnc-password=' + vnc_password_des.stdout }}"
   when:
     - not CLIENTS_VNC_DISABLED
 
@@ -196,6 +196,12 @@
     generation_options: "{{ generation_options + ' --disable-inventory' }}"
   when:
     - CLIENTS_FUSIONINVENTORY_DISABLED
+
+- name: PULSE/AGENT - Append geolocalisation options to setup 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --disable-geoloc' }}"
+  when:
+    - INTERNET_DISABLED
 
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'

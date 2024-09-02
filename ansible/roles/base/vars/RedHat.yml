@@ -1,2 +1,2 @@
-PULSE4REPO_DEST: /etc/yum.repos.d/pulse4.repo
+PULSE4REPO_DEST: /etc/yum.repos.d/medulla.repo
 NTP_DAEMON: ntpd

@@ -73,6 +73,7 @@ if [[ $(echo ${CHECKSUM} | awk '{ print $1 }') != $(echo ${REMOTE_CHECKSUM} | aw
     fi
 else
     echo "$(date +\[%F\ %X\]) File ${DEST}/${REMOTE_FILE} is already up to date"
+    DL_SUCCESSFUL='True'
 fi
 
 # Import dump and generate packages if new download
