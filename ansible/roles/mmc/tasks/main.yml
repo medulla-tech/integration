@@ -220,7 +220,7 @@
 
 - name: MMC - Make sure {{ DBADMINUSER }} can connect to db server remotely
   community.mysql.mysql_user:
-    login_host: '{{ DBHOST }}'
+    login_host: localhost
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
@@ -229,7 +229,7 @@
     host: '{{ IP_ADDRESS }}'
     state: present
     priv:
-      '*.*:ALL'
+      '*.*:ALL,GRANT'
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ DBHOST }}'

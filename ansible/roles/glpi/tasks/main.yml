@@ -89,6 +89,25 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: GLPI - Make sure {{ DBADMINUSER }} can connect to db server remotely
+  community.mysql.mysql_user:
+    login_host: localhost
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+    host: '{{ IP_ADDRESS }}'
+    state: present
+    priv:
+      '*.*:ALL,GRANT'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ GLPI_DBHOST }}'
+  when:
+    - GLPI_DBHOST != 'localhost'
+  no_log: True
+
 - name: GLPI - Create database
   community.mysql.mysql_db:
     login_host: '{{ GLPI_DBHOST }}'
