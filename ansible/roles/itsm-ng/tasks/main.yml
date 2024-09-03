@@ -80,6 +80,25 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: ITSM-NG - Make sure {{ DBADMINUSER }} can connect to db server remotely
+  community.mysql.mysql_user:
+    login_host: localhost
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ DBADMINUSER }}'
+    password: '{{ DBADMINPASSWD }}'
+    host: '{{ IP_ADDRESS }}'
+    state: present
+    priv:
+      '*.*:ALL,GRANT'
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ ITSMNG_DBHOST }}'
+  when:
+    - ITSMNG_DBHOST != 'localhost'
+  no_log: True
+
 - name: ITSM-NG - Create database
   community.mysql.mysql_db:
     login_host: '{{ ITSMNG_DBHOST }}'
