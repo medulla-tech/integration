@@ -165,7 +165,7 @@
     group: root
     mode: '644'
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: Creates /etc/guacamole/lib/ folder
   ansible.builtin.file:
