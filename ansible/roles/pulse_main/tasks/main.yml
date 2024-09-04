@@ -108,6 +108,21 @@
     - ITSM_WRITEABLE
     - ITSM_DBHOST != 'localhost' and ITSM_DBHOST != '127.0.0.1'
 
+- name: PULSE/AGENT - Restart Apache2
+  ansible.builtin.systemd:
+    name: apache2
+    state: restarted
+
+- name: PULSE/AGENT - Restart php
+  ansible.builtin.systemd:
+    name: php8.2-fpm
+    state: restarted
+
+- name: PULSE/AGENT - Restart mariadb
+  ansible.builtin.systemd:
+    name: mariadb
+    state: restarted
+
 - name: PULSE/ITSM - Initialise session to API
   ansible.builtin.uri:
     url: "{{ ITSM_BASEURL }}/apirest.php/initSession"
@@ -208,6 +223,21 @@
   with_items:
     - /var/lib/pulse2/clients/generate-pulse-agent.sh {{ generation_options }}
     - /var/lib/pulse2/clients/generate-agent-package
+
+- name: PULSE/AGENT - Restart Apache2
+  ansible.builtin.systemd:
+    name: apache2
+    state: restarted
+
+- name: PULSE/AGENT - Restart php
+  ansible.builtin.systemd:
+    name: php8.2-fpm
+    state: restarted
+
+- name: PULSE/AGENT - Restart mariadb
+  ansible.builtin.systemd:
+    name: mariadb
+    state: restarted
 
 - name: PULSE/AGENT - Create the quick action that will deploy updatebackupclient.ini to the machines
   community.mysql.mysql_query:
