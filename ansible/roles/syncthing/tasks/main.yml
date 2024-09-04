@@ -125,9 +125,10 @@
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindepldeviceid
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set PULSEMAINDEPL_DEVICE_ID for syncthing-depl
@@ -135,8 +136,9 @@
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Configure syncthing-depl
@@ -176,9 +178,10 @@
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindeviceid
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
@@ -186,8 +189,9 @@
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Reset STCONF_CHANGED variable
@@ -213,8 +217,9 @@
   register: relayres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STRELAYSRV_URL == ''
     - STMAIN_HOST != ''
 
@@ -234,8 +239,9 @@
   register: globalannounceres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STDISCOSRV_URL == ''
     - STMAIN_HOST != ''
 
@@ -247,8 +253,9 @@
   register: discores
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STDISCOSRV_URL == ''
     - STMAIN_HOST != ''
     - globalannounceres.matches[0].globalAnnounceEnabled == 'true'
@@ -298,8 +305,9 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set MAINSTAPIKEY variable
@@ -316,8 +324,9 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Set MAINSTDEPLAPIKEY variable
@@ -332,8 +341,9 @@
   ignore_errors: yes
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Delete relayserver device from pulsemain syncthing waiting up to 5 minutes
@@ -346,8 +356,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
     - not relay_device_id.failed
   register: result
@@ -361,8 +372,9 @@
   ignore_errors: yes
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING - Delete relayserver device from pulsemain syncthing-depl waiting up to 5 minutes
@@ -375,8 +387,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
     - not relay_device_id.failed
   register: result
@@ -399,8 +412,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
   register: result
   retries: 10
@@ -422,8 +436,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
   register: result
   retries: 10
@@ -452,20 +467,22 @@
     mode: '0644'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:
+    - STMAIN_HOST is defined
     - STMAIN_HOST != ''
 
 - name: SYNCTHING/APACHE - Enable syncthing configuration
   ansible.builtin.command: a2enconf syncthing-{{ DEVICE_NAME }}
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:
+    - STMAIN_HOST is defined
     - ansible_distribution == 'Debian'
     - STMAIN_HOST != ''
 

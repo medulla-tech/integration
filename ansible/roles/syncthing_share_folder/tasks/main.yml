@@ -132,8 +132,9 @@
   register: xmlres
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ST_SHARE_FOLDER - Set MAINSTAPIKEY variable
@@ -154,8 +155,9 @@
   register: result
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   retries: 10
   delay: 30
@@ -183,8 +185,9 @@
   throttle: 1
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   register: result
   retries: 10
@@ -195,9 +198,10 @@
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   register: pulsemaindeviceid
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ST_SHARE_FOLDER - Set PULSEMAIN_DEVICE_ID for syncthing
@@ -205,8 +209,9 @@
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ST_SHARE_FOLDER - Get current folder configuration
