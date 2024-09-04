@@ -225,16 +225,6 @@
     state: link
     force: yes
 
-- name: BASE - Update /etc/hosts
-  ansible.builtin.lineinfile:
-    dest: "/etc/hosts"
-    line: "{{ item.line }}"
-    regexp: "{{ item.regex }}"
-  when: item.when
-  with_items:
-    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: '{{ PULSEMAIN_IP != "" }}' }
-    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: '{{ ansible_hostname != "pulse" }}' }
-
 - name: BASE - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
