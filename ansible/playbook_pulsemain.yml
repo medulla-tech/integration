@@ -27,7 +27,7 @@
     - { role: syncthing_discosrv, when: (ansible_domain != 'siveo.net') }
     - { role: syncthing_relay, when: (ansible_domain != 'siveo.net') }
     - syncthing
-    - urbackup
+    - { role: urbackup, when: (not URBACKUP_DISABLED) }
     - ssh
     - { role: glpi, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'glpi') }
     - { role: itsm-ng, when: (ITSM_DBHOST == 'localhost' and ITSM_TYPE == 'itsm-ng') }
