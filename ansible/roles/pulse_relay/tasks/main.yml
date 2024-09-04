@@ -85,14 +85,17 @@
     backup: yes
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP is defined
 
 - name: PULSE/GUACAMOLE - Enable guacamole module
   ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - ansible_distribution == 'Debian'
 
 - name: GUACAMOLE/APACHE - Reload apache on pulsemain
@@ -101,7 +104,9 @@
     state: reloaded
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP is defined
 
 - name: PULSE/APACHE - Setup local apache for agent update
   ansible.builtin.copy:
@@ -132,8 +137,9 @@
   register: res_query
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - ITSM_DBHOST == PULSEMAIN_IP
 
 - name: PULSE/ITSM - Allow access to ITSM API
@@ -163,8 +169,9 @@
   register: json_session
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - ITSM_WRITEABLE
 
 - name: PULSE/ITSM - Create entity in ITSM if it does not exist
@@ -185,8 +192,9 @@
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
@@ -204,8 +212,9 @@
       - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
@@ -226,8 +235,9 @@
       'imaging.*': 'ALL'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   no_log: True
 
@@ -307,7 +317,9 @@
     path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - PULSEMAIN_IP is defined
 
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
@@ -344,8 +356,9 @@
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   register: res_queryentityglpi
 
@@ -436,8 +449,9 @@
     state: absent
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   register: res_queryclusterid
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   no_log: True

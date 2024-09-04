@@ -116,8 +116,9 @@
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: RELAY_AGENT - Force relay to re-register in case of upgrade
@@ -145,8 +146,9 @@
       'xmppmaster.*': 'ALL'
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   no_log: True
 
@@ -332,9 +334,10 @@
     state: absent
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   register: res_queryclusterid
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
   no_log: True
 

@@ -44,8 +44,9 @@
     - ENABLE_CDN - Restart pulse-package-watching
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ENABLE_CDN - Configure pkgs.ini.local
@@ -77,8 +78,9 @@
     - ENABLE_CDN - Restart mmc-agent
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ENABLE_CDN - Configure loaddeployment.ini.local
@@ -110,8 +112,9 @@
     - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ENABLE_CDN - Configure Relay server applicationdeploymentjson.ini.local
@@ -163,8 +166,9 @@
   register: pulsemain_sshkey
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: ENABLE_CDN - !!!!! IMPORTANT MESSAGE !!!!!
