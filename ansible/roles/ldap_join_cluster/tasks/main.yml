@@ -77,7 +77,7 @@
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/config_synch.ldif'
   register: command_result
   failed_when:
-    - (command_result.rc != 0) and (command_result.rc != 20)
+    - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
@@ -92,7 +92,7 @@
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/config_synch.ldif'
   register: command_result
   failed_when:
-    - (command_result.rc != 0) and (command_result.rc != 20)
+    - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
 
 - name: LDAP_CLUSTER - Copy db_synch.ldif to /tmp on main server
   ansible.builtin.template:
@@ -107,7 +107,7 @@
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/db_synch.ldif'
   register: command_result
   failed_when:
-    - (command_result.rc != 0) and (command_result.rc != 20)
+    - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
   vars:
     ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
