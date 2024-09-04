@@ -95,31 +95,6 @@
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
-- name: RELAY_AGENT - Update /etc/hosts
-  ansible.builtin.lineinfile:
-    dest: "/etc/hosts"
-    line: "{{ item.line }}"
-    regexp: "{{ item.regex }}"
-  when: item.when
-  with_items:
-    - { regex: '^.* pulse$', line: '{{ PULSEMAIN_IP }} pulse', when: '{{ PULSEMAIN_IP != "" }}' }
-    - { regex: '^.* {{ XMPP_DOMAIN }}$', line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}', when: '{{ ansible_hostname != "pulse" }}' }
-  notify:
-    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
-
-- name: RELAY_AGENT - Update /etc/hosts on pulsemain
-  ansible.builtin.lineinfile:
-    dest: /etc/hosts
-    line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
-    regexp: '^.* {{ XMPP_DOMAIN }}$'
-  notify:
-    - RELAY_AGENT - Restart pulse-xmpp-agent-relay
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
-  when:
-    - PULSEMAIN_IP != ''
-
 - name: RELAY_AGENT - Force relay to re-register in case of upgrade
   ansible.builtin.file:
     dest: '{{ PYTHON_BASEDIR }}/pulse_xmpp_agent/BOOLFILECOMPLETREGISTRATION'
