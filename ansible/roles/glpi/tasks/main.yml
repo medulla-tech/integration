@@ -208,6 +208,16 @@
     path: /usr/share/glpi/files/_log/php-errors.log
     mode: '0666'
 
+- name: GLPI - Restart Apache2
+  ansible.builtin.systemd:
+    name: apache2
+    state: restarted
+
+- name: GLPI - Restart php
+  ansible.builtin.systemd:
+    name: php8.2-fpm
+    state: restarted
+
 - name: GLPI - Initialise session to API
   ansible.builtin.uri:
     url: "http://{{ SERVER_FQDN }}/glpi/apirest.php/initSession"
