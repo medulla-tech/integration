@@ -12,10 +12,12 @@
     name: syncthing@{{ item }}
     state: restarted
     daemon_reload: yes
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
   with_items:
     - syncthing
     - syncthing-depl
+  when:
+    - STMAIN_HOST is defined
 
 - name: SYNCTHING - Restart apache
   ansible.builtin.systemd:
@@ -28,4 +30,6 @@
     name: '{{ APACHE_DAEMON }}'
     state: restarted
     daemon_reload: yes
-  delegate_to: '{{ STMAIN_HOST }} if {{ STMAIN_HOST }} is defined'
+  delegate_to: '{{ STMAIN_HOST }}'
+  when:
+    - STMAIN_HOST is defined

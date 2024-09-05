@@ -194,8 +194,9 @@
     key: "{{ sshkey.ssh_public_key }}"
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: BASE - Fetch ssh public key from pulsemain
@@ -206,8 +207,9 @@
   register: pulsemain_sshkey
   vars:
     ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }} if {{ PULSEMAIN_IP }} is defined'
+  delegate_to: '{{ PULSEMAIN_IP }}'
   when:
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: BASE - Add pulsemain ssh public key to authorized_keys on relay
