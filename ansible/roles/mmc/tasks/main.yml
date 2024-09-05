@@ -458,8 +458,8 @@
 
 - name: MMC - Configure mmc-agent
   ansible.builtin.template:
-    src: 'mmc.ini.j2'
-    dest: /etc/mmc/mmc.ini
+    src: 'mmc.ini.local.j2'
+    dest: /etc/mmc/mmc.ini.local
     mode: '0644'
     backup: yes
 
