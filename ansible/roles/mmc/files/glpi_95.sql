@@ -1,51 +1,37 @@
--- glpi_computers_pulse on xmppmaster
 CREATE OR REPLACE TABLE xmppmaster.local_glpi_machines (
-  `id` int(10) NOT NULL DEFAULT 0, primary key(id),
-  `entities_id` int(10) NOT NULL DEFAULT 0,
-  `name` varchar(255) NULL DEFAULT NULL,
-  `serial` varchar(255) NULL DEFAULT NULL,
-  `otherserial` varchar(255) NULL DEFAULT NULL,
-  `contact` varchar(255) NULL DEFAULT NULL,
-  `contact_num` varchar(255) NULL DEFAULT NULL,
-  `users_id_tech` int(10) NOT NULL DEFAULT 0,
-  `groups_id_tech` int(10) NOT NULL DEFAULT 0,
-  `comment` text NULL DEFAULT NULL,
-  `date_mod` timestamp NULL DEFAULT NULL,
-  `autoupdatesystems_id` int(10) NOT NULL DEFAULT 0,
-  `locations_id` int(10) NOT NULL DEFAULT 0,
-  `networks_id` int(10) NOT NULL DEFAULT 0,
-  `computermodels_id` int(10) NOT NULL DEFAULT 0,
-  `computertypes_id` int(10) NOT NULL DEFAULT 0,
-  `is_template` tinyint(4) NOT NULL DEFAULT 0,
-  `template_name` varchar(255) NULL DEFAULT NULL,
-  `manufacturers_id` int(10) NOT NULL DEFAULT 0,
-  `is_deleted` tinyint(4) NOT NULL DEFAULT 0,
-  `is_dynamic` tinyint(4) NOT NULL DEFAULT 0,
-  `users_id` int(10) NOT NULL DEFAULT 0,
-  `groups_id` int(10) NOT NULL DEFAULT 0,
-  `states_id` int(10) NOT NULL DEFAULT 0,
-  `ticket_tco` decimal(20,4) NULL DEFAULT 0.0,
-  `uuid` varchar(255) NULL DEFAULT NULL,
-  `date_creation` timestamp NULL DEFAULT NULL,
-  `is_recursive` tinyint(4) NOT NULL DEFAULT 0,
-  `domains_id` int(10) NULL DEFAULT 0,
-  `operatingsystems_id` int(10) NULL DEFAULT 0,
-  `operatingsystemversions_id` int(10) NULL DEFAULT 0,
-  `operatingsystemservicepacks_id` int(10) NULL DEFAULT 0,
-  `operatingsystemarchitectures_id` int(10) NULL DEFAULT 0,
-  `license_number` varchar(255) NULL DEFAULT NULL,
-  `licenseid` varchar(255) NULL DEFAULT NULL,
-  `operatingsystemkernelversions_id` int(10) NULL DEFAULT 0
-)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_computers_pulse';
+    `id` int NOT NULL, primary key(id),
+    `entities_id` int(10) NOT NULL DEFAULT 0,
+    `name` varchar(255) NULL DEFAULT NULL,
+    `is_template` tinyint(4) NOT NULL DEFAULT 0,
+    `is_deleted` tinyint(4) NOT NULL DEFAULT 0
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_computers';
 
--- glpi_entities on xmppmaster
-CREATE OR REPLACE TABLE xmppmaster.local_glpi_entities(
-  `id` int(10) unsigned NOT NULL DEFAULT 0, primary key(id),
-  `name` varchar(255) NULL DEFAULT NULL,
-  `entities_id` int(10) unsigned NULL DEFAULT 0,
-  `completename` text NULL DEFAULT NULL,
-  `comment` text NULL DEFAULT NULL,
-  `level` int(11) unsigned NOT NULL DEFAULT 0,
-  `sons_cache` longtext NULL DEFAULT NULL,
-  `ancestors_cache` longtext NULL DEFAULT NULL
-)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_entities';
+CREATE OR REPLACE TABLE xmppmaster.local_glpi_filters (
+    `id` int NOT NULL, primary key(id),
+    `states_id` int(10) NOT NULL DEFAULT 0,
+    `entities_id` int(10) NOT NULL DEFAULT 0,
+    `computertypes_id` int(10) NOT NULL DEFAULT 0,
+    `autoupdatesystems_id` int(10) NOT NULL DEFAULT 0
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_computers';
+
+-- (>= glpi 9.5)
+CREATE OR REPLACE TABLE xmppmaster.local_glpi_items_softwareversions(
+    `id` int NOT NULL, primary key(id),
+    `items_id` int NOT NULL DEFAULT 0,
+    `itemtype` varchar(100) NOT NULL,
+    `softwareversions_id` int NOT NULL DEFAULT 0
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_items_softwareversions';
+
+CREATE OR REPLACE TABLE xmppmaster.local_glpi_softwareversions (
+    `id` int NOT NULL, primary key(id),
+    `softwares_id` int NOT NULL DEFAULT 0,
+    `name` varchar(255) DEFAULT NULL,
+    `comment` text DEFAULT NULL
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_softwareversions';
+
+
+CREATE OR REPLACE TABLE xmppmaster.local_glpi_softwares(
+    `id` int not null, primary key(id),
+    `name` varchar(255) null default NULL,
+    `comment` text null default null
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_softwares';
