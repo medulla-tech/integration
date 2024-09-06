@@ -270,6 +270,14 @@
     remote_src: yes
   when:
     - subs_number != ''
+
+- name: SUBSTITUTE_AGENT - Replace config file path if needed
+  ansible.builtin.replace:
+    path: /usr/lib/systemd/system/pulse-xmpp-master-substitute-{{ subs_long_name }}.service
+    regexp: 'agent_master_substitute_{{ subs_short_type }}'
+    replace: 'agent_master_substitute_{{ subs_short_name }}'
+  when:
+    - subs_number != ''
     
 - name: SUBSTITUTE_AGENT - Restart service
   ansible.builtin.systemd:

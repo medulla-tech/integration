@@ -133,7 +133,7 @@
 
 - name: RELAY_AGENT - Allow user to connect to db from relay
   community.mysql.mysql_user:
-    login_host: 'localhost'
+    login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
@@ -229,7 +229,7 @@
     query:
       - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
     named_args:
-      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
+      jid: 'rs{{ XMPP_DOMAIN }}{{ RELAY_INDEX }}@{{ XMPP_DOMAIN }}/%'
   register: res_queryrelayserverid
   retries: 10
   delay: 30
@@ -325,7 +325,7 @@
 
 - name: RELAY_AGENT - Remove user connection to db from relay
   community.mysql.mysql_user:
-    login_host: 'localhost'
+    login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
