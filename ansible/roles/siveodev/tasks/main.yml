@@ -48,7 +48,6 @@
     - calvin.pub
     - hassan.pub
 
-
 - name: SIVEODEV - Set permissions for Workbench
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
@@ -112,7 +111,32 @@
   notify: SIVEODEV - Reload Vim
 
 - name: SIVEODEV - Configure .vimrc to activate AnsiEsc by default
-  ansible.builtin.lineinfile:
+  ansible.builtin.blockinfile:
     path: ~/.vimrc
-    line: 'autocmd BufRead * AnsiEsc'
+    block: |
+      " Enable AnsiEsc for all files
+      let g:AnsiEsc_guicolors = 1
+
+      " Automatically apply AnsiEsc to all files when they are read into a buffer
+      "autocmd BufRead * AnsiEsc
+
+      " Function to check for ANSI escape sequences and apply AnsiEsc if found
+      function! ApplyAnsiEscIfNeeded()
+          if search('\e\[[0-9;]*m', 'nw') != 0
+              AnsiEsc
+          endif
+      endfunction
+
+      " Automatically apply AnsiEsc to files containing ANSI escape sequences
+      autocmd BufRead * call ApplyAnsiEscIfNeeded()
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: SIVEODEV - Reload Vim
+
+- name: SIVEODEV - Copy dev scripts
+  ansible.builtin.copy:
+    src: '{{ item }}'
+    dest: /usr/sbin/
+    mode: '0755'
+    owner: root
+  with_items:
+    - medulla_dev_gitinit.sh
