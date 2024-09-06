@@ -1,0 +1,21 @@
+- name: GLPI Frontend
+  gather_facts: true
+  hosts: all
+  remote_user: root
+
+  pre_tasks:
+    - name: GLPI FRONT - Set version for this playbook
+      ansible.builtin.set_fact:
+        PLAYBOOK_VERSION: '5.0.0'
+
+    - name: GLPI FRONT - Display version
+      ansible.builtin.debug:
+        msg:
+        - "Playbook Version: {{ PLAYBOOK_VERSION }}"
+
+  roles:
+    - base
+    - security
+    - apache
+    - php
+    - glpi
