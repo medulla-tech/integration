@@ -229,7 +229,7 @@
     query:
       - SELECT id FROM relayserver WHERE jid LIKE %(jid)s
     named_args:
-      jid: 'rs{{ XMPP_DOMAIN }}@{{ XMPP_DOMAIN }}/%'
+      jid: 'rs{{ XMPP_DOMAIN }}{{ RELAY_INDEX }}@{{ XMPP_DOMAIN }}/%'
   register: res_queryrelayserverid
   retries: 10
   delay: 30
