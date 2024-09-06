@@ -17,6 +17,7 @@ EXTERNAL_LDAP_PASSWORD: ''
 EXTERNAL_LDAP_USERATTR: sAMAccountName
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+NETMASK: "{{ vars['ansible_'~INTERFACE].ipv4.netmask }}"
 # Define PUBLIC_IP if main pulse server also has a public relay. TODO: Maybe this needs to go in another task
 PUBLIC_IP: ''
 GUACAMOLE_ROOT_PASSWORD: '' # 40 character string. Must be vaulted
@@ -56,3 +57,4 @@ OIDC_PROVIDER_CLIENTSECRET: ''
 OIDC_DEFAULT_ACL: 'base#main#default/'
 URBACKUP_DISABLED: false
 IMAGING_DISABLED: false
+PULSEMAIN_IP: '' # PULSEMAIN_IP must be set for secondary servers of mmc cluster

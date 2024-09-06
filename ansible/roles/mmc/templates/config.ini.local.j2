@@ -1,5 +1,8 @@
 [main]
 host = 0.0.0.0
 
-[submaster] 
+[submaster]
+{% if PULSEMAIN_IP is defined and PULSEMAIN_IP != '' %}
+host = {{ PULSEMAIN_IP }}
+{% endif %}
 allowed_token = {{ MASTER_TOKEN }}

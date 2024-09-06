@@ -147,6 +147,28 @@
   when: 
     - PYTHON_VERSION == 3
 
+- name: MMC - Allow mmc-agent to connect to master substitute on main server
+  ansible.builtin.command: 'crudini --set --list /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local filter allowed_ips {{ IP_ADDRESS }}/{{ NETMASK }}'
+  notify:
+    - MMC - Restart pulse-xmpp-master-substitute-master on main server
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when: 
+    - PULSEMAIN_IP is defined
+    - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 3
+
+- name: MMC - Restart pulse-xmpp-master-substitute-master with the new parameters
+  ansible.builtin.meta: flush_handlers
+  vars:
+    ansible_ssh_user: root
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when: 
+    - PULSEMAIN_IP is defined
+    - PULSEMAIN_IP != ''
+    - PYTHON_VERSION == 3
+
 - name: MMC/APACHE - Enable pulse and mmc modules
   ansible.builtin.command: a2enconf {{ item }}
   with_items:
@@ -195,6 +217,8 @@
     password: '{{ XMPP_MASTER_PASSWORD }}'
   notify:
     - MMC - Restart mmc-agent
+  when:
+    - PULSEMAIN_IP == ''
 
 - name: MMC - Set marker for database initialisation if INITIALISE_DB is false
   ansible.builtin.file:
@@ -492,7 +516,8 @@
     backup: yes
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
-  when: 
+  when:
+    - PULSEMAIN_IP == ''
     - PYTHON_VERSION == 3
 
 - name: MMC/SUBSTITUTE_AGENT - Additional configuration for master substitute
@@ -503,7 +528,20 @@
     backup: yes
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master
+  when:
+    - PULSEMAIN_IP == ''
+    - PYTHON_VERSION == 3
+
+- name: MMC - Disable dependency on pulse-xmpp-master-substitute-master for cluster
+  ansible.builtin.copy:
+    src: mmc-agent.service
+    dest: /etc/systemd/system/
+    mode: '0644'
+  notify:
+    - MMC - Restart mmc-agent
   when: 
+    - PULSEMAIN_IP is defined
+    - PULSEMAIN_IP != ''
     - PYTHON_VERSION == 3
 
 - name: MMC - Force restart of service to use new config files
@@ -598,6 +636,7 @@
     state: started
     enabled: yes
     masked: no
-  when: 
+  when:
+    - PULSEMAIN_IP == ''
     - PYTHON_VERSION == 3
 
