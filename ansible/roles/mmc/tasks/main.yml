@@ -115,14 +115,16 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-ldap
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: MMC - Install tools needed for the setup
   ansible.builtin.apt:
     state: latest
     pkg:
       - python3-pymysql
+      - python3-pyldap
   when:
     - ansible_distribution == 'Debian'
 
