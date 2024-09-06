@@ -48,7 +48,6 @@
     - calvin.pub
     - hassan.pub
 
-
 - name: SIVEODEV - Set permissions for Workbench
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
@@ -132,3 +131,12 @@
       autocmd BufRead * call ApplyAnsiEscIfNeeded()
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: SIVEODEV - Reload Vim
+
+- name: SIVEODEV - Copy dev scripts
+  ansible.builtin.copy:
+    src: '{{ item }}'
+    dest: /usr/sbin/
+    mode: '0755'
+    owner: root
+  with_items:
+    - medulla_dev_gitinit.sh
