@@ -1,6 +1,7 @@
 [connection]
 server = {{ IP_ADDRESS }}
 password = {{ XMPP_MASTER_PASSWORD }}
+jidmastersubstitute = master_{{ subs_short_name }}@{{ XMPP_DOMAIN }}
 
 [glpi]
 enable_forward = True
