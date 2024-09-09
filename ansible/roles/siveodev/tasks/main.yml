@@ -113,12 +113,10 @@
 - name: SIVEODEV - Configure .vimrc to activate AnsiEsc by default
   ansible.builtin.blockinfile:
     path: ~/.vimrc
+    marker: '" {mark} ANSIBLE MANAGED BLOCK'
     block: |
       " Enable AnsiEsc for all files
       let g:AnsiEsc_guicolors = 1
-
-      " Automatically apply AnsiEsc to all files when they are read into a buffer
-      "autocmd BufRead * AnsiEsc
 
       " Function to check for ANSI escape sequences and apply AnsiEsc if found
       function! ApplyAnsiEscIfNeeded()
@@ -129,7 +127,6 @@
 
       " Automatically apply AnsiEsc to files containing ANSI escape sequences
       autocmd BufRead * call ApplyAnsiEscIfNeeded()
-    marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: SIVEODEV - Reload Vim
 
 - name: SIVEODEV - Copy dev scripts
