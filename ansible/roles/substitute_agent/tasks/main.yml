@@ -248,10 +248,14 @@
 
 - name: SUBSTITUTE_AGENT - Additional configuration for deployment substitute
   ansible.builtin.template:
-    src: loaddeployment.ini.local.j2
-    dest: /etc/pulse-xmpp-agent-substitute/loaddeployment.ini.local
+    src: '{{ item }}.ini.local.j2'
+    dest: /etc/pulse-xmpp-agent-substitute/{{ item }}.ini.local
     mode: '0644'
     backup: yes
+  with_items:
+    - loaddeployment
+    - wakeonlan
+    - wakeonlangroup
   when:
     - SUBS_LONG_TYPE == 'deployment'
     

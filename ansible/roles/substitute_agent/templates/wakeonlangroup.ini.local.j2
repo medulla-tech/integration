@@ -1,0 +1,5 @@
+[parameters]
+{% if SEND_WOL_FROM_MAIN %}
+remotelan = False
+{% endif %}
+wakeonlanport = {{ WOL_PORT }}

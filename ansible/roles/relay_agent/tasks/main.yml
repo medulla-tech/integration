@@ -92,6 +92,7 @@
     - guacamoleconf
     - reverse_ssh_on
     - scheduling_mon_pulsesystem
+    - wakeonlan
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
