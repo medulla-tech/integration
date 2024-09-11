@@ -465,6 +465,18 @@
     mode: '0644'
     backup: yes
 
+- name: MMC - Configure WOL
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: /etc/mmc/plugins/{{ item }}.ini.local 
+    mode: '0644'
+    backup: yes
+  with_items:
+    - wakeonlan
+    - wakeonlangroup
+  notify:
+    - MMC - Restart mmc-agent
+
 - name: MMC - Create /home/archives folder
   ansible.builtin.file:
     dest: /home/archives
