@@ -220,7 +220,7 @@
 
 - name: PULSE/SHARE - Allow user to connect to db from relay
   community.mysql.mysql_user:
-    login_host: '{{ DBHOST }}'
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
@@ -440,7 +440,7 @@
 
 - name: PULSE/SHARE - Remove user connection to db from relay
   community.mysql.mysql_user:
-    login_host: '{{ DBHOST }}'
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
