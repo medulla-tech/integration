@@ -40,6 +40,8 @@ ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_BASEURL: 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}'
 ITSM_API_USER: 'root'
 ITSM_API_PASSWORD: '{{ ROOT_PASSWORD }}'
+ITSM_DBADMINUSER: '{{ DBADMINUSER }}' # Must be defined when using separate ITSM database
+ITSM_DBADMINPASSWD: '{{ DBADMINPASSWD }}' # Must be defined when using separate ITSM database
 URBACKUP_API_SERVER: 127.0.0.1
 URBACKUP_ADMINPASSWD: '{{ ROOT_PASSWORD }}'
 URBACKUP_API_PASSWORD: '' # URBACKUP_API_PASSWORD comes from urbackup role
