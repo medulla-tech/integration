@@ -489,13 +489,25 @@
     mode: '0644'
     backup: yes
 
+- name: MMC - Configure WOL
+  ansible.builtin.template:
+    src: '{{ item }}.ini.local.j2'
+    dest: /etc/mmc/plugins/{{ item }}.ini.local 
+    mode: '0644'
+    backup: yes
+  with_items:
+    - wakeonlan
+    - wakeonlangroup
+  notify:
+    - MMC - Restart mmc-agent
+
 - name: MMC - Create /home/archives folder
   ansible.builtin.file:
     dest: /home/archives
     state: directory
 
 - name: MMC/GLPI - Create view for pulse
-  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ DBADMINUSER }} -p'{{ DBADMINPASSWD }}' < {{ ITSM_VIEW_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
+  ansible.builtin.shell: mysql -h {{ ITSM_DBHOST }} -P {{ ITSM_DBPORT }} -u{{ ITSM_DBADMINUSER }} -p'{{ ITSM_DBADMINPASSWD }}' < {{ ITSM_VIEW_PATH }}/glpi-{{ ITSM_VERSION.split(".") | join("") }}.sql
   when:
     - ITSM_WRITEABLE
 

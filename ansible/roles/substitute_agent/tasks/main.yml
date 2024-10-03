@@ -248,12 +248,25 @@
 
 - name: SUBSTITUTE_AGENT - Additional configuration for deployment substitute
   ansible.builtin.template:
-    src: loaddeployment.ini.local.j2
-    dest: /etc/pulse-xmpp-agent-substitute/loaddeployment.ini.local
+    src: '{{ item }}.ini.local.j2'
+    dest: /etc/pulse-xmpp-agent-substitute/{{ item }}.ini.local
+    mode: '0644'
+    backup: yes
+  with_items:
+    - loaddeployment
+    - wakeonlan
+    - wakeonlangroup
+  when:
+    - SUBS_LONG_TYPE == 'deployment'
+
+- name: SUBSTITUTE_AGENT - Additional configuration for registration substitute
+  ansible.builtin.template:
+    src: registeryagent.ini.local.j2
+    dest: /etc/pulse-xmpp-agent-substitute/registeryagent.ini.local
     mode: '0644'
     backup: yes
   when:
-    - SUBS_LONG_TYPE == 'deployment'
+    - SUBS_LONG_TYPE == 'registration'
     
 - name: SUBSTITUTE_AGENT - Disable initial service
   ansible.builtin.systemd:

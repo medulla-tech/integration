@@ -39,7 +39,7 @@
     path: /var/lib/pulse2/packages
   register: packages_link
   when:
-    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - PACKAGES_FOLDER != "/var/lib/pulse2/packages"
 
 - name: PULSE/PACKAGES - Create {{ PACKAGES_FOLDER }} folder
   ansible.builtin.file:
@@ -47,7 +47,7 @@
     state: directory
     mode: '0755'
   when:
-    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - PACKAGES_FOLDER != "/var/lib/pulse2/packages"
     - packages_link.stat.islnk is not defined
 
 - name: PULSE/PACKAGES - Copy contents of /var/lib/pulse2/packages folder to {{ PACKAGES_FOLDER }}
@@ -56,7 +56,7 @@
     dest: '{{ PACKAGES_FOLDER }}'
     remote_src: yes
   when:
-    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - PACKAGES_FOLDER != "/var/lib/pulse2/packages"
     - packages_link.stat.islnk is not defined
 
 - name: PULSE/PACKAGES - Delete copied packages
@@ -64,7 +64,7 @@
     path: /var/lib/pulse2/packages
     state: absent
   when:
-    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - PACKAGES_FOLDER != "/var/lib/pulse2/packages"
     - packages_link.stat.islnk is not defined
 
 - name: PULSE/PACKAGES - Create /var/lib/pulse2/packages link pointing to {{ PACKAGES_FOLDER }}
@@ -74,7 +74,7 @@
     state: link
     force: yes
   when:
-    - PACKAGES_FOLDER != /var/lib/pulse2/packages
+    - PACKAGES_FOLDER != "/var/lib/pulse2/packages"
     - packages_link.stat.islnk is not defined
 
 - name: PULSE/GUACAMOLE - Setup apache for guacamole on main pulse
@@ -220,7 +220,7 @@
 
 - name: PULSE/SHARE - Allow user to connect to db from relay
   community.mysql.mysql_user:
-    login_host: '{{ DBHOST }}'
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
@@ -440,7 +440,7 @@
 
 - name: PULSE/SHARE - Remove user connection to db from relay
   community.mysql.mysql_user:
-    login_host: '{{ DBHOST }}'
+    login_host: 'localhost'
     login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'

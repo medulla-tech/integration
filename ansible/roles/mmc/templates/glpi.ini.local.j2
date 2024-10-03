@@ -6,6 +6,9 @@ dbname = {{ ITSM_DBNAME }}
 dbuser = {{ ITSM_DBUSER }}
 dbpasswd = {{ ITSM_DBPASSWD }}
 glpi_computer_uri = {{ ITSM_BASEURL }}/front/computer.form.php?id=
+{% if ITSM_READONLY %}
+dbreadonly = 1
+{% endif %}
 
 [webservices]
 purge_machine = 1
