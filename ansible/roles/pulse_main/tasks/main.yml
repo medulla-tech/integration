@@ -203,6 +203,13 @@
   when:
     - INTERNET_DISABLED
 
+- name: PULSE/AGENT - Append configuration server options if load balanced 
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --conf-xmppserver=' + LOADBALANCER_FQDN }}"
+  when:
+    - LOADBALANCER_FQDN is defined
+    - LOADBALANCER_FQDN != ''
+
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
   with_items:

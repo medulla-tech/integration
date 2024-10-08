@@ -1,5 +1,9 @@
 <Location /guacamole/>
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+    SetEnvIf Referer "^https?://{{ LOADBALANCER_FQDN }}/" GUACAMOLE_ALLOWED
+{% else %}
     SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+{% endif %}
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED
@@ -7,7 +11,11 @@
     ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
 </Location>
 <Location /guacamole/websocket-tunnel>
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+    SetEnvIf Referer "^https?://{{ LOADBALANCER_FQDN }}/" GUACAMOLE_ALLOWED
+{% else %}
     SetEnvIf Referer "^https?://{{ SERVER_FQDN }}/" GUACAMOLE_ALLOWED
+{% endif %}
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED

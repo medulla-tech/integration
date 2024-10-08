@@ -16,7 +16,9 @@ jidname = RS{{ XMPP_DOMAIN }}{{ RELAY_INDEX }}@{{ XMPP_DOMAIN }}/{{ XMPP_DOMAIN 
 allow_order = master_reg
 
 [type]
-{% if XMPP_DOMAIN == 'pulse' %}
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+guacamole_baseurl = http://{{ LOADBALANCER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
+{% elif XMPP_DOMAIN == 'pulse' %}
 guacamole_baseurl = http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
 {% else %}
 guacamole_baseurl = http://{{ PULSEMAIN_FQDN }}/guacamole-{{ XMPP_DOMAIN }}/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
