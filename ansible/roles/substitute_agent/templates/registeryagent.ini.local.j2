@@ -1,4 +1,4 @@
 [parameters]
-{% if ITSM_READONLY %}
+{% if not ITSM_WRITEABLE %}
 check_uuidinventory = True
 {% endif %}

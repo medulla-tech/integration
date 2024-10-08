@@ -60,6 +60,5 @@ OIDC_DEFAULT_ACL: 'base#main#default/'
 URBACKUP_DISABLED: false
 IMAGING_DISABLED: false
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set for secondary servers of mmc cluster
-ITSM_READONLY: false
 SEND_WOL_FROM_MAIN: false
 WOL_PORT: 9
