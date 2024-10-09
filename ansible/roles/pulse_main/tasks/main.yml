@@ -210,6 +210,19 @@
     - LOADBALANCER_FQDN is defined
     - LOADBALANCER_FQDN != ''
 
+- name: PULSE/AGENT - Append base-url options
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --base-url=http://' + LOADBALANCER_FQDN + '/downloads'}}"
+  when:
+    - LOADBALANCER_FQDN is defined
+    - LOADBALANCER_FQDN != ''
+
+- name: PULSE/AGENT - Append base-url options
+  ansible.builtin.set_fact:
+    generation_options: "{{ generation_options + ' --base-url=http://' + SERVER_FQDN + '/downloads'}}"
+  when:
+    - LOADBALANCER_FQDN is not defined
+
 - name: PULSE/AGENT - Generate full agent
   ansible.builtin.command: '{{ item }}'
   with_items:
@@ -227,7 +240,7 @@
       - INSERT IGNORE INTO xmppmaster.qa_custom_command (user, os, namecmd, customcmd, description) VALUES ('allusers', 'windows', 'Deploy updatebackupclient.ini file', 'powershell.exe "$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ URBACKUP_SERVERADDRESS }} {0}backup_port = {{ URBACKUP_SERVERPORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent"', 'Copy urbackup installation config file to client machine')
 
 - name: PULSE/AGENT - Generate minimal agent
-  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --base-url=http://{{ SERVER_FQDN }}/downloads {{ generation_options }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal {{ generation_options }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
   ignore_errors: true
 
 - name: PULSE/PACKAGESERVER - Configure samba for package server
