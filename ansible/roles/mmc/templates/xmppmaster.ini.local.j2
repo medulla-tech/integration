@@ -29,5 +29,10 @@ announce_server = {{ STDISCOSRV_URL }}
 
 [grafana_api]
 api_key = {{ GRAFANA_ADMIN_KEY }}
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+render_url = http://{{ LOADBALANCER_FQDN }}/grafana/render/d-solo
+graph_url = http://{{ LOADBALANCER_FQDN }}/grafana/d-solo
+{% else %}
 render_url = http://{{ SERVER_FQDN }}/grafana/render/d-solo
 graph_url = http://{{ SERVER_FQDN }}/grafana/d-solo
+{% endif %}

@@ -1,5 +1,9 @@
 <Location /guacamole-{{ XMPP_DOMAIN }}/>
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+    SetEnvIf Referer "^https?://{{ LOADBALANCER_FQDN }}/" GUACAMOLE_ALLOWED
+{% else %}
     SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+{% endif %}
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED
@@ -8,7 +12,11 @@
     ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
 </Location>
 <Location /guacamole-{{ XMPP_DOMAIN }}/websocket-tunnel>
+{% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
+    SetEnvIf Referer "^https?://{{ LOADBALANCER_FQDN }}/" GUACAMOLE_ALLOWED
+{% else %}
     SetEnvIf Referer "^https?://{{ PULSEMAIN_FQDN }}/" GUACAMOLE_ALLOWED
+{% endif %}
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED

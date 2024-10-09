@@ -26,3 +26,4 @@ PUBLIC_IP: ''
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
+LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
