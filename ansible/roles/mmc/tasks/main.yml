@@ -588,10 +588,12 @@
     body:
       name: xmppmaster
       type: mysql
-      host: '{{ DBHOST }}:{{ DBPORT }}'
+      url: '{{ DBHOST }}:{{ DBPORT }}'
       user: '{{ DBUSER }}'
-      password: '{{ DBPASSWORD }}'
-      database: xmppmaster
+      secureJsonData:
+        password: '{{ DBPASSWORD }}'
+      jsonData:
+        database: xmppmaster
       access: direct
     status_code: [200, 409]
 

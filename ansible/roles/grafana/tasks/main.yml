@@ -110,7 +110,7 @@
 - name: GRAFANA - Get adminkey api key if present
   ansible.builtin.uri:
     url: "http://localhost:3000/api/auth/keys"
-    url_username: admin
+    url_username: root
     url_password: '{{ GRAFANAADMINPASSWD }}'
     force_basic_auth: yes
     method: GET
@@ -130,7 +130,7 @@
 - name: GRAFANA - Delete api key if present
   ansible.builtin.uri:
     url: "http://localhost:3000/api/auth/keys/{{ adminkey_id }}"
-    url_username: admin
+    url_username: root
     url_password: '{{ GRAFANAADMINPASSWD }}'
     force_basic_auth: yes
     method: DELETE
@@ -140,7 +140,7 @@
 - name: GRAFANA - Generate api key
   ansible.builtin.uri:
     url: "http://localhost:3000/api/auth/keys"
-    url_username: admin
+    url_username: root
     url_password: '{{ GRAFANAADMINPASSWD }}'
     force_basic_auth: yes
     method: POST
