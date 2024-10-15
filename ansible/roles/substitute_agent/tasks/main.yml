@@ -291,6 +291,16 @@
     replace: 'agent_master_substitute_{{ subs_short_name }}'
   when:
     - subs_number != ''
+
+- name: SUBSTITUTE_AGENT - Create substituteconf records
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) SELECT '{{ SUBS_LONG_TYPE }}', 'master_{{ subs_short_name }}@{{ XMPP_DOMAIN }}', id FROM relayserver
     
 - name: SUBSTITUTE_AGENT - Restart service
   ansible.builtin.systemd:
