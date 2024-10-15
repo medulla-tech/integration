@@ -45,16 +45,16 @@
     - { role: substitute_agent, SUBS_LONG_TYPE: 'monitoring' }
     - { role: substitute_agent, SUBS_LONG_TYPE: 'reconfigurator' }
     - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
-    - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
-    - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
-    - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
-    - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
     - medulla_osupdates
     - relay_agent
     - samba
     - pulse_file_browser
     - { role: pulse_packageserver, when: (not IMAGING_DISABLED) }
     - { role: pxe_registration, when: (not IMAGING_DISABLED) }
-    - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive', when: (not IMAGING_DISABLED) }
+    - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (not IMAGING_DISABLED) }
     - { role: pulse_imaging, when: (not IMAGING_DISABLED) }
     - pulse_main
