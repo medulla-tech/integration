@@ -227,6 +227,28 @@
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ item }}'
+    state: present
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+    - urbackup
+    - updates
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC - Import database schemas
+  community.mysql.mysql_db:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ item }}'
     state: import
     target: '{{ CONTRIB_PATH }}/{{ item }}/sql/schema-001.sql'
   with_items:
