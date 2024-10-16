@@ -221,16 +221,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: 'xmppmaster'
     query:
-      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', {{ res_queryrelayserverid.query_result[0][0].id }})
-  with_items:
-    - { type: 'assessor', jid: 'master_asse@pulse' }
-    - { type: 'subscription', jid: 'master_subs@pulse' }
-    - { type: 'registration', jid: 'master_reg@pulse' }
-    - { type: 'inventory', jid: 'master_inv@pulse' }
-    - { type: 'logger', jid: 'master_log@pulse' }
-    - { type: 'monitoring', jid: 'master_mon@pulse' }
-    - { type: 'deployment', jid: 'master_depl@pulse' }
-    - { type: 'updates', jid: 'master_upd@pulse' }
+      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) SELECT DISTINCT type, jidsubtitute, '{{ res_queryrelayserverid.query_result[0][0].id }}' FROM substituteconf
   vars:
     ansible_ssh_user: root
   delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
