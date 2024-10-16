@@ -229,7 +229,7 @@
     name: '{{ item }}'
     state: import
     target: '{{ CONTRIB_PATH }}/{{ item }}/sql/schema-001.sql'
-  loop:
+  with_items:
     - dyngroup
     - msc
     - pkgs
@@ -240,8 +240,6 @@
     - kiosk
     - urbackup
     - updates
-  loop_control:
-    pause: 15
   when:
     - MMC_DBINITIALISED is not defined
   register: db_init
