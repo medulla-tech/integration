@@ -619,6 +619,16 @@
       access: direct
     status_code: [200, 409]
 
+- name MMC/GRAFANA - Configure API Key
+  community.general.ini_file:
+    path: /etc/mmc/plugins/xmppmaster.ini.local
+    section: grafana_api
+    option: api_key
+    value: '{{ GRAFANA_ADMIN_KEY }}'
+    backup: yes
+  notify:
+    - MMC - Restart mmc-agent
+
 - name: CERT - Fetch certificates from pki server
   ansible.builtin.fetch:
     src: '{{ PKI_PATH }}/{{ item.src }}'
