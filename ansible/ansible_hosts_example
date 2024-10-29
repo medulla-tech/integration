@@ -23,7 +23,7 @@ medulla-tech:
       6137356136363631390a313766333139333962626266373333636639633163376339363063643030
       3266
 
-mmc:
+mmcmain:
   hosts:
     medulla-main.medulla-tech.io:
   vars:
