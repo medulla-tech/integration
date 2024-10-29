@@ -13,6 +13,7 @@ CLIENTS_VNC_PASSWORD: '' # 8 character string. Must be vaulted
 REVERSE_SSH_PORT: 22
 ENTITY: Public
 CLUSTER_NAME: '{{ ENTITY }}'
+CLUSTER_DESCRIPTION: '{{ CLUSTER_NAME }}'
 # For using database on another server, define DBHOST
 DBHOST: localhost # To be set to PULSEMAIN_IP on relays
 DBPORT: 3306
@@ -25,3 +26,10 @@ INTERNET_DISABLED: false
 RELAY_INDEX: ''
 WOL_PORT: 9
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
+CLUSTER_FROM_ITSM_LOCATION: false
+CLUSTER_NAME_PREFIX: '{{ ENTITY }}'
+ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
+ITSM_DBPORT: 3306
+ITSM_DBUSER: glpi
+ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
+ITSM_DBNAME: glpi
