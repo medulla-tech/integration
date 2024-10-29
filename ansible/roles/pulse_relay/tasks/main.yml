@@ -226,7 +226,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
+      - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_queryshareexists
   vars:
     ansible_ssh_user: root
@@ -258,7 +258,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}')
+      - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ PKGS_SHARE_NAME }}', '{{ PKGS_SHARE_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}')
   when:
     - res_queryshareexists.rowcount[0] == 0
   vars:
@@ -273,7 +273,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - SELECT id FROM pkgs_shares WHERE name='{{ CLUSTER_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ CLUSTER_NAME }}'
+      - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_querynewshare
   vars:
     ansible_ssh_user: root
