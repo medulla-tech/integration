@@ -11,7 +11,7 @@ ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
 ITSM_BASEURL: 'http://{{ PULSEMAIN_FQDN }}/{{ ITSM_TYPE }}'
 ENTITY: Public
-CLUSTER_NAME: '{{ ENTITY }}'
+PKGS_SHARE_NAME: '{{ ENTITY }}'
 ORGANISATION: Siveo Medulla
 IMAGING_SERVER_NAME: '{{ ENTITY }}'
 NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
