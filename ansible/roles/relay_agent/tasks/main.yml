@@ -150,6 +150,50 @@
 - name: RELAY_AGENT - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
 
+- name: RELAY_AGENT - Get location of server from ITSM
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWORD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT glpi_locations.completename AS locationname FROM glpi_locations LEFT JOIN glpi_computers ON glpi_computers.locations_id=glpi_locations.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
+  register: res_location
+  vars:
+    ansible_ssh_user: root
+  delegate_to: "{{ PULSEMAIN_IP }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Get entity of server from ITSM
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWORD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT glpi_entities.completename AS entityname FROM glpi_entities LEFT JOIN glpi_computers ON glpi_computers.entities_id=glpi_entities.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
+  register: res_entity
+  vars:
+    ansible_ssh_user: root
+  delegate_to: "{{ PULSEMAIN_IP }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Define cluster description
+  ansible.builtin.set_fact:
+    CLUSTER_DESCRIPTION: "{{ res_entity.query_result[0][0].entityname.split(' > ')[3:] | join(' > ') | regex_replace (\"'\",\" \") }} # {{ res_location.query_result[0][0].locationname | regex_replace (\"'\",\" \") }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Define cluster name
+  ansible.builtin.set_fact:
+    CLUSTER_NAME: "{{ CLUSTER_NAME_PREFIX }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
 - name: RELAY_AGENT - Create or update cluster
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
@@ -158,7 +202,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: 'xmppmaster'
     query:
-      - INSERT IGNORE INTO cluster_ars (name, description) VALUES('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}') ON DUPLICATE KEY UPDATE description='{{ CLUSTER_NAME }}'
+      - INSERT IGNORE INTO cluster_ars (name, description) VALUES('{{ CLUSTER_NAME }}', '{{ CLUSTER_DESCRIPTION }}') ON DUPLICATE KEY UPDATE description='{{ CLUSTER_DESCRIPTION }}'
   vars:
     ansible_ssh_user: root
   delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
