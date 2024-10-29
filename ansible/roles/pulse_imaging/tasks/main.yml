@@ -79,11 +79,10 @@
     remote_src: yes
 
 - name: PULSE_IMAGING - Create syslinux symlinks to bios, uefi31 and uefi64 bootloaders
-  ansible.builtin.file:
+  ansible.builtin.copy:
     src: '{{ item.src }}'
     dest: '{{ item.dest }}'
-    state: hard
-    force: yes
+    remote_src: yes
   with_items:
     - { src: '{{ PXELINUX_PATH }}/pxelinux.0', dest: '{{ PULSE_BIOS_PATH }}/pxelinux.0' }
     - { src: '{{ SYSLINUX_BIOS_PATH }}/libgpl.c32', dest: '{{ PULSE_BIOS_PATH }}/libgpl.c32' }
@@ -119,11 +118,10 @@
     - { src: '/usr/share/hwdata/pci.ids', dest: '{{ PULSE_UEFI64_PATH }}/pci.ids' }
 
 - name: PULSE_IMAGING - Create syslinux specific setup for Debian
-  ansible.builtin.file:
+  ansible.builtin.copy:
     src: '{{ item.src }}'
     dest: '{{ item.dest }}'
-    state: hard
-    force: yes
+    remote_src: yes
   with_items:
     - { src: '{{ SYSLINUX_UEFI32_PATH }}/ldlinux.e32', dest: '{{ PULSE_UEFI32_PATH }}/ldlinux.e32' }
   when:
