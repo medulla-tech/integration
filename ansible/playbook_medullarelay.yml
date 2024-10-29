@@ -44,7 +44,7 @@
 
 - name: Medulla Relay - Part 3
   gather_facts: true
-  hosts: mmcmain
+  hosts: mmcmain:mmccluster
   remote_user: root
   roles:
     - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }

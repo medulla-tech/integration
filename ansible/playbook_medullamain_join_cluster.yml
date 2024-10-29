@@ -1,6 +1,6 @@
 - name: Medulla Main Cluster
   gather_facts: true
-  hosts: all
+  hosts: mmccluster
   remote_user: root
   serial: 1
 
