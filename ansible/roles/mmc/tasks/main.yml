@@ -581,7 +581,7 @@
       access: direct
     status_code: [200, 409]
 
-- name MMC/GRAFANA - Configure API Key
+- name: MMC/GRAFANA - Configure API Key
   community.general.ini_file:
     path: /etc/mmc/plugins/xmppmaster.ini.local
     section: grafana_api
