@@ -131,7 +131,7 @@
     content: text
   register: xmlres
   vars:
-    remote_user: root
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -154,7 +154,7 @@
   throttle: 1
   register: result
   vars:
-    remote_user: root
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -184,7 +184,7 @@
     status_code: 200
   throttle: 1
   vars:
-    remote_user: root
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -197,7 +197,7 @@
 - name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
-    remote_user: root
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   register: pulsemaindeviceid
   when:
@@ -208,7 +208,7 @@
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
-    remote_user: root
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
