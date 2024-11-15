@@ -141,7 +141,7 @@ All the following variables are required to install and configure Medulla :
 
 ```yaml
 [all:vars]
-ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 PULSE4REPO_URL='https://git.siveo.net/integration.list'
 	#Repo Medulla
 PULSE4REPOKEY_URL='https://git.siveo.net/pubkey.txt'

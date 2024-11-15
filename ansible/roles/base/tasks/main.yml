@@ -193,7 +193,7 @@
     state: present
     key: "{{ sshkey.ssh_public_key }}"
   vars:
-    ansible_ssh_user: root
+    remote_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -206,7 +206,7 @@
     ssh_key_bits: 2048
   register: pulsemain_sshkey
   vars:
-    ansible_ssh_user: root
+    remote_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
