@@ -59,9 +59,9 @@ mmcmain:
 
 all:
   vars:
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_python_interpreter: /usr/bin/python3
-    ansible_user: root
+    remote_user: root
     PULSE4REPO_URL: https://apt.siveo.net/stable.sources
     XMPP_MASTER_PASSWORD: !vault |
       $ANSIBLE_VAULT;1.1;AES256
