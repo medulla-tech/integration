@@ -74,7 +74,7 @@
 
 - name: PULSE_IMAGING - Add certificates to certs folder
   ansible.builtin.copy:
-    src: "{{ PKI_PATH }}/ca-chain.cert.pem"
+    src: "{{ CACERTS_PATH }}/pulse-ca-chain.crt"
     dest: /var/lib/pulse2/imaging/certs/pulse-ca-chain.crt
     remote_src: yes
 
