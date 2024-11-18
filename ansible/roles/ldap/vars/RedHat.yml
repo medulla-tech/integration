@@ -1,3 +1,4 @@
 SLAPD_D_PATH: /etc/openldap/slapd.d
 SLAPD_CERTS_PATH: /etc/openldap/certs
 LDAP_CONF: /etc/openldap/ldap.conf
+LDAP_USER: ldap

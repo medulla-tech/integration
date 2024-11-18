@@ -148,10 +148,11 @@
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
-- name: LDAP - Copy certificate to /etc/{{ CERTS_PATH }}/{{ SERVER_FQDN }}.pem
+- name: LDAP - Copy certificate to {{ SLAPD_CERTS_PATH }}/{{ SERVER_FQDN }}.pem
   ansible.builtin.copy:
     src: "{{ PKI_PATH }}/{{ SERVER_FQDN }}.pem"
-    dest: "/etc/{{ SLAPD_CERTS_PATH }}/"
+    dest: "{{ SLAPD_CERTS_PATH }}/"
+    owner: "{{ LDAP_USER }}"
     remote_src: yes
 
 - name: LDAP - Copy certificates_modify.ldif to /tmp
@@ -187,6 +188,22 @@
 
 - name: LDAP - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
+
+- name: LDAP - Copy add_module_entry.ldif to /tmp
+  ansible.builtin.copy:
+    src: add_module_entry.ldif
+    dest: /tmp/add_module_entry.ldif
+    mode: '0644'
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: LDAP - Add entry schema
+  ansible.builtin.command: ldapadd -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/add_module_entry.ldif
+  register: command_result
+  failed_when:
+    - (command_result.rc != 0) and (command_result.rc != 80) and (command_result.rc != 20) and (command_result.rc != 64)
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP - Copy syncprov_modify.ldif to /tmp
   ansible.builtin.copy:

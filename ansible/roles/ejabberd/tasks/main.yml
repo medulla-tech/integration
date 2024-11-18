@@ -39,7 +39,7 @@
 
 - name: EJABBERD - Name node after hostname
   ansible.builtin.lineinfile:
-    dest: /etc/default/ejabberd
+    dest: /etc/ejabberd/ejabberdctl.cfg
     line: ERLANG_NODE=ejabberd@{{ ansible_hostname }}
     regexp: '^#?ERLANG_NODE=.*$'
   register: nodename
