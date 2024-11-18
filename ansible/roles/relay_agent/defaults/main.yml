@@ -1,6 +1,7 @@
 XMPP_DOMAIN: '{{ ansible_hostname }}'
 XMPP_MASTER_PASSWORD: '' # 12 character string. Must be vaulted
 SERVER_FQDN: '{{ ansible_fqdn }}'
+DOMAIN_NAME: '{{ ansible_domain }}'
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 # Define PUBLIC_IP if main pulse server also has a public relay. TODO: Maybe this needs to go in another task
@@ -22,15 +23,15 @@ DBPASSWORD: '' # 12 character string. Must be vaulted
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
+PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set on relays
 INTERNET_DISABLED: false
 RELAY_INDEX: ''
 WOL_PORT: 9
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
 CLUSTER_FROM_ITSM_LOCATION: false
 CLUSTER_NAME_PREFIX: '{{ ENTITY }}'
-ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
+ITSM_DBHOST: '{{ PULSEMAIN_FQDN }}'
 ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
-SSH_USER: root

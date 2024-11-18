@@ -83,30 +83,24 @@
     dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
     mode: '0644'
     backup: yes
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/GUACAMOLE - Enable guacamole module
   ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ansible_distribution == 'Debian'
 
 - name: GUACAMOLE/APACHE - Reload apache on pulsemain
   systemd:
     name: '{{ APACHE_DAEMON }}'
     state: reloaded
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/APACHE - Setup local apache for agent update
   ansible.builtin.copy:
@@ -135,12 +129,10 @@
     named_args:
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
   register: res_query
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - ITSM_DBHOST == PULSEMAIN_IP
+    - PULSEMAIN_FQDN is defined
+    - ITSM_DBHOST == PULSEMAIN_FQDN
 
 - name: PULSE/ITSM - Allow access to ITSM API
   community.mysql.mysql_query:
@@ -152,8 +144,6 @@
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
     single_transaction: yes
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
@@ -167,11 +157,9 @@
     force_basic_auth: yes
     method: GET
   register: json_session
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
 
 - name: PULSE/ITSM - Create entity in ITSM if it does not exist
@@ -190,11 +178,9 @@
     return_content: yes
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
@@ -210,11 +196,9 @@
       - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
       - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
       - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
@@ -228,9 +212,7 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_queryshareexists
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
 
 - name: PULSE/SHARE - Get relay server id from db
   community.mysql.mysql_query:
@@ -246,9 +228,7 @@
   register: res_queryrelayserverid
   when:
     - res_queryshareexists.rowcount[0] == 0
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
 
 - name: PULSE/SHARE - Create cluster share in database if it did not exist
   community.mysql.mysql_query:
@@ -261,9 +241,7 @@
       - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ PKGS_SHARE_NAME }}', '{{ PKGS_SHARE_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}')
   when:
     - res_queryshareexists.rowcount[0] == 0
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
 
 - name: PULSE/SHARE - Find id of newly added share
   community.mysql.mysql_query:
@@ -275,9 +253,7 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_querynewshare
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
 
 - name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
   community.mysql.mysql_query:
@@ -288,30 +264,26 @@
     login_db: pkgs
     query:
       - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
   when:
     - res_queryshareexists.rowcount[0] == 0
 
 - name: PULSE/FILE_TRANSFER - Get relay ssh keys
   ansible.builtin.user:
-    name: '{{ SSH_USER }}'
+    name: root
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: sshkey
 
 - name: PULSE/FILE_TRANSFER - Add relay root public key to pulsetransfert authorized keys on pulsemain
   ansible.posix.authorized_key:
-    user: '{{ SSH_USER }}'
+    user: root
     state: present
     key: "{{ sshkey.ssh_public_key }}"
     path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
@@ -338,9 +310,7 @@
     named_args:
       packageserver_uuid: '{{ ps_uuid }}'
   register: res_query
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: "{{ PULSEMAIN_FQDN }}"
   when:
     - not IMAGING_DISABLED
 
@@ -355,9 +325,7 @@
       - SELECT id FROM glpi_entities WHERE completename = %(completename)s
     named_args:
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   register: res_queryentityglpi
   when:
     - not IMAGING_DISABLED
@@ -374,9 +342,7 @@
     named_args:
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
@@ -390,9 +356,7 @@
     login_db: imaging
     query:
       - INSERT INTO Entity (name, uuid) VALUES ('{{ ORGANISATION }} > {{ ENTITY }}', 'UUID{{ res_queryentityglpi.query_result[0][0].id }}')
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityimaging.rowcount[0] == 0
@@ -406,9 +370,7 @@
     login_db: imaging
     query:
       - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = {{ res_queryentityimaging.query_result[0][0].id }}
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityimaging.rowcount[0] != 0
@@ -425,9 +387,7 @@
     named_args:
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
 
@@ -440,9 +400,7 @@
     login_db: imaging
     query:
       - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
@@ -456,9 +414,7 @@
     login_db: imaging
     query:
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0

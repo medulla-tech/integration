@@ -8,14 +8,14 @@ public_mask = {{ NETMASK }}
 
 [imaging_api]
 glpi_mode = True
-{% if PULSEMAIN_IP != '' %}
-inventory_host = {{ PULSEMAIN_IP }}
+{% if PULSEMAIN_FQDN != '' %}
+inventory_host = {{ PULSEMAIN_FQDN }}
 {% else %}
 inventory_host = 127.0.0.1
 {% endif %}
 uuid = {{ IMAGING_UUID }}
 
-{% if PULSEMAIN_IP != '' %}
+{% if PULSEMAIN_FQDN != '' %}
 [mmc_agent]
-host = {{ PULSEMAIN_IP }}
+host = {{ PULSEMAIN_FQDN }}
 {% endif %}

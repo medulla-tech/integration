@@ -104,14 +104,14 @@
     src: 99-pulse.conf
     dest: /etc/sysctl.d/
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: BASE - Configure system limits for posix queues
   ansible.builtin.copy:
     src: pulse.conf
     dest: /etc/security/limits.d/
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: BASE - Clean yum repo
   ansible.builtin.command: yum clean {{ item }}
@@ -193,12 +193,10 @@
     user: '{{ SSH_USER }}'
     state: present
     key: "{{ sshkey.ssh_public_key }}"
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: BASE - Fetch ssh public key from pulsemain
   ansible.builtin.user:
@@ -206,12 +204,10 @@
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: pulsemain_sshkey
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: BASE - Add pulsemain ssh public key to authorized_keys on relay
   ansible.posix.authorized_key:
@@ -219,7 +215,7 @@
     state: present
     key: "{{ pulsemain_sshkey.ssh_public_key }}"
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: BASE - Create rbash shell
   ansible.builtin.file:

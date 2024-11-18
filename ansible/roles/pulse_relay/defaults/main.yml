@@ -1,10 +1,9 @@
-PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
 ITSM_TYPE: glpi # can be glpi or itsm-ng
 ITSM_WRITEABLE: true
 ITSM_API_USER: 'root'
 ITSM_API_PASSWORD: '{{ ROOT_PASSWORD }}'
-ITSM_DBHOST: '{{ PULSEMAIN_IP }}'
+ITSM_DBHOST: '{{ PULSEMAIN_FQDN }}'
 ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
@@ -15,7 +14,7 @@ PKGS_SHARE_NAME: '{{ ENTITY }}'
 ORGANISATION: Siveo Medulla
 IMAGING_SERVER_NAME: '{{ ENTITY }}'
 NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
-DBHOST: '{{ PULSEMAIN_IP }}' # To be set to PULSEMAIN_IP on relays
+DBHOST: '{{ PULSEMAIN_FQDN }}' # To be set to PULSEMAIN_FQDN on relays
 DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
@@ -28,4 +27,3 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
 IMAGING_DISABLED: false
-SSH_USER: root

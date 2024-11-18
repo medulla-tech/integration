@@ -26,7 +26,7 @@
   notify:
     - ENABLE_CDN - Restart pulse-package-watching
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ENABLE_CDN - Configure package_watching.ini.local
   community.general.ini_file:
@@ -42,12 +42,10 @@
     - { parameter: 'ssh_destpath', value: '{{ SSH_REMOTE_PATH }}' }
   notify:
     - ENABLE_CDN - Restart pulse-package-watching
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ENABLE_CDN - Configure pkgs.ini.local
   community.general.ini_file:
@@ -62,7 +60,7 @@
   notify:
     - ENABLE_CDN - Restart mmc-agent
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ENABLE_CDN - Configure pkgs.ini.local
   community.general.ini_file:
@@ -76,12 +74,10 @@
     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
   notify:
     - ENABLE_CDN - Restart mmc-agent
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ENABLE_CDN - Configure loaddeployment.ini.local
   community.general.ini_file:
@@ -96,7 +92,7 @@
   notify:
     - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ENABLE_CDN - Configure loaddeployment.ini.local
   community.general.ini_file:
@@ -110,12 +106,10 @@
     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
   notify:
     - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ENABLE_CDN - Configure Relay server applicationdeploymentjson.ini.local
   community.general.ini_file:
@@ -148,7 +142,7 @@
     ssh_key_bits: 2048
   register: pulsemain_sshkey
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ENABLE_CDN - !!!!! IMPORTANT MESSAGE !!!!!
   ansible.builtin.debug:
@@ -156,7 +150,7 @@
     - Please make sure the following key is added to {{ SSH_REMOTEUSER }} account on {{ SSH_REMOTESERVER }}
     - '{{ pulsemain_sshkey.ssh_public_key }}'
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ENABLE_CDN - Make sure ssh key exists on pulsemain
   ansible.builtin.user:
@@ -164,12 +158,10 @@
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: pulsemain_sshkey
-  vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ENABLE_CDN - !!!!! IMPORTANT MESSAGE !!!!!
   ansible.builtin.debug:
@@ -177,4 +169,4 @@
     - Please make sure the following key is added to {{ SSH_REMOTEUSER }} account on {{ SSH_REMOTESERVER }}
     - '{{ pulsemain_sshkey.ssh_public_key }}'
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''

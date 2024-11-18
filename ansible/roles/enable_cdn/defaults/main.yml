@@ -1,4 +1,4 @@
-PULSEMAIN_IP: ''
+PULSEMAIN_FQDN: ''
 AES_KEY: '' # 32 character string. Must be vaulted
 SSH_REMOTEUSER: cdnsync
 SSH_REMOTESERVER: cdn.siveo.net

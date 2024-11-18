@@ -1,4 +1,5 @@
 PULSEMAIN_IP: ''
+PULSEMAIN_FQDN: ''
 XMPP_DOMAIN: '{{ ansible_hostname }}'
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
