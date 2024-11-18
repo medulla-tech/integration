@@ -159,7 +159,7 @@
 - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
   ansible.builtin.copy:
     src: /usr/share/java/mysql-connector-java.jar
-    dest: /etc/guacamole/lib/mysql-connector-java.jar
+    dest: /etc/guacamole/lib/
     remote_src: yes
     owner: root
     group: root
@@ -167,7 +167,7 @@
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
-- name: Creates /etc/guacamole/lib/ folder
+- name: GUACAMOLE - Create /etc/guacamole/lib/ folder
   ansible.builtin.file:
     path: /etc/guacamole/lib/
     state: directory
