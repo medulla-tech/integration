@@ -32,4 +32,3 @@ ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
-SSH_USER: root

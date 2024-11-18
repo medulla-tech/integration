@@ -27,4 +27,3 @@ DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 IMAGING_DISABLED: false
-SSH_USER: root

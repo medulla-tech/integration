@@ -3,4 +3,3 @@ SHARE_PATH: /var/lib/pulse2/xmpp_baseremoteagent/
 MAIN_SHARE_TYPE: sendonly # sendonly or sendreceive
 RELAY_SHARE_TYPE: sendreceive # sendonly or sendreceive
 PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
-SSH_USER: root

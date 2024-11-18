@@ -5,4 +5,3 @@ STROOTPASSWD: '{{ ROOT_PASSWORD }}'
 STROOTPASSWD_HASHED: "{{ STROOTPASSWD | password_hash('bcrypt') }}"
 DEVICE_NAME: '{{ ansible_hostname }}'
 STMAIN_HOST: '{{ PULSEMAIN_IP }}' # STMAIN_HOST must be set on relays and cluster members
-SSH_USER: root
