@@ -34,7 +34,7 @@
     src: '{{ SLAPD_D_PATH }}/cn=config.ldif'
   register: configldif
   vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Create a list of all olcServerID records from main server
@@ -70,7 +70,7 @@
     dest: /tmp/config_synch.ldif
     mode: '0644'
   vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Enable replication of cn=config database on main server
@@ -79,7 +79,7 @@
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
   vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Copy config_synch.ldif to /tmp
@@ -100,7 +100,7 @@
     dest: /tmp/db_synch.ldif
     mode: '0644'
   vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
 
 - name: LDAP_CLUSTER - Enable replication of database on main server
@@ -109,7 +109,7 @@
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
   vars:
-    ansible_ssh_user: '{{ SSH_USER }}'
+    ansible_ssh_user: root
   delegate_to: '{{ PULSEMAIN_IP }}'
   register: dbrepl_init
 
