@@ -19,7 +19,7 @@
       - crudini
       - at
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: MEDULLA_OSUPDATES - Install tools needed for Medulla OS Updates
   ansible.builtin.apt:
