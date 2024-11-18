@@ -123,7 +123,7 @@
 
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   register: pulsemaindepldeviceid
   when:
     - STMAIN_HOST is defined
@@ -132,7 +132,7 @@
 - name: SYNCTHING - Set PULSEMAINDEPL_DEVICE_ID for syncthing-depl
   ansible.builtin.set_fact:
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -172,7 +172,7 @@
 
 - name: SYNCTHING - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   register: pulsemaindeviceid
   when:
     - STMAIN_HOST is defined
@@ -181,7 +181,7 @@
 - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -207,7 +207,7 @@
     xpath: /configuration/options/listenAddress
     content: text
   register: relayres
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STRELAYSRV_URL == ''
@@ -227,7 +227,7 @@
     xpath: /configuration/options/globalAnnounceEnabled
     content: text
   register: globalannounceres
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STDISCOSRV_URL == ''
@@ -239,7 +239,7 @@
     xpath: /configuration/options/globalAnnounceServer
     content: text
   register: discores
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STDISCOSRV_URL == ''
@@ -289,7 +289,7 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -306,7 +306,7 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -321,7 +321,7 @@
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -334,7 +334,7 @@
     method: DELETE
     status_code: 200
   throttle: 1
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -348,7 +348,7 @@
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -361,7 +361,7 @@
     method: DELETE
     status_code: 200
   throttle: 1
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -384,7 +384,7 @@
       introducer: false
     status_code: 200
   throttle: 1
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -406,7 +406,7 @@
       introducer: false
     status_code: 200
   throttle: 1
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined
     - STMAIN_HOST != ''
@@ -435,7 +435,7 @@
     src: syncthing.conf.j2
     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ DEVICE_NAME }}.conf'
     mode: '0644'
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:
@@ -444,7 +444,7 @@
 
 - name: SYNCTHING/APACHE - Enable syncthing configuration
   ansible.builtin.command: a2enconf syncthing-{{ DEVICE_NAME }}
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
   when:

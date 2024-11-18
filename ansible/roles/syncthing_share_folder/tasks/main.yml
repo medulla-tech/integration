@@ -130,7 +130,7 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -151,7 +151,7 @@
     status_code: 200
   throttle: 1
   register: result
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -179,7 +179,7 @@
       devices: "{{ new_devices }}"
     status_code: 200
   throttle: 1
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -190,7 +190,7 @@
 
 - name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   register: pulsemaindeviceid
   when:
     - PULSEMAIN_FQDN is defined
@@ -199,7 +199,7 @@
 - name: ST_SHARE_FOLDER - Set PULSEMAIN_DEVICE_ID for syncthing
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
