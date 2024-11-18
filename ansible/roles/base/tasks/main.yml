@@ -70,6 +70,7 @@
   ansible.builtin.get_url:
     url: '{{ PULSE4REPO_URL }}'
     dest: '{{ PULSE4REPO_DEST }}'
+    force: true
 
 - name: BASE - Find out URL of SIVEO public key
   ansible.builtin.command: grep -m1 -ir 'gpgkey=' {{ PULSE4REPO_DEST }}
