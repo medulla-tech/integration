@@ -17,7 +17,7 @@
     pkg:
       - crudini
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: MAXSCALE - Install tools needed for the setup
   ansible.builtin.apt:
