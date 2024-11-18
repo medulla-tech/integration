@@ -181,10 +181,10 @@
   with_items:
     - master-public-RSA.key
     - master-all-RSA.key
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
     - PYTHON_VERSION == 2
 
 - name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
@@ -195,7 +195,7 @@
     - master-public-RSA.key
     - master-all-RSA.key
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
     - PYTHON_VERSION == 2
 
 - name: SUBSTITUTE_AGENT - Copy master agent keys to substitutes folder
@@ -207,7 +207,7 @@
     - master-public-RSA.key
     - master-all-RSA.key
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
     - PYTHON_VERSION == 2
     
 - name: SUBSTITUTE_AGENT/EJABBERD - Register substitute account

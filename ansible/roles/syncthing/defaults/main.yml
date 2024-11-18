@@ -4,4 +4,4 @@ STAPIKEY: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32
 STROOTPASSWD: '{{ ROOT_PASSWORD }}'
 STROOTPASSWD_HASHED: "{{ STROOTPASSWD | password_hash('bcrypt') }}"
 DEVICE_NAME: '{{ ansible_hostname }}'
-STMAIN_HOST: '{{ PULSEMAIN_IP }}' # STMAIN_HOST must be set on relays and cluster members
+STMAIN_HOST: '{{ PULSEMAIN_FQDN }}' # STMAIN_HOST must be set on relays and cluster members

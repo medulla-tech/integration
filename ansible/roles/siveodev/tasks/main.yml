@@ -58,7 +58,7 @@
     priv: '*.*:ALL'
   no_log: True
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: SIVEODEV - Allow access to databases for automatic testing
   community.mysql.mysql_user:
@@ -71,7 +71,7 @@
   loop: '{{ DB_ALLOWED_IPS }}'
   no_log: True
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: SIVEODEV - Install python modules needed for deploy_pulse_files_from_git.py
   ansible.builtin.apt:

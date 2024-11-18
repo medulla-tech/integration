@@ -123,8 +123,6 @@
 
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindepldeviceid
   when:
@@ -134,8 +132,6 @@
 - name: SYNCTHING - Set PULSEMAINDEPL_DEVICE_ID for syncthing-depl
   ansible.builtin.set_fact:
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -176,8 +172,6 @@
 
 - name: SYNCTHING - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindeviceid
   when:
@@ -187,8 +181,6 @@
 - name: SYNCTHING - Set PULSEMAIN_DEVICE_ID for syncthing
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -215,8 +207,6 @@
     xpath: /configuration/options/listenAddress
     content: text
   register: relayres
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -237,8 +227,6 @@
     xpath: /configuration/options/globalAnnounceEnabled
     content: text
   register: globalannounceres
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -251,8 +239,6 @@
     xpath: /configuration/options/globalAnnounceServer
     content: text
   register: discores
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -303,8 +289,6 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -322,8 +306,6 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -339,8 +321,6 @@
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -354,8 +334,6 @@
     method: DELETE
     status_code: 200
   throttle: 1
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -370,8 +348,6 @@
   ansible.builtin.command: xmlstarlet sel -t -v "configuration/device[@name='{{ DEVICE_NAME }}']/@id" /var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/config.xml
   register: relay_device_id
   ignore_errors: yes
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -385,8 +361,6 @@
     method: DELETE
     status_code: 200
   throttle: 1
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -410,8 +384,6 @@
       introducer: false
     status_code: 200
   throttle: 1
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -434,8 +406,6 @@
       introducer: false
     status_code: 200
   throttle: 1
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -465,8 +435,6 @@
     src: syncthing.conf.j2
     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ DEVICE_NAME }}.conf'
     mode: '0644'
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
@@ -476,8 +444,6 @@
 
 - name: SYNCTHING/APACHE - Enable syncthing configuration
   ansible.builtin.command: a2enconf syncthing-{{ DEVICE_NAME }}
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain

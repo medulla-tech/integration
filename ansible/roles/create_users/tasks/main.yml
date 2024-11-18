@@ -37,7 +37,7 @@
       - "uidNumber"
   register: ldap_uidnumbers
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: CREATE_USERS - Add entry basedn
   community.general.ldap_entry:
@@ -64,7 +64,7 @@
       lmcACL: '{{ ACL_ALL }}'
       loginShell: /bin/bash
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
     - ldap_uidnumbers.results | length == 0
 
 - name: CREATE_USERS - Add entry basedn
@@ -92,7 +92,7 @@
       lmcACL: '{{ ACL_ALL }}'
       loginShell: /bin/bash
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
     - ldap_uidnumbers.results | length > 0
 
 - name: CREATE_USERS - Provision user in ITSM
@@ -104,7 +104,7 @@
     method: GET
   register: json_session
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
     - ITSM_WRITEABLE
 
 - name: CREATE_USERS - Check if user is already assigned Technician profile in ITSM
@@ -120,7 +120,7 @@
       name: '{{ USER_USERNAME }}'
   register: res_queryprofileid
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: CREATE_USERS - Assign user to Technician profile in ITSM if not already done
   community.mysql.mysql_query:
@@ -134,5 +134,5 @@
     named_args:
       name: '{{ USER_USERNAME }}'
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
     - res_queryprofileid.rowcount[0] == 0
