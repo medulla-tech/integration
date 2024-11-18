@@ -71,8 +71,6 @@
       'mysql.proxies_priv': 'SELECT'
       'mysql.roles_mapping': 'SELECT'
       '*.*': 'SHOW DATABASES'
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 
@@ -86,8 +84,6 @@
     state: present
     priv:
       '*.*': 'REPLICATION CLIENT,SUPER,RELOAD'
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 

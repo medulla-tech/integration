@@ -33,9 +33,7 @@
   ansible.builtin.slurp:
     src: '{{ SLAPD_D_PATH }}/cn=config.ldif'
   register: configldif
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
 
 - name: LDAP_CLUSTER - Create a list of all olcServerID records from main server
   ansible.builtin.set_fact:
@@ -69,18 +67,14 @@
     src: config_synch.ldif.j2
     dest: /tmp/config_synch.ldif
     mode: '0644'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
 
 - name: LDAP_CLUSTER - Enable replication of cn=config database on main server
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/config_synch.ldif'
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
 
 - name: LDAP_CLUSTER - Copy config_synch.ldif to /tmp
   ansible.builtin.template:
@@ -99,18 +93,14 @@
     src: db_synch.ldif.j2
     dest: /tmp/db_synch.ldif
     mode: '0644'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
 
 - name: LDAP_CLUSTER - Enable replication of database on main server
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/db_synch.ldif'
   register: command_result
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
   register: dbrepl_init
 
 - name: LDAP_CLUSTER - Set marker for database replication initialisation

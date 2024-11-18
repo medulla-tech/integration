@@ -1,4 +1,4 @@
-PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
+PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
 LDAPADMINPASSWD: '{{ ROOT_PASSWORD }}'
 LDAPSYNCHADMINPASSWD: '' # 20 character string. Must be vaulted
 LDAP_DOMAIN: '{{ ansible_domain }}'

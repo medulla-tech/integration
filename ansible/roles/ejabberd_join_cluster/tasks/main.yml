@@ -14,8 +14,6 @@
 - name: EJABBERD_CLUSTER - Get initial server node name
   ansible.builtin.command: grep -m1 -ir '^ERLANG_NODE=' /etc/default/ejabberd
   register: grep_output
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
   failed_when: ('localhost' in grep_output.stdout) or (grep_output.stdout == '')
 
@@ -27,8 +25,6 @@
 - name: EJABBERD_CLUSTER - Check if the initial server is in the correct domain
   ansible.builtin.set_fact:
     hosts: "{{ (ejabberdyml['content'] | b64decode |from_yaml).hosts }}"
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
   failed_when: (XMPP_DOMAIN not in hosts)
 
@@ -41,8 +37,6 @@
     - { src: '/var/lib/ejabberd/.erlang.cookie', dest_filename: 'erlang.cookie' }
     - { src: '/etc/ejabberd/{{ XMPP_DOMAIN }}.pem', dest_filename: '{{ XMPP_DOMAIN }}.pem' }
     - { src: '/etc/ejabberd/ejabberd.yml', dest_filename: 'ejabberd.yml' }
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
 
 - name: EJABBERD_CLUSTER - Copy files over to new cluster member

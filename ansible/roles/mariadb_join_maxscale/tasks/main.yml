@@ -56,28 +56,20 @@
     - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'protocol', value: 'MariaDBBackend' }
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Add mariadb server to MariaDB-Monitor
   ansible.builtin.command: 'crudini --set --list /etc/maxscale.cnf.d/medulla_master.cnf MariaDB-Monitor servers {{ SERVER_FQDN.split(".")[0] }}'
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Add mariadb server to Read-Only-Service
   ansible.builtin.command: 'crudini --set --list /etc/maxscale.cnf.d/medulla_master.cnf Read-Only-Service servers {{ SERVER_FQDN.split(".")[0] }}'
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ MAXSCALE_FQDN }}'
