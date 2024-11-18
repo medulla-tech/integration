@@ -2,3 +2,4 @@
 XMPP_DOMAIN: pulse
 # INITIAL_CLUSTER_SERVER must be set to the IP or FQDN of the initial server of the cluster to be joined
 INITIAL_CLUSTER_SERVER: ''
+SSH_USER: root

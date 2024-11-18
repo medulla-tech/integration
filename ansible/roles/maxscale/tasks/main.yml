@@ -72,7 +72,7 @@
       'mysql.roles_mapping': 'SELECT'
       '*.*': 'SHOW DATABASES'
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 
@@ -87,7 +87,7 @@
     priv:
       '*.*': 'REPLICATION CLIENT,SUPER,RELOAD'
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 

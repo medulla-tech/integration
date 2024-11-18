@@ -154,7 +154,7 @@
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master on main server
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ PULSEMAIN_IP }}'
   when: 
     - PULSEMAIN_IP is defined
@@ -164,7 +164,7 @@
 - name: MMC - Restart pulse-xmpp-master-substitute-master with the new parameters
   ansible.builtin.meta: flush_handlers
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ PULSEMAIN_IP }}'
   when: 
     - PULSEMAIN_IP is defined

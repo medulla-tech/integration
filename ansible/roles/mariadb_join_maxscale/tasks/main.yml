@@ -57,7 +57,7 @@
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Add mariadb server to MariaDB-Monitor
@@ -65,7 +65,7 @@
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Add mariadb server to Read-Only-Service
@@ -73,11 +73,11 @@
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ MAXSCALE_FQDN }}'

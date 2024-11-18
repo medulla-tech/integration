@@ -22,5 +22,5 @@
     state: restarted
     daemon_reload: yes
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ PULSEMAIN_IP }}'
