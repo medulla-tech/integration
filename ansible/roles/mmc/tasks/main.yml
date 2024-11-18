@@ -153,7 +153,7 @@
   ansible.builtin.command: 'crudini --set --list /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local filter allowed_ips {{ IP_ADDRESS }}/{{ NETMASK }}'
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master on main server
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when: 
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -161,7 +161,7 @@
 
 - name: MMC - Restart pulse-xmpp-master-substitute-master with the new parameters
   ansible.builtin.meta: flush_handlers
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when: 
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
