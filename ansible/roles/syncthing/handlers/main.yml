@@ -12,7 +12,7 @@
     name: syncthing@{{ item }}
     state: restarted
     daemon_reload: yes
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   with_items:
     - syncthing
     - syncthing-depl
@@ -30,6 +30,6 @@
     name: '{{ APACHE_DAEMON }}'
     state: restarted
     daemon_reload: yes
-  delegate_to: '{{ STMAIN_HOST }}'
+  delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
     - STMAIN_HOST is defined

@@ -118,7 +118,7 @@
     query:
       - SELECT nameserver FROM relayserver WHERE jid LIKE '%@pulse/%'
   register: res_querymmc
-  delegate_to: "{{ PULSEMAIN_FQDN }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -156,7 +156,7 @@
     query:
       - SELECT glpi_locations.completename AS locationname FROM glpi_locations LEFT JOIN glpi_computers ON glpi_computers.locations_id=glpi_locations.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
   register: res_location
-  delegate_to: "{{ PULSEMAIN_FQDN }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - CLUSTER_FROM_ITSM_LOCATION
 
@@ -170,7 +170,7 @@
     query:
       - SELECT glpi_entities.completename AS entityname FROM glpi_entities LEFT JOIN glpi_computers ON glpi_computers.entities_id=glpi_entities.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
   register: res_entity
-  delegate_to: "{{ PULSEMAIN_FQDN }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - CLUSTER_FROM_ITSM_LOCATION
 
@@ -209,7 +209,7 @@
     named_args:
       name: '{{ CLUSTER_NAME }}'
   register: res_queryclusterid
-  delegate_to: "{{ PULSEMAIN_FQDN }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
   community.mysql.mysql_query:

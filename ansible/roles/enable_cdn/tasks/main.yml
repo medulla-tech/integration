@@ -42,7 +42,7 @@
     - { parameter: 'ssh_destpath', value: '{{ SSH_REMOTE_PATH }}' }
   notify:
     - ENABLE_CDN - Restart pulse-package-watching
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+    delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -74,7 +74,7 @@
     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
   notify:
     - ENABLE_CDN - Restart mmc-agent
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -106,7 +106,7 @@
     - { parameter: 'keyAES32', value: '{{ AES_KEY }}' }
   notify:
     - ENABLE_CDN - Restart pulse-xmpp-master-substitute-deployment
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -158,7 +158,7 @@
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: pulsemain_sshkey
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''

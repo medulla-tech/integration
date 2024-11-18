@@ -181,7 +181,7 @@
   with_items:
     - master-public-RSA.key
     - master-all-RSA.key
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''

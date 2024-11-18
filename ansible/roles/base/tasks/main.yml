@@ -193,7 +193,7 @@
     user: '{{ SSH_USER }}'
     state: present
     key: "{{ sshkey.ssh_public_key }}"
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
@@ -204,7 +204,7 @@
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: pulsemain_sshkey
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
