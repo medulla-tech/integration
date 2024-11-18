@@ -32,7 +32,7 @@
 
 - name: SIVEODEV - Add all users ssh keys to root account
   ansible.posix.authorized_key:
-    user: root
+    user: '{{ SSH_USER }}'
     state: present
     key: '{{ item }}'
   with_file:

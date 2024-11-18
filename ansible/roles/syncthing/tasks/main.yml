@@ -124,7 +124,7 @@
 - name: SYNCTHING - Find pulsemain device id for syncthing-depl
   ansible.builtin.command: syncthing -home=/var/lib/syncthing-depl/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindepldeviceid
   when:
@@ -135,7 +135,7 @@
   ansible.builtin.set_fact:
     PULSEMAINDEPL_DEVICE_ID: '{{ pulsemaindepldeviceid.stdout }}'
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -177,7 +177,7 @@
 - name: SYNCTHING - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   register: pulsemaindeviceid
   when:
@@ -188,7 +188,7 @@
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -216,7 +216,7 @@
     content: text
   register: relayres
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -238,7 +238,7 @@
     content: text
   register: globalannounceres
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -252,7 +252,7 @@
     content: text
   register: discores
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -304,7 +304,7 @@
     content: text
   register: xmlres
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -323,7 +323,7 @@
     content: text
   register: xmlres
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -340,7 +340,7 @@
   register: relay_device_id
   ignore_errors: yes
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -355,7 +355,7 @@
     status_code: 200
   throttle: 1
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -371,7 +371,7 @@
   register: relay_device_id
   ignore_errors: yes
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -386,7 +386,7 @@
     status_code: 200
   throttle: 1
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -411,7 +411,7 @@
     status_code: 200
   throttle: 1
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -435,7 +435,7 @@
     status_code: 200
   throttle: 1
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   when:
     - STMAIN_HOST is defined
@@ -466,7 +466,7 @@
     dest: '{{ APACHE_CONF_PATH }}/syncthing-{{ DEVICE_NAME }}.conf'
     mode: '0644'
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain
@@ -477,7 +477,7 @@
 - name: SYNCTHING/APACHE - Enable syncthing configuration
   ansible.builtin.command: a2enconf syncthing-{{ DEVICE_NAME }}
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ STMAIN_HOST }}'
   notify:
     - SYNCTHING - Restart apache on pulsemain

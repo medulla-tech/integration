@@ -28,3 +28,4 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
 IMAGING_DISABLED: false
+SSH_USER: root
