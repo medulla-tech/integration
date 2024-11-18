@@ -3,3 +3,4 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PULSEMAIN_IP: ''
 DB_ALLOWED_IPS: [{'name': 'BuildNew', 'ip': '10.10.0.105'}]
 CLIENTS_SSH_PORT: 22
+SSH_USER: root

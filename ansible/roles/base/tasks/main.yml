@@ -182,18 +182,18 @@
 
 - name: BASE - Make sure ssh key exists
   ansible.builtin.user:
-    name: root
+    name: '{{ SSH_USER }}'
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: sshkey
 
 - name: BASE - Add relay ssh public key to authorized_keys on pulsemain
   ansible.posix.authorized_key:
-    user: root
+    user: '{{ SSH_USER }}'
     state: present
     key: "{{ sshkey.ssh_public_key }}"
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -201,12 +201,12 @@
 
 - name: BASE - Fetch ssh public key from pulsemain
   ansible.builtin.user:
-    name: root
+    name: '{{ SSH_USER }}'
     generate_ssh_key: yes
     ssh_key_bits: 2048
   register: pulsemain_sshkey
   vars:
-    ansible_ssh_user: root
+    ansible_ssh_user: '{{ SSH_USER }}'
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - PULSEMAIN_IP is defined
@@ -214,7 +214,7 @@
 
 - name: BASE - Add pulsemain ssh public key to authorized_keys on relay
   ansible.posix.authorized_key:
-    user: root
+    user: '{{ SSH_USER }}'
     state: present
     key: "{{ pulsemain_sshkey.ssh_public_key }}"
   when:

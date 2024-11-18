@@ -5,3 +5,4 @@ SSH_REMOTESERVER: cdn.siveo.net
 SSH_REMOTE_PATH: /home/cdnsync/webroot/sharing/
 CDN_BASEURL: http://cdn.siveo.net/sharing/
 CDN_TOKEN: '' # String used as X-Authorization token
+SSH_USER: root
