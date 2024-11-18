@@ -2,4 +2,4 @@ SHARE_NAME: baseremoteagent
 SHARE_PATH: /var/lib/pulse2/xmpp_baseremoteagent/
 MAIN_SHARE_TYPE: sendreceive # sendonly, sendreceive or receiveonly
 RELAY_SHARE_TYPE: receiveonly # ssendonly, sendreceive or receiveonly
-PULSEMAIN_FQDN: '' # PULSEMAIN_IP must be set on relays
+PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set on relays
