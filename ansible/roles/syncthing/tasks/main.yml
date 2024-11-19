@@ -333,6 +333,7 @@
       X-API-Key: '{{ MAINSTAPIKEY }}'
     method: DELETE
     status_code: 200
+    use_proxy: false
   throttle: 1
   delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
@@ -360,6 +361,7 @@
       X-API-Key: '{{ MAINSTDEPLAPIKEY }}'
     method: DELETE
     status_code: 200
+    use_proxy: false
   throttle: 1
   delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
@@ -383,6 +385,7 @@
       name: "{{ DEVICE_NAME }}"
       introducer: false
     status_code: 200
+    use_proxy: false
   throttle: 1
   delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:
@@ -405,6 +408,7 @@
       name: "{{ DEVICE_NAME }}"
       introducer: false
     status_code: 200
+    use_proxy: false
   throttle: 1
   delegate_to: '{{ STMAIN_HOST if STMAIN_HOST != "" else omit }}'
   when:

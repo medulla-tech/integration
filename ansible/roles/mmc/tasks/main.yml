@@ -580,6 +580,7 @@
         database: xmppmaster
       access: direct
     status_code: [200, 409]
+    use_proxy: false
 
 - name: MMC/GRAFANA - Configure API Key
   community.general.ini_file:

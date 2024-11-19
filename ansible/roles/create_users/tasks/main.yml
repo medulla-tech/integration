@@ -102,6 +102,7 @@
     url_password: '{{ USER_PASSWORD }}'
     force_basic_auth: yes
     method: GET
+    use_proxy: false
   register: json_session
   when:
     - PULSEMAIN_FQDN == ''

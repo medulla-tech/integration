@@ -94,6 +94,7 @@
       label: "{{ SHARE_NAME }}"
       path: "{{ SHARE_PATH }}"
       type: "{{ MAIN_SHARE_TYPE }}"
+    use_proxy: false
   when:
     - PULSEMAIN_FQDN == ''
 
@@ -109,6 +110,7 @@
       label: "{{ SHARE_NAME }}"
       path: "{{ SHARE_PATH }}"
       type: "{{ RELAY_SHARE_TYPE }}"
+    use_proxy: false
   when:
     - PULSEMAIN_FQDN != ''
 
@@ -149,6 +151,7 @@
     method: GET
     body_format: json
     status_code: 200
+    use_proxy: false
   throttle: 1
   register: result
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
@@ -178,6 +181,7 @@
     body:
       devices: "{{ new_devices }}"
     status_code: 200
+    use_proxy: false
   throttle: 1
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
@@ -211,6 +215,7 @@
       X-API-Key: '{{ STAPIKEY }}'
     method: GET
     body_format: json
+    use_proxy: false
   register: result
   when:
     - PULSEMAIN_FQDN != ''
@@ -233,6 +238,7 @@
     body_format: json
     body:
       devices: "{{ new_devices }}"
+    use_proxy: false
   when:
     - PULSEMAIN_FQDN != ''
 
