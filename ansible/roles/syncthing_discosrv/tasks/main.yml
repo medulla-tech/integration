@@ -21,7 +21,6 @@
   ansible.builtin.yum:
     pkg:
       - syncthing-tools
-      - syncthing-systemd-addons
     state: latest
   when:
     - ansible_distribution == 'CentOS'  or ansible_distribution == 'RedHat'
@@ -33,6 +32,16 @@
     state: latest
   when:
     - ansible_distribution == 'Debian'
+
+- name: STDISCOSRV - Create service file
+  ansible.builtin.copy:
+    src: syncthing-discosrv.service
+    dest: /usr/lib/systemd/system/
+    mode: '0644'
+  notify:
+    - STDISCOSRV - Restart discovery server
+  when: 
+    - ansible_distribution == 'CentOS'  or ansible_distribution == 'RedHat'
 
 - name: STDISCOSRV - Create user accounts
   ansible.builtin.user:

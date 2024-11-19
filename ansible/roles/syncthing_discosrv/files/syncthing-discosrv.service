@@ -1,0 +1,15 @@
+[Unit]
+Description=Syncthing Discovery Server
+After=network.target
+Documentation=man:stdiscosrv(1)
+
+[Service]
+User=syncthing
+Group=syncthing
+WorkingDirectory=/var/lib/syncthing/.local/state/syncthing/
+ExecStart=/usr/bin/stdiscosrv
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=stdiscosrv.service
