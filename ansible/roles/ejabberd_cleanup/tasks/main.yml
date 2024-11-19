@@ -27,6 +27,6 @@
 
 - name: EJABBERD - Reset ERLANG_NODE to ejabberd@localhost
   ansible.builtin.lineinfile:
-    dest: /etc/default/ejabberd
+    dest: /etc/ejabberd/ejabberdctl.cfg
     line: ERLANG_NODE=ejabberd@localhost
     regexp: '^#?ERLANG_NODE=.*$'
