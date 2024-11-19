@@ -113,6 +113,7 @@
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
     method: GET
+    use_proxy: false
   register: json_session
   when:
     - ITSM_WRITEABLE
@@ -131,6 +132,7 @@
       input:
         name: '{{ ENTITY }}'
     return_content: yes
+    use_proxy: false
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
   when:

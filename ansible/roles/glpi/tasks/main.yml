@@ -215,6 +215,7 @@
     url_password: '{{ GLPI_ADMINPASSWD }}'
     force_basic_auth: yes
     method: GET
+    use_proxy: false
   register: json_session
 
 - name: GLPI - Delete all initially created users apart from glpi/root
@@ -227,6 +228,7 @@
       Session-Token: '{{ json_session.json.session_token }}'
     method: DELETE
     return_content: yes
+    use_proxy: false
   with_items:
     - 3
     - 4
@@ -244,6 +246,7 @@
       Session-Token: '{{ json_session.json.session_token }}'
     method: DELETE
     return_content: yes
+    use_proxy: false
   with_items:
     - 3
     - 4
@@ -266,6 +269,7 @@
         name: '{{ ORGANISATION }}'
         completename: '{{ ORGANISATION }}'
     return_content: yes
+    use_proxy: false
   register: result
   failed_when: ('false' not in result.content) and (result.status != 200)
 
@@ -286,6 +290,7 @@
         entities_id: 0
         locations_id: 0
     return_content: yes
+    use_proxy: false
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 200) and (result.status != 201)
 
