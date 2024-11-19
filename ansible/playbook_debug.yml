@@ -3,6 +3,7 @@
   hosts: all
   remote_user: root
   serial: 1
+  environment: "{{ proxy_env }}"
   tasks:
     - name: Display all variables/facts known for a host
       debug:

@@ -2,6 +2,7 @@
   gather_facts: true
   remote_user: root
   hosts: mmc
+  environment: "{{ proxy_env }}"
   roles:
     - security
     - siveodev
@@ -11,6 +12,7 @@
   gather_facts: true
   remote_user: root
   hosts: ars
+  environment: "{{ proxy_env }}"
   roles:
     - security
     - siveodev
