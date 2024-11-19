@@ -21,5 +21,8 @@
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={2}nis.ldif
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
+  - /var/lib/ldap/data.mdb
+  - /var/lib/ldap/lock.mdb
+  - /var/lib/ldap/DB_CONFIG
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
