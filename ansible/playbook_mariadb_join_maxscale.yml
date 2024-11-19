@@ -3,6 +3,7 @@
   remote_user: root
   hosts: all
   serial: 1
+  environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: MAXSCALE_CLUSTER - Set version for this playbook
