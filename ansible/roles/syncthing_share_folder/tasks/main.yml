@@ -59,7 +59,7 @@
     path: '{{ SHARE_PATH }}'
     entity: syncthing
     etype: user
-    permissions: rwx
+    permissions: rwX
     state: present
     recursive: true
 
@@ -68,7 +68,7 @@
     path: '{{ SHARE_PATH }}'
     entity: syncthing
     etype: user
-    permissions: rwx
+    permissions: rwX
     state: present
     default: true
     recursive: true
