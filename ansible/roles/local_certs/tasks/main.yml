@@ -24,7 +24,7 @@
       - openssl
       - ca-certificates
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: CERT - Install openssl and ca-certificates package
   ansible.builtin.apt:
@@ -50,7 +50,7 @@
     pkg:
       - pyOpenSSL
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: CERT - Install tools needed for the setup
   ansible.builtin.apt:
@@ -92,7 +92,7 @@
 - name: CERT - Add pulse ca to ca certs
   ansible.builtin.command: update-ca-trust extract
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: CERT - Create pki folder tree
   ansible.builtin.file:
