@@ -1,1 +1,2 @@
 SLAPD_D_PATH: /etc/openldap/slapd.d
+REPL_ATTRIBUTE: olcMirrorMode

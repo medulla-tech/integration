@@ -29,5 +29,5 @@ olcSyncRepl:
     tls_cacertdir=/etc/ssl/certs/
 {% endfor %}
 -
-add: olcMultiProvider
-olcMultiProvider: TRUE
+add: {{ REPL_ATTRIBUTE }}
+{{ REPL_ATTRIBUTE }}: TRUE
