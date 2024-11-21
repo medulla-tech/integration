@@ -12,7 +12,7 @@
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
 - name: EJABBERD_CLUSTER - Get initial server node name
-  ansible.builtin.command: grep -m1 -ir '^ERLANG_NODE=' /etc/default/ejabberd
+  ansible.builtin.command: grep -m1 -ir '^ERLANG_NODE=' /etc/ejabberd/ejabberdctl.cfg
   register: grep_output
   delegate_to: '{{ INITIAL_CLUSTER_SERVER }}'
   failed_when: ('localhost' in grep_output.stdout) or (grep_output.stdout == '')
