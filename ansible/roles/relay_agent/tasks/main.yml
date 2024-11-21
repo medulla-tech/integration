@@ -195,7 +195,7 @@
     login_db: 'xmppmaster'
     query:
       - INSERT IGNORE INTO cluster_ars (name, description) VALUES('{{ CLUSTER_NAME }}', '{{ CLUSTER_DESCRIPTION }}') ON DUPLICATE KEY UPDATE description='{{ CLUSTER_DESCRIPTION }}'
-  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Get cluster id for relay
   community.mysql.mysql_query:
@@ -226,7 +226,7 @@
   retries: 10
   delay: 30
   until: res_queryrelayserverid.rowcount[0] != 0
-  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Make sure ssh key exists
   ansible.builtin.user:
@@ -244,7 +244,7 @@
     login_db: 'xmppmaster'
     query:
       - UPDATE relayserver SET ssh_public_key = '{{ sshkey.ssh_public_key }}' WHERE id = {{ res_queryrelayserverid.query_result[0][0].id }}
-  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Insert relay in its cluster
   community.mysql.mysql_query:
@@ -255,7 +255,7 @@
     login_db: 'xmppmaster'
     query:
       - INSERT INTO has_cluster_ars (id_ars, id_cluster) VALUES ({{ res_queryrelayserverid.query_result[0][0].id }}, {{ res_queryclusterid.query_result[0][0].id }}) ON DUPLICATE KEY UPDATE id_cluster='{{ res_queryclusterid.query_result[0][0].id }}'
-  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Create substituteconf records
   community.mysql.mysql_query:
@@ -266,7 +266,7 @@
     login_db: 'xmppmaster'
     query:
       - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) SELECT DISTINCT type, jidsubtitute, '{{ res_queryrelayserverid.query_result[0][0].id }}' FROM substituteconf
-  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Ensure relay service is running
   ansible.builtin.systemd:
