@@ -86,7 +86,7 @@
     masked: no
 
 - name: STDISCOSRV - Get Service Status
-  ansible.builtin.shell: systemctl status syncthing-discosrv.service |awk 'match($0, /.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}/) {print substr($0, RSTART, RLENGTH)}'
+  ansible.builtin.shell: systemctl status syncthing-discosrv.service | grep 'Server device ID' |awk 'match($0, /.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}-.{7}/) {print substr($0, RSTART, RLENGTH)}'
   register: stdiscosrv_status
 
 - name: STDISCOSRV - Set STDISCOSRV_URL variable
