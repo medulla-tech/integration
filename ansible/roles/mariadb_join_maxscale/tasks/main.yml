@@ -70,6 +70,12 @@
     - MAXSCALE_CLUSTER - Restart maxscale
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
+- name: MAXSCALE_CLUSTER - Add mariadb server to Splitter-Service
+  ansible.builtin.command: 'crudini --set --list /etc/maxscale.cnf.d/medulla_master.cnf Splitter-Service servers {{ SERVER_FQDN.split(".")[0] }}'
+  notify:
+    - MAXSCALE_CLUSTER - Restart maxscale
+  delegate_to: '{{ MAXSCALE_FQDN }}'
+
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
   delegate_to: '{{ MAXSCALE_FQDN }}'

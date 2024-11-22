@@ -30,3 +30,10 @@ router_options=slave
 servers={{ MASTER_FQDN.split('.')[0] }}
 user={{ MAXSCALE_USER }}
 password={{ MAXSCALE_USER_PASSWORD }}
+
+[Splitter-Service]
+type=service
+router=readwritesplit
+servers={{ MASTER_FQDN.split('.')[0] }}
+user={{ MAXSCALE_USER }}
+password={{ MAXSCALE_USER_PASSWORD }}

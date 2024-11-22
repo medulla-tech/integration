@@ -98,6 +98,23 @@
     - Read-Write-Service
     - Read-Only-Service
     - server1
+  notify:
+    - MAXSCALE - Restart maxscale
+
+- name: MAXSCALE - Add Splitter-Listener to maxscale.cnf
+  community.general.ini_file:
+    path: /etc/maxscale.cnf
+    section: Splitter-Listener
+    option: '{{ item.parameter }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { parameter: 'type', value: 'listener' }
+    - { parameter: 'service', value: 'Splitter-Service' }
+    - { parameter: 'protocol', value: 'MariaDBClient' }
+    - { parameter: 'port', value: '3306' }
+  notify:
+    - MAXSCALE - Restart maxscale
 
 - name: MAXSCALE - Configure maxscale
   ansible.builtin.template:
