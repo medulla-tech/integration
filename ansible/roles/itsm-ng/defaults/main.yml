@@ -1,6 +1,7 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 ITSMNG_DBHOST: localhost
+ITSMNG_DBHOST_IP: "{{ query('community.general.dig', ITSMNG_DBHOST)[0] }}"
 ITSMNG_DBPORT: 3306
 ITSMNG_DBUSER: glpi
 ITSMNG_DBPASSWD: '' # 12 character string. Must be vaulted

@@ -1,6 +1,7 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 GLPI_DBHOST: localhost
+GLPI_DBHOST_IP: "{{ query('community.general.dig', GLPI_DBHOST)[0] }}"
 GLPI_DBPORT: 3306
 GLPI_DBUSER: glpi
 GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
