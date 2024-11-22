@@ -47,7 +47,7 @@
   hosts: mmcmain
   remote_user: root
   roles:
-    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
+    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
 
 - name: Medulla Relay - Part 4
   gather_facts: true
@@ -55,7 +55,7 @@
   serial: 1
   remote_user: root
   roles:
-    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly' }
+    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
 
 - name: Medulla Relay - Part 5
   gather_facts: true
