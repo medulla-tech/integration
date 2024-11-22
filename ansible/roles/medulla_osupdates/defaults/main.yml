@@ -1,6 +1,7 @@
 DBDUMP_DL_BASEURL: https://updates.siveo.net
 # For using database on another server, define DBHOST
 DBHOST: localhost
+DBHOST_IP: "{{ query('community.general.dig', DBHOST)[0] }}"
 DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted

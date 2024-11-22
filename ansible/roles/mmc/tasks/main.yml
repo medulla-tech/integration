@@ -317,6 +317,7 @@
   with_items:
     - { host: 'localhost', when: true }
     - { host: '{{ DBHOST }}', when: '{{ DBHOST != "localhost" }}' }
+    - { host: '{{ DBHOST_IP }}', when: '{{ DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
     - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
