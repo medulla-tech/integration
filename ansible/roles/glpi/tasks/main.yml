@@ -227,6 +227,8 @@
       Session-Token: '{{ json_session.json.session_token }}'
     method: DELETE
     return_content: yes
+  when:
+    - GLPI_CHANGED | bool
   with_items:
     - 3
     - 4
@@ -244,6 +246,8 @@
       Session-Token: '{{ json_session.json.session_token }}'
     method: DELETE
     return_content: yes
+  when:
+    - GLPI_CHANGED | bool
   with_items:
     - 3
     - 4
@@ -267,6 +271,8 @@
         completename: '{{ ORGANISATION }}'
     return_content: yes
   register: result
+  when:
+    - GLPI_CHANGED | bool
   failed_when: ('false' not in result.content) and (result.status != 200)
 
 - name: GLPI - Create location in GLPI
@@ -287,6 +293,8 @@
         locations_id: 0
     return_content: yes
   register: result
+  when:
+    - GLPI_CHANGED | bool
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 200) and (result.status != 201)
 
 - name: GLPI - Enable {{ GLPI_PLUGIN }} plugin after db init
