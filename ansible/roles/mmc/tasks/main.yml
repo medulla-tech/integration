@@ -150,7 +150,7 @@
     - PYTHON_VERSION == 3
 
 - name: MMC - Allow mmc-agent to connect to master substitute on main server
-  ansible.builtin.command: 'crudini --set --list /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local filter allowed_ips {{ IP_ADDRESS }}/{{ NETMASK }}'
+  ansible.builtin.command: 'crudini --set --list /etc/pulse-xmpp-agent-substitute/__server_mmc_master.ini.local filter allowed_ips {{ IP_ADDRESS }}/{{ NETMASK | ansible.utils.ipaddr('prefix') }}'
   notify:
     - MMC - Restart pulse-xmpp-master-substitute-master on main server
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
