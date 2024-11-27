@@ -112,7 +112,7 @@
     - { parameter: 'type', value: 'listener' }
     - { parameter: 'service', value: 'Splitter-Service' }
     - { parameter: 'protocol', value: 'MariaDBClient' }
-    - { parameter: 'port', value: '{{ MAXSCALE_SPLITTER_PORT }}' }
+    - { parameter: 'port', value: '3306' }
   notify:
     - MAXSCALE - Restart maxscale
 
