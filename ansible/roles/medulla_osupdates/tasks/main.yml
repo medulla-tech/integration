@@ -66,7 +66,7 @@
 - name: MEDULLA_OSUPDATES - Create database
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: 'base_wsusscn2'
@@ -75,7 +75,7 @@
 - name: MEDULLA_OSUPDATES - Create database user
   community.mysql.mysql_user:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ DBUSER }}'
@@ -104,7 +104,7 @@
 - name: MEDULLA_OSUPDATES - Get share id for winupdates share if it exists
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
@@ -117,7 +117,7 @@
 - name: MEDULLA_OSUPDATES - Get MAX_ID FROM pkgs_shares when share does not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
@@ -130,7 +130,7 @@
 - name: MEDULLA_OSUPDATES - Create winupdates share and add root user for packages management if it does not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'

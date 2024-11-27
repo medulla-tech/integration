@@ -243,7 +243,7 @@
 - name: MMC - Create databases
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ item }}'
@@ -265,7 +265,7 @@
 - name: MMC - Import database schemas
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ item }}'
@@ -295,7 +295,7 @@
 - name: MMC - Create database user
   community.mysql.mysql_user:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ DBUSER }}'
@@ -339,7 +339,7 @@
 - name: MMC/ITSM - Create federated server connection to ITSM DB using mariadb wrapper
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -354,7 +354,7 @@
 - name: MMC/ITSM - Create local federated table for ITSM version
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -364,7 +364,7 @@
 - name: MMC/ITSM - Check if federated mariadb wrapper is working
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -375,7 +375,7 @@
 - name: MMC/ITSM - Create federated server connection to ITSM DB using mysql wrapper
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -392,7 +392,7 @@
 - name: MMC/ITSM - Create local federated table for ITSM version
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -404,7 +404,7 @@
 - name: MMC/ITSM - Find ITSM version
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'xmppmaster'
@@ -419,7 +419,7 @@
 - name: MMC/ITSM - Import federated tables creation
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: xmppmaster
@@ -433,7 +433,7 @@
     - ITSM_DBHOST == '127.0.0.1'
 
 - name: MMC - Update database schemas
-  ansible.builtin.command: 'pulse2-dbupdate --user={{ DBADMINUSER }} --password={{ DBADMINPASSWD }} --host={{ DBHOST }} --port={{ DBPORT }} --db={{ item }}'
+  ansible.builtin.command: 'pulse2-dbupdate --user={{ DBADMINUSER }} --password={{ DBADMINPASSWD }} --host={{ DBHOST }} --port={{ DB_SETUP_PORT }} --db={{ item }}'
   with_items:
     - dyngroup
     - msc
@@ -588,7 +588,7 @@
 - name: MMC - Set up global share and root user for packages management
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
+    login_port: '{{ DB_SETUP_PORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     login_db: 'pkgs'
