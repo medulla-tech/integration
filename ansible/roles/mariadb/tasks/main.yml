@@ -90,6 +90,16 @@
   notify:
     - MARIADB - Restart mariadb
 
+- name: MARIADB - Make sure /etc/systemd/system/mariadb.service.d exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/mariadb.service.d
+    mode: 0755
+    state: directory
+  when:
+    - MARIADB_USER != 'mysql'
+  notify:
+    - MARIADB - Restart mariadb
+
 - name: MARIADB - Change mariadb system user if required
   ansible.builtin.template:
     src: user.conf.j2
