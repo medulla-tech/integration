@@ -137,7 +137,7 @@
   ignore_errors: True
 
 - name: MARIADB - Trying to initialize datadir
-  ansible.builtin.command: mysql_install_db --user={{ MARIADB_USER }} --datadir={{ MARIADB_DATADIR }}
+  ansible.builtin.command: mysql_install_db --user={{ MARIADB_USER }} --datadir={{ MARIADB_DATADIR }}/mysql
   when: 
     - lsdatadir.stdout | length == 0
 
