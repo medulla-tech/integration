@@ -101,6 +101,7 @@
     - MARIADB - Restart mariadb
 
 - name: MARIADB - Change mariadb datadir if required
+  community.general.ini_file:
     path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
     section: mysqld
     option: datadir
