@@ -1,4 +1,4 @@
 MARIADB_CONF_PATH: /etc/mysql/mariadb.conf.d
-MARIADB_DATADIR: /var/lib/mysql
-MARIADB_USER: mysql
-MARIADB_GROUP: mysql
+SERVER_CONF_FILE: 50-server.cnf
+MARIADB_SOCKET_FILE: /run/mysqld/mysqld.sock
+MARIADB_PID_FILE: /run/mysqld/mysqld.pid
