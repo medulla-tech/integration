@@ -1,2 +1,3 @@
 GUAC_SCHEMAS_PATH: /usr/share/guacamole-auth-jdbc/mysql/schema
 TOMCAT_DAEMON: tomcat9
+MARIADB_SOCKET_FILE: /run/mysqld/mysqld.sock

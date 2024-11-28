@@ -108,23 +108,20 @@
 
 - name: GUACAMOLE - Delete guacamole database user
   community.mysql.mysql_user:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     host_all: yes
     state: absent
 
 - name: GUACAMOLE - Delete guacamole database
   community.mysql.mysql_db:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     state: absent
 
 - name: GUACAMOLE - Create guacamole database user
   community.mysql.mysql_user:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     password: '{{ GUACDBPASSWD }}'
     state: present
@@ -134,8 +131,7 @@
 
 - name: GUACAMOLE - Create guacamole database
   community.mysql.mysql_db:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     state: import
     target: '{{ GUAC_SCHEMAS_PATH }}/{{ item }}'
@@ -145,9 +141,8 @@
 
 - name: GUACAMOLE - Define guacamole root user password in database
   community.mysql.mysql_query:
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     login_db: guacamole
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
     query: 
     - UPDATE guacamole_entity SET name = 'root' WHERE entity_id = 1
     - SET @salt = UNHEX(SHA2(UUID(), 256))
