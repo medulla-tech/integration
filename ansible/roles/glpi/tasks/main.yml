@@ -110,9 +110,6 @@
     state: present
     priv:
       '{{ GLPI_DBNAME }}.*:ALL'
-  with_items:
-    - localhost
-    - '{{ IP_ADDRESS }}'
   when: item.when
   with_items:
     - { host: 'localhost', when: true }
@@ -230,6 +227,8 @@
     method: DELETE
     return_content: yes
     use_proxy: false
+  when:
+    - GLPI_CHANGED | bool
   with_items:
     - 3
     - 4
@@ -248,6 +247,8 @@
     method: DELETE
     return_content: yes
     use_proxy: false
+  when:
+    - GLPI_CHANGED | bool
   with_items:
     - 3
     - 4
@@ -272,6 +273,8 @@
     return_content: yes
     use_proxy: false
   register: result
+  when:
+    - GLPI_CHANGED | bool
   failed_when: ('false' not in result.content) and (result.status != 200)
 
 - name: GLPI - Create location in GLPI
@@ -293,6 +296,8 @@
     return_content: yes
     use_proxy: false
   register: result
+  when:
+    - GLPI_CHANGED | bool
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 200) and (result.status != 201)
 
 - name: GLPI - Enable {{ GLPI_PLUGIN }} plugin after db init
