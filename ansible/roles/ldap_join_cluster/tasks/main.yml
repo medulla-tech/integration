@@ -101,11 +101,10 @@
   failed_when:
     - (command_result.rc != 0) and (command_result.rc != 20) and (command_result.rc != 80)
   delegate_to: '{{ PULSEMAIN_FQDN }}'
-  register: dbrepl_init
 
 - name: LDAP_CLUSTER - Set marker for database replication initialisation
   ansible.builtin.file:
     path: /var/lib/ldap/.dbinitialised
     state: touch
   when:
-    - dbrepl_init.changed | bool
+    - command_result.changed | bool
