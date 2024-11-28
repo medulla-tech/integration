@@ -58,6 +58,7 @@
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
+    login_port: '{{ MASTER_PORT }}'
     name: '{{ MAXSCALE_USER }}'
     password: '{{ MAXSCALE_USER_PASSWORD }}'
     host: '%'
@@ -78,6 +79,7 @@
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
+    login_port: '{{ MASTER_PORT }}'
     name: '{{ MAXSCALE_MONITOR_USER }}'
     password: '{{ MAXSCALE_MONITOR_USER_PASSWORD }}'
     host: '%'
