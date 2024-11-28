@@ -110,9 +110,6 @@
     state: present
     priv:
       '{{ GLPI_DBNAME }}.*:ALL'
-  with_items:
-    - localhost
-    - '{{ IP_ADDRESS }}'
   when: item.when
   with_items:
     - { host: 'localhost', when: true }
