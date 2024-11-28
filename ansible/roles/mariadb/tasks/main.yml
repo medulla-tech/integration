@@ -17,6 +17,18 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
+- name: MARIADB - Redefine MARIADB_SOCKET_FILE if needed
+  ansible.builtin.set_fact:
+    MARIADB_SOCKET_FILE: '{{ NEW_MARIADB_SOCKET_FILE }}'
+  when:
+    - NEW_MARIADB_SOCKET_FILE != ''
+
+- name: MARIADB - Redefine MARIADB_PID_FILE if needed
+  ansible.builtin.set_fact:
+    MARIADB_PID_FILE: '{{ NEW_MARIADB_PID_FILE }}'
+  when:
+    - NEW_MARIADB_PID_FILE != ''
+
 - name: MARIADB - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
