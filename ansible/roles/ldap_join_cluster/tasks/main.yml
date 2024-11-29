@@ -90,10 +90,21 @@
 
 - name: LDAP_CLUSTER - Copy db_synch.ldif to /tmp on main server
   ansible.builtin.template:
-    src: db_synch.ldif.j2
+    src: db_synch_deb.ldif.j2
     dest: /tmp/db_synch.ldif
     mode: '0644'
   delegate_to: '{{ PULSEMAIN_FQDN }}'
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: LDAP_CLUSTER - Copy db_synch.ldif to /tmp on main server
+  ansible.builtin.template:
+    src: db_synch_rhel.ldif.j2
+    dest: /tmp/db_synch.ldif
+    mode: '0644'
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: LDAP_CLUSTER - Enable replication of database on main server
   ansible.builtin.command: 'ldapmodify -c -Q -Y EXTERNAL -H ldapi:/// -f /tmp/db_synch.ldif'

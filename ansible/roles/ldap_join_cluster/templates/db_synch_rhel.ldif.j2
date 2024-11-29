@@ -1,0 +1,33 @@
+dn: olcDatabase={2}mdb,cn=config
+changetype:  modify
+add: olcDbIndex
+olcDbIndex: entryCSN eq
+olcDbIndex: entryUUID eq
+
+dn: olcOverlay=syncprov,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: syncprov
+
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+add: olcSyncRepl
+{% for item in CLUSTER_SERVERS_LIST -%}
+olcSyncRepl:
+    rid=01{{ item.split(' ')[0] }}
+    provider={{ item.split(' ')[1] }}
+    bindmethod=simple
+    binddn="cn=admin,{{ LDAP_BASEDN }}"
+    credentials={{ LDAPADMINPASSWD }}
+    searchbase="{{ LDAP_BASEDN }}"
+    type=refreshAndPersist
+    retry="5 5 300 5"
+    timeout=1
+    starttls=critical
+    tls_reqcert=demand
+    tls_cacertdir=/etc/ssl/certs/
+{% endfor %}
+-
+add: {{ REPL_ATTRIBUTE }}
+{{ REPL_ATTRIBUTE }}: TRUE
