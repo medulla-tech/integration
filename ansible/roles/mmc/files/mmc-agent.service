@@ -1,7 +1,6 @@
 [Unit]
 Description=Machines Management Console
 After=smbd.service slapd.service ejabberd.service pulse-xmpp-master-substitute-master.service
-Requires=ejabberd.service
 ConditionPathExists=/etc/mmc/plugins/base.ini.local
 
 [Service]
