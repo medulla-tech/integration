@@ -19,6 +19,14 @@
     owner: root
     group: root
 
+- name: SSH - Make sure /etc/ssh/sshd_config.d/*.conf files are read
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    backup: true
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
 - name: SSH - Setup alternate SSH port if defined
   ansible.builtin.template:
     src: pulse.conf.j2
