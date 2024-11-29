@@ -25,8 +25,8 @@
     - ldap
     - mariadb
     - ejabberd
-    - { role: syncthing_discosrv, when: (ansible_domain != 'siveo.net') }
-    - { role: syncthing_relay, when: (ansible_domain != 'siveo.net') }
+    - { role: syncthing_discosrv, when: (STDISCOSRV_URL == '') }
+    - { role: syncthing_relay, when: (STRELAYSRV_URL == '') }
     - syncthing
     - { role: urbackup, when: (not URBACKUP_DISABLED) }
     - ssh
