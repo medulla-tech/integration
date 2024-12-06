@@ -13,6 +13,6 @@ ORGANISATION: Siveo Medulla
 LDAP_BASEDN: 'dc={{ ansible_domain.split(".") | join(",dc=")}}'
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
-GLPI_VERSION: '10.0.16'
+GLPI_VERSION: '10.0.17'
 SERVER_FQDN: '{{ ansible_fqdn }}'
 PUBLIC_IP: ''
