@@ -1,4 +1,5 @@
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
+SERVER_FQDN: '{{ ansible_fqdn }}'
 ITSM_TYPE: glpi # can be glpi or itsm-ng
 ITSM_WRITEABLE: true
 ITSM_API_USER: 'root'

@@ -381,7 +381,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://pulse:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://pulse:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
@@ -394,7 +394,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://pulse:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://pulse:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }}, davos_opts = 'fqdn={{ SERVER_FQDN }}' WHERE packageserver_uuid = '{{ ps_uuid }}'
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0
