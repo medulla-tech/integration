@@ -565,18 +565,6 @@
     - PULSEMAIN_IP == ''
     - PYTHON_VERSION == 3
 
-- name: MMC - Disable dependency on pulse-xmpp-master-substitute-master for cluster
-  ansible.builtin.copy:
-    src: mmc-agent.service
-    dest: /etc/systemd/system/
-    mode: '0644'
-  notify:
-    - MMC - Restart mmc-agent
-  when: 
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
-    - PYTHON_VERSION == 3
-
 - name: MMC - Force restart of service to use new config files
   ansible.builtin.meta: flush_handlers
 
