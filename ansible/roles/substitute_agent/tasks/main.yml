@@ -292,18 +292,6 @@
   when:
     - subs_number != ''
 
-- name: SUBSTITUTE_AGENT - Create initial substituteconf records
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DBPORT }}'
-    login_user: '{{ DBUSER }}'
-    login_password: '{{ DBPASSWORD }}'
-    login_db: 'xmppmaster'
-    query:
-      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ SUBS_LONG_TYPE }}', 'master_{{ subs_short_name }}@{{ XMPP_DOMAIN }}', 1)
-  when:
-    - subs_number == ''
-    
 - name: SUBSTITUTE_AGENT - Create substituteconf records
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
