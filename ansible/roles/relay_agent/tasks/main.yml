@@ -26,7 +26,6 @@
   when:
     - ansible_distribution == 'CentOS'
 
-
 - name: RELAY_AGENT - Install relay server packages
   ansible.builtin.yum:
     state: latest
@@ -256,6 +255,28 @@
     query:
       - INSERT INTO has_cluster_ars (id_ars, id_cluster) VALUES ({{ res_queryrelayserverid.query_result[0][0].id }}, {{ res_queryclusterid.query_result[0][0].id }}) ON DUPLICATE KEY UPDATE id_cluster='{{ res_queryclusterid.query_result[0][0].id }}'
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+
+- name: RELAY_AGENT - Create initial substituteconf records
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) VALUES ('{{ item.type }}', '{{ item.jid }}', 1)
+  with_items:
+    - { type: 'assessor', jid: 'master_asse@pulse' }
+    - { type: 'subscription', jid: 'master_subs@pulse' }
+    - { type: 'registration', jid: 'master_reg@pulse' }
+    - { type: 'inventory', jid: 'master_inv@pulse' }
+    - { type: 'logger', jid: 'master_log@pulse' }
+    - { type: 'monitoring', jid: 'master_mon@pulse' }
+    - { type: 'deployment', jid: 'master_depl@pulse' }
+    - { type: 'updates', jid: 'master_upd@pulse' }
+    - { type: 'reconfigurator', jid: 'master_reconf@pulse' }
+  when:
+    - PULSEMAIN_IP == ''
 
 - name: RELAY_AGENT - Create substituteconf records
   community.mysql.mysql_query:
