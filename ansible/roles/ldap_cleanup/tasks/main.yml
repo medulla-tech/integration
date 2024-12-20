@@ -23,3 +23,11 @@
   - /etc/openldap/slapd.d/cn=config/cn=schema/cn={4}mmc.ldif
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: LDAP - Uninstall slapd
+  ansible.builtin.apt:
+    state: absent
+    pkg:
+      - slapd
+  when:
+    - ansible_distribution == 'Debian'
