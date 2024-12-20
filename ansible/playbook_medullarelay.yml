@@ -1,6 +1,6 @@
 - name: Medulla Relay - Part 1
   gather_facts: true
-  hosts: ars
+  hosts: ars, ambox
   remote_user: root
   environment: "{{ proxy_env }}"
 
@@ -16,7 +16,6 @@
 
   roles:
     - base
-    - security
     - local_certs
     - mariadb
     - ejabberd
@@ -32,7 +31,7 @@
 
 - name: Medulla Relay - Part 2
   gather_facts: true
-  hosts: ars
+  hosts: ars, ambox
   serial: 1
   remote_user: root
   environment: "{{ proxy_env }}"
@@ -54,7 +53,7 @@
 
 - name: Medulla Relay - Part 4
   gather_facts: true
-  hosts: ars
+  hosts: ars, ambox
   serial: 1
   remote_user: root
   environment: "{{ proxy_env }}"
@@ -63,7 +62,7 @@
 
 - name: Medulla Relay - Part 5
   gather_facts: true
-  hosts: ars
+  hosts: ars, ambox
   remote_user: root
   environment: "{{ proxy_env }}"
   roles:
