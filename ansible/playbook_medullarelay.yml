@@ -15,7 +15,7 @@
 
   roles:
     - base
-    - security
+    - { role: security, when: (ansible_domain == 'siveo.net') }
     - local_certs
     - mariadb
     - ejabberd
