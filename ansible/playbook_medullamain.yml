@@ -37,15 +37,15 @@
     - grafana
     - nfs
     - mmc
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'subscription' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'assessor' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'inventory' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'registration' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'logger' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'deployment' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'monitoring' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'reconfigurator' }
-    - { role: substitute_agent, SUBS_LONG_TYPE: 'updates' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'subscription', SUBS_NAME: 'subscription' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'assessor', SUBS_NAME: 'assessor' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'inventory', SUBS_NAME: 'inventory' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'registration', SUBS_NAME: 'registration' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'logger', SUBS_NAME: 'logger' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'deployment', SUBS_NAME: 'deployment' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'monitoring', SUBS_NAME: 'monitoring' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'reconfigurator', SUBS_NAME: 'reconfigurator' }
+    - { role: substitute_agent, SUBS_LONG_TYPE: 'updates', SUBS_NAME: 'updates' }
     - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
     - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
     - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
