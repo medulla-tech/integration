@@ -195,8 +195,7 @@
     key: "{{ sshkey.ssh_public_key }}"
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_FQDN is defined
-    - PULSEMAIN_FQDN != ''
+    - IS_RELAY | bool
 
 - name: BASE - Fetch ssh public key from pulsemain
   ansible.builtin.user:
@@ -206,8 +205,7 @@
   register: pulsemain_sshkey
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_FQDN is defined
-    - PULSEMAIN_FQDN != ''
+    - IS_RELAY | bool
 
 - name: BASE - Add pulsemain ssh public key to authorized_keys on relay
   ansible.posix.authorized_key:
@@ -215,7 +213,7 @@
     state: present
     key: "{{ pulsemain_sshkey.ssh_public_key }}"
   when:
-    - PULSEMAIN_FQDN != ''
+    - IS_RELAY | bool
 
 - name: BASE - Create rbash shell
   ansible.builtin.file:

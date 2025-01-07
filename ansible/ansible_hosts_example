@@ -77,6 +77,7 @@ ars:
     STRELAYSRV_URL: '' # Needs to be defined
     PKI_SERVER: '{{ PULSEMAIN_IP }}'
     DBHOST: '{{ PULSEMAIN_IP }}'
+    IS_RELAY: True
 
 all:
   vars:
