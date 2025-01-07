@@ -5,3 +5,4 @@ INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 PYTHON_VERSION: 3.11
 SSH_USER: root
+IS_RELAY: False
