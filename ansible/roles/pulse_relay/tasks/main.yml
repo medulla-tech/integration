@@ -334,6 +334,7 @@
     named_args:
       name: '{{ IMAGING_SERVER_NAME }}'
   register: res_query_entity
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
 
