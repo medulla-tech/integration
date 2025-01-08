@@ -186,6 +186,12 @@
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
+- name: PULSE/ITSM - Clear the itsm cache
+  ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
+  delegate_to: '{{ ITSM_FRONTSERVER if ITSM_FRONTSERVER != "" else omit }}'
+  when:
+    - ITSM_WRITEABLE
+
 - name: PULSE/ITSM - Create rules in ITSM if entity does not exist
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
@@ -401,7 +407,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }} )
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
@@ -415,7 +421,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }} WHERE packageserver_uuid = '{{ ps_uuid }}'
+      - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }}, davos_opts = 'fqdn={{ SERVER_FQDN }}' WHERE packageserver_uuid = '{{ ps_uuid }}'
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED

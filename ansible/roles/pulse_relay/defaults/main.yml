@@ -1,4 +1,5 @@
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
+SERVER_FQDN: '{{ ansible_fqdn }}'
 ITSM_TYPE: glpi # can be glpi or itsm-ng
 ITSM_WRITEABLE: true
 ITSM_API_USER: 'root'
@@ -8,6 +9,7 @@ ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
+ITSM_FRONTSERVER: '{{ PULSEMAIN_FQDN }}'
 ITSM_BASEURL: 'http://{{ PULSEMAIN_FQDN }}/{{ ITSM_TYPE }}'
 ENTITY: Public
 PKGS_SHARE_NAME: '{{ ENTITY }}'
