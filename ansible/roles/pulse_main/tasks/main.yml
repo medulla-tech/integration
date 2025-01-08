@@ -138,8 +138,9 @@
   when:
     - ITSM_WRITEABLE
 
-- name: GLPI - Clear the cache
+- name: PULSE/ITSM - Clear the itsm cache
   ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
+  delegate_to: '{{ ITSM_FRONTSERVER if ITSM_FRONTSERVER != "" else omit }}'
   when:
     - ITSM_WRITEABLE
 

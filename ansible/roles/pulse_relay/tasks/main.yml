@@ -186,13 +186,11 @@
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
-- name: PULSE/ITSM - Clear the glpi cache
+- name: PULSE/ITSM - Clear the itsm cache
   ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
-  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  delegate_to: '{{ ITSM_FRONTSERVER if ITSM_FRONTSERVER != "" else omit }}'
   when:
-    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
-
 
 - name: PULSE/ITSM - Create rules in ITSM if entity does not exist
   community.mysql.mysql_query:

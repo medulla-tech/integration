@@ -9,6 +9,7 @@ ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
+ITSM_FRONTSERVER: '{{ PULSEMAIN_FQDN }}'
 ITSM_BASEURL: 'http://{{ PULSEMAIN_FQDN }}/{{ ITSM_TYPE }}'
 ENTITY: Public
 PKGS_SHARE_NAME: '{{ ENTITY }}'
