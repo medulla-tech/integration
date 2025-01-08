@@ -330,6 +330,21 @@
   when:
     - not IMAGING_DISABLED
 
+- name: PULSE/IMAGING - Check if an imaging server is already registered for this entity
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE name = %(name)s
+    named_args:
+      name: '{{ IMAGING_SERVER_NAME }}'
+  register: res_query_entity
+  when:
+    - not IMAGING_DISABLED
+
 - name: PULSE/IMAGING - Find Entity from GLPI
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
@@ -374,7 +389,7 @@
     - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
 
-- name: PULSE/IMAGING - Insert imaging server in database if not registered
+- name: PULSE/IMAGING - Insert imaging server in database if not registered and entity does not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -386,6 +401,7 @@
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
+    - res_query_entity.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
   community.mysql.mysql_query:
