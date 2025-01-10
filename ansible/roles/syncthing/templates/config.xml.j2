@@ -10,7 +10,7 @@
         <remoteGUIPort>0</remoteGUIPort>
     </device>
 {% if STMAIN_HOST != '' %}
-    <device id="{{ PULSEMAIN_DEVICE_ID }}" name="pulse" compression="metadata" introducer="true" skipIntroductionRemovals="false" introducedBy="">
+    <device id="{{ PULSEMAIN_DEVICE_ID }}" name="pulse" compression="metadata" introducer="{{ STMAIN_IS_INTRODUCER }}" skipIntroductionRemovals="false" introducedBy="">
         <address>dynamic</address>
         <paused>false</paused>
         <autoAcceptFolders>false</autoAcceptFolders>
