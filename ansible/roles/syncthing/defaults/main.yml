@@ -5,3 +5,4 @@ STROOTPASSWD: '{{ ROOT_PASSWORD }}'
 STROOTPASSWD_HASHED: "{{ STROOTPASSWD | password_hash('bcrypt') }}"
 DEVICE_NAME: '{{ ansible_hostname }}'
 STMAIN_HOST: '{{ PULSEMAIN_FQDN }}' # STMAIN_HOST must be set on relays and cluster members
+STMAIN_IS_INTRODUCER: true # Set to false if the synch must be done only from main to relays and not between relays
