@@ -24,3 +24,4 @@ PULSEMAIN_IP: '' # PULSEMAIN_IP must be set on relays
 INTERNET_DISABLED: false
 RELAY_INDEX: ''
 WOL_PORT: 9
+HTTP_PROTOCOL: http

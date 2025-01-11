@@ -6,5 +6,5 @@ Stop-Service -Name wuauserv -Force
 Set-Service -Name wuauserv -StartupType Disabled
 
 # Download and install pulse agent
-Invoke-WebRequest -Uri 'http://{{ SERVER_FQDN }}/downloads/win/Medulla-Agent-windows-FULL-latest.exe' -OutFile 'C:\Windows\Temp\medulla-setup.exe'
+Invoke-WebRequest -Uri '{{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/downloads/win/Medulla-Agent-windows-FULL-latest.exe' -OutFile 'C:\Windows\Temp\medulla-setup.exe'
 Start-Process -FilePath 'C:\Windows\Temp\medulla-setup.exe' -ArgumentList '/S' -NoNewWindow -Wait
