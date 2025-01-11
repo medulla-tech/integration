@@ -21,7 +21,7 @@ serverip = {{ PUBLIC_IP }}
 serverip = {{ IP_ADDRESS }}
 {% endif %}
 password = {{ XMPP_MASTER_PASSWORD }}
-guacamole_baseurl = http://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
+guacamole_baseurl = {{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/guacamole/#/client/@@CUX_ID@@?username=root&password={{ GUACAMOLE_ROOT_PASSWORD }}
 keyAES32 = {{ AES_KEY }}
 
 [syncthing]
@@ -30,9 +30,9 @@ announce_server = {{ STDISCOSRV_URL }}
 [grafana_api]
 api_key = {{ GRAFANA_ADMIN_KEY }}
 {% if LOADBALANCER_FQDN is defined and LOADBALANCER_FQDN %}
-render_url = http://{{ LOADBALANCER_FQDN }}/grafana/render/d-solo
-graph_url = http://{{ LOADBALANCER_FQDN }}/grafana/d-solo
+render_url = {{ HTTP_PROTOCOL }}://{{ LOADBALANCER_FQDN }}/grafana/render/d-solo
+graph_url = {{ HTTP_PROTOCOL }}://{{ LOADBALANCER_FQDN }}/grafana/d-solo
 {% else %}
-render_url = http://{{ SERVER_FQDN }}/grafana/render/d-solo
-graph_url = http://{{ SERVER_FQDN }}/grafana/d-solo
+render_url = {{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/grafana/render/d-solo
+graph_url = {{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/grafana/d-solo
 {% endif %}
