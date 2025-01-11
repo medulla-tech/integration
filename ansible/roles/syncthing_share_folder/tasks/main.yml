@@ -82,6 +82,15 @@
     group: syncthing
   ignore_errors: true
 
+- name: ST_SHARE_FOLDER - Copy stignore file to share path if exists
+  ansible.builtin.template:
+    src: '{{ SHARE_NAME }}_stignore.j2'
+    dest: '{{ SHARE_PATH }}/.stignore'
+    mode: '0644'
+    owner: syncthing
+    group: syncthing
+  ignore_errors: true
+
 - name: ST_SHARE_FOLDER - Create syncthing shares
   ansible.builtin.uri:
     url: "http://localhost:8384/rest/config/folders/pulsemaster_{{ SHARE_NAME }}"
