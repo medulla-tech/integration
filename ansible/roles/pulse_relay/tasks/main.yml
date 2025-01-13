@@ -293,6 +293,33 @@
   when:
     - PULSEMAIN_FQDN is defined
 
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+    uid: 215
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Configure samba for drivers
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb_drivers.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
+  notify:
+    - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Define Samba drivers Password
+  ansible.builtin.shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
+  when:
+    - not IMAGING_DISABLED
+
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
     src: /etc/mmc/pulse2/package-server/package-server.ini.local
