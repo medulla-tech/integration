@@ -258,6 +258,7 @@
   ansible.builtin.user:
     name: drivers
     shell: /bin/false
+    uid: 215
   when:
     - not IMAGING_DISABLED
 
