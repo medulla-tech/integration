@@ -25,6 +25,15 @@
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
+- name: APACHE - Install mod_ssl
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - mod_ssl
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+    - HTTP_PROTOCOL == "https"
+
 - name: APACHE - Install Apache
   ansible.builtin.apt:
     state: latest
@@ -45,9 +54,43 @@
     - { name: 'mpm_prefork', state: 'absent' }
     - { name: 'mpm_event', state: 'present' }
     - { name: 'rewrite', state: 'present' }
+    - { name: 'ssl', state: 'present', when: '{{ HTTP_PROTOCOL == "https" }}' }
   notify:
     - APACHE - Restart apache
   when:
+    - ansible_distribution == "Debian"
+
+- name: APACHE - Copy SSL certificates
+  ansible.builtin.copy:
+    content: "{{ lookup('ansible.builtin.file', '{{ inventory_dir }}/{{ SSL_PEM_CHAIN_FILENAME }}') }}"
+    dest: '/etc/ssl/certs/{{ SSL_PEM_CHAIN_FILENAME }}'
+    mode: '0644'
+  notify:
+    - APACHE - Restart apache
+  when:
+    - HTTP_PROTOCOL == "https"
+
+- name: APACHE - Configure apache for SSL
+  ansible.builtin.replace:
+    dest: '{{ APACHE_SSL_CONF_FILE }}'
+    regexp: '{{ item.regexp }}'
+    replace: '{{ item.replace }}'
+    backup: true
+  with_items:
+    - { regexp: '^\s*SSLCertificateFile .*', replace: 'SSLCertificateFile /etc/ssl/certs/{{ SSL_PEM_CHAIN_FILENAME }}'}
+    - { regexp: '^\s*SSLCertificateKeyFile .*', replace: 'SSLCertificateKeyFile /etc/ssl/certs/{{ SSL_PEM_CHAIN_FILENAME }}'}
+    - { regexp: '^\s*SSLCertificateChainFile .*', replace: 'SSLCertificateChainFile /etc/ssl/certs/{{ SSL_PEM_CHAIN_FILENAME }}'}
+  notify:
+    - APACHE - Restart apache
+  when:
+    - HTTP_PROTOCOL == "https"
+
+- name: APACHE - Enable SSL in apache
+  ansible.builtin.command: a2ensite default-ssl
+  notify:
+    - APACHE - Restart apache
+  when:
+    - HTTP_PROTOCOL == "https"
     - ansible_distribution == "Debian"
 
 - name: APACHE - Ensure apache is running

@@ -1,1 +1,2 @@
 APACHE_DAEMON: httpd
+APACHE_SSL_CONF_FILE: /etc/httpd/conf.d/ssl.conf
