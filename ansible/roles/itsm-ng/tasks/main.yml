@@ -155,10 +155,72 @@
     login_user: '{{ ITSMNG_DBUSER }}'
     login_password: '{{ ITSMNG_DBPASSWD }}'
     login_db: '{{ ITSMNG_DBNAME }}'
-    query:
-    - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, condition, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP', %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', %(is_default)s, 1)
+    named_args:
+      host: '127.0.0.1'
+      basedn: '{{ LDAP_BASEDN }}'
+      port: 389
+      condition: '(objectClass=inetOrgPerson)'
+      login_field: 'uid'
+      group_field: NULL
+      group_condition: '(&(objectClass=posixGroup)(cn=GLPI-*))'
+      group_search_type: 1
+      group_member_field: memberuid
+      use_dn: 0
+      is_default: 0
   when:
     - ITSMNG_CHANGED | bool
+    - EXTERNAL_LDAP_URL == ''
+
+- name: ITSM-NG - Configure LDAP authentication
+  community.mysql.mysql_query:
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, condition, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP', %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', %(is_default)s, 1)
+    named_args:
+      host: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("hostname") }}'
+      basedn: '{{ EXTERNAL_LDAP_SUFFIX }}'
+      port: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("port") }}'
+      condition: '(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+      login_field: '{{ EXTERNAL_LDAP_USERATTR }}'
+      group_field: memberof
+      group_condition: '(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+      group_search_type: 0
+      group_member_field: NULL
+      use_dn: 1
+      is_default: 0
+  when:
+    - ITSMNG_CHANGED | bool
+    - EXTERNAL_LDAP_URL != ''
+    - EXTERNAL_LDAP_TYPE == 'ad'
+
+- name: ITSM-NG - Configure LDAP authentication
+  community.mysql.mysql_query:
+    login_host: '{{ ITSMNG_DBHOST }}'
+    login_port: '{{ ITSMNG_DBPORT }}'
+    login_user: '{{ ITSMNG_DBUSER }}'
+    login_password: '{{ ITSMNG_DBPASSWD }}'
+    login_db: '{{ ITSMNG_DBNAME }}'
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, condition, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP', %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', %(is_default)s, 1)
+    named_args:
+      host: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("hostname") }}'
+      basedn: '{{ EXTERNAL_LDAP_SUFFIX }}'
+      port: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("port") }}'
+      condition: '(objectClass=inetOrgPerson)'
+      login_field: '{{ EXTERNAL_LDAP_USERATTR }}'
+      group_field: NULL
+      group_condition: '(objectClass=posixGroup)'
+      group_search_type: 1
+      group_member_field: memberuid
+      use_dn: 0
+      is_default: 0
+  when:
+    - ITSMNG_CHANGED | bool
+    - EXTERNAL_LDAP_URL != ''
+    - EXTERNAL_LDAP_TYPE == 'openldap'
     
 - name: ITSM-NG - Define password and enable token for root user
   community.mysql.mysql_query:
