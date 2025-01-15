@@ -6,7 +6,6 @@
   roles:
     - security
     - siveodev
-    - siveotest
 
 - name: SIVEO environments - ARS
   gather_facts: true
