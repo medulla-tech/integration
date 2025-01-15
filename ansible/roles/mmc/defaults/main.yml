@@ -13,7 +13,7 @@ EXTERNAL_LDAP_URL: ''
 EXTERNAL_LDAP_SUFFIX: ''
 EXTERNAL_LDAP_BINDNAME: ''
 EXTERNAL_LDAP_PASSWORD: ''
-EXTERNAL_LDAP_USERATTR: sAMAccountName
+EXTERNAL_LDAP_USERATTR: cn
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 # Define PUBLIC_IP if main pulse server also has a public relay. TODO: Maybe this needs to go in another task
