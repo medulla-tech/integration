@@ -165,9 +165,74 @@
     login_password: '{{ GLPI_DBPASSWD }}'
     login_db: '{{ GLPI_DBNAME }}'
     query:
-    - INSERT INTO glpi_authldaps (name, host, basedn, port, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values ('LocalLDAP','127.0.0.1','{{ LDAP_BASEDN }}',389,'(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','mobile',0,'preferredlanguage',1,1)
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, `condition`, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values (%(name)s, %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', 1, 1)
+    named_args:
+      name: 'LocalLDAP'
+      host: '127.0.0.1'
+      basedn: '{{ LDAP_BASEDN }}'
+      port: 389
+      condition: '(objectClass=inetOrgPerson)'
+      login_field: 'uid'
+      group_field: NULL
+      group_condition: '(&(objectClass=posixGroup)(cn=GLPI-*))'
+      group_search_type: 1
+      group_member_field: memberuid
+      use_dn: 0
   when:
     - GLPI_CHANGED | bool
+    - EXTERNAL_LDAP_URL == ''
+
+- name: GLPI - Configure LDAP authentication
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, `condition`, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values (%(name)s, %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', 1, 1)
+    named_args:
+      name: 'ExternalAD'
+      host: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("hostname") }}'
+      basedn: '{{ EXTERNAL_LDAP_SUFFIX }}'
+      port: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("port") }}'
+      condition: '(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+      login_field: '{{ EXTERNAL_LDAP_USERATTR }}'
+      group_field: memberof
+      group_condition: '(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
+      group_search_type: 0
+      group_member_field: NULL
+      use_dn: 1
+  when:
+    - GLPI_CHANGED | bool
+    - EXTERNAL_LDAP_URL != ''
+    - EXTERNAL_LDAP_TYPE == 'ad'
+
+- name: GLPI - Configure LDAP authentication
+  community.mysql.mysql_query:
+    login_host: '{{ GLPI_DBHOST }}'
+    login_port: '{{ GLPI_DBPORT }}'
+    login_user: '{{ GLPI_DBUSER }}'
+    login_password: '{{ GLPI_DBPASSWD }}'
+    login_db: '{{ GLPI_DBNAME }}'
+    query:
+    - INSERT INTO glpi_authldaps (name, host, basedn, port, `condition`, login_field, group_field, group_condition, group_search_type, group_member_field, email1_field, realname_field, firstname_field, phone_field, mobile_field, use_dn, language_field, is_default, is_active) values (%(name)s, %(host)s, %(basedn)s, %(port)s, %(condition)s, %(login_field)s, %(group_field)s, %(group_condition)s, %(group_search_type)s, %(group_member_field)s, 'mail', 'sn', 'givenname', 'telephonenumber', 'mobile', %(use_dn)s, 'preferredlanguage', 1, 1)
+    named_args:
+      name: 'ExternalLDAP'
+      host: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("hostname") }}'
+      basedn: '{{ EXTERNAL_LDAP_SUFFIX }}'
+      port: '{{ EXTERNAL_LDAP_URL | ansible.builtin.urlsplit("port") }}'
+      condition: '(objectClass=inetOrgPerson)'
+      login_field: '{{ EXTERNAL_LDAP_USERATTR }}'
+      group_field: NULL
+      group_condition: '(objectClass=posixGroup)'
+      group_search_type: 1
+      group_member_field: memberuid
+      use_dn: 0
+  when:
+    - GLPI_CHANGED | bool
+    - EXTERNAL_LDAP_URL != ''
+    - EXTERNAL_LDAP_TYPE == 'openldap'
 
 - name: GLPI - Define password and enable token for root user
   community.mysql.mysql_query:
