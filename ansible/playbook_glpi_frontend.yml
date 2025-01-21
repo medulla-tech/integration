@@ -2,7 +2,6 @@
   gather_facts: true
   hosts: all
   remote_user: root
-  environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: GLPI FRONT - Set version for this playbook
