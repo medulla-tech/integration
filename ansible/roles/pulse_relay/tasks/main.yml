@@ -272,9 +272,9 @@
     login_db: pkgs
     query:
       - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '{{ item }}', 'rw', {{ res_querynewshare.query_result[0][0].id }})
-    with_items:
-      - 'root'
-      - '{{ PKGS_SHARE_ADMIN_USER_REGEX }}'
+  with_items:
+    - 'root'
+    - '{{ PKGS_SHARE_ADMIN_USER_REGEX }}'
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - res_queryshareexists.rowcount[0] == 0
