@@ -2,7 +2,7 @@
   gather_facts: true
   hosts: ars
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: MEDULLARELAY - Set version for this playbook
@@ -35,7 +35,7 @@
   hosts: ars
   serial: 1
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive', when: (not IMAGING_DISABLED) }
     - { role: syncthing_share_folder, SHARE_NAME: 'baseremoteagent', SHARE_PATH: '/var/lib/pulse2/xmpp_baseremoteagent/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
@@ -48,7 +48,7 @@
   gather_facts: true
   hosts: mmcmain
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
 
@@ -57,7 +57,7 @@
   hosts: ars
   serial: 1
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
 
@@ -65,7 +65,7 @@
   gather_facts: true
   hosts: ars
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - pulse_relay
     - { role: pulse_imaging, when: (not IMAGING_DISABLED) }

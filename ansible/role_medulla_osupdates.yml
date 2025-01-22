@@ -2,7 +2,7 @@
   gather_facts: true
   hosts: mmc
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - apache
     - php

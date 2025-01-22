@@ -3,7 +3,7 @@
   hosts: all
   remote_user: root
   serial: 1
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: CLEANUP - Set version for this playbook
