@@ -31,3 +31,4 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
 IMAGING_DISABLED: false
+PKGS_SHARE_ADMIN_USER_REGEX: '.*' # eg. '^{{ ansible_hostname[:6] }}.*'

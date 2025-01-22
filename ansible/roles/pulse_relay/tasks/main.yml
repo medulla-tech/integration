@@ -263,7 +263,7 @@
   register: res_querynewshare
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
-- name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
+- name: PULSE/SHARE - Create rw permission for root and admin on cluster share if it did not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -271,7 +271,10 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '{{ item }}', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+    with_items:
+      - 'root'
+      - '{{ PKGS_SHARE_ADMIN_USER_REGEX }}'
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - res_queryshareexists.rowcount[0] == 0
