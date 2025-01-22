@@ -30,3 +30,4 @@ DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 IMAGING_DISABLED: false
+PKGS_SHARE_ADMIN_USER_REGEX: '.*' # eg. '^{{ ansible_hostname[:6] }}.*'
