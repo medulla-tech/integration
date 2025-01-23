@@ -22,4 +22,18 @@ attr = {{ EXTERNAL_LDAP_USERATTR }}
 {% endif %}
 
 [provisioning]
+{% if OIDC_PROVIDER != '' %}
+method = oidc glpi
+{% elif EXTERNAL_LDAP_URL != '' %}
+method = externalldap glpi
+{% else %}
 method = glpi
+{% endif %}
+
+{% if EXTERNAL_LDAP_URL != '' %}
+[provisioning_externalldap]
+exclude = root
+ldap_uid = {{ EXTERNAL_LDAP_USERATTR }}
+ldap_givenName = givenName
+ldap_sn = sn
+{% endif %}

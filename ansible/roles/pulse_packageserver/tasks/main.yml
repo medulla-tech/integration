@@ -29,6 +29,30 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: PULSE_PACKAGESERVER - Check if package-server.ini.local exists
+  ansible.builtin.stat:
+    path: /etc/mmc/pulse2/package-server/package-server.ini.local
+  register: respsinifile
+
+- name: PULSE_PACKAGESERVER - Load config file to find Package Server UUID
+  ansible.builtin.slurp:
+    src: /etc/mmc/pulse2/package-server/package-server.ini.local
+  register: psinifile
+  when:
+    - respsinifile.stat.exists
+
+- name: PULSE_PACKAGESERVER - Find Package Server UUID
+  ansible.builtin.set_fact:
+    IMAGING_UUID: "{{ psinifile['content'] | b64decode | regex_search('uuid = (.+)', '\\1') | first }}"
+  when:
+    - respsinifile.stat.exists
+
+- name: PULSE_PACKAGESERVER - Generate IMAGING_UUID if not existing
+  ansible.builtin.set_fact:
+    IMAGING_UUID: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') | to_uuid }}"
+  when:
+    - not respsinifile.stat.exists
+
 - name: PULSE_PACKAGESERVER - Configure package server
   ansible.builtin.template:
     src: package-server.ini.local.j2

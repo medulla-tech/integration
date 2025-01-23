@@ -1,5 +1,7 @@
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
 SERVER_FQDN: '{{ ansible_fqdn }}'
+DRIVERS_PASSWORD: '' # 12 character string. Must be vaulted
+DRIVERS_FOLDER: /var/lib/pulse2/imaging/postinst/sysprep/drivers
 ITSM_TYPE: glpi # can be glpi or itsm-ng
 ITSM_WRITEABLE: true
 ITSM_API_USER: 'root'
@@ -29,3 +31,4 @@ DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 PACKAGES_FOLDER: /var/lib/pulse2/packages
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
 IMAGING_DISABLED: false
+PKGS_SHARE_ADMIN_USER_REGEX: '.*' # eg. '^{{ ansible_hostname[:6] }}.*'

@@ -3,3 +3,5 @@ SHARE_PATH: /var/lib/pulse2/xmpp_baseremoteagent/
 MAIN_SHARE_TYPE: sendreceive # sendonly, sendreceive or receiveonly
 RELAY_SHARE_TYPE: receiveonly # ssendonly, sendreceive or receiveonly
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set on relays
+POSTINST_STIGNORE: '' # String of files to ignore in postinst
+DRIVERS_SEPARATE_SHARES: false # Set to true if the drivers shares on each relay must not be synched

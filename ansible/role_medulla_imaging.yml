@@ -3,7 +3,7 @@
   hosts: all
   serial: 1
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
   roles:
     - nfs
     - apache

@@ -1,0 +1,2 @@
+HTTP_PROTOCOL: http # Set https and define SSL_CERT and SSL_KEY below to setup ssl
+SSL_PEM_CHAIN_FILENAME: '' # The file must be in the same location as ansible_hosts. It must contain the certificate, the key and the CA chain if needed

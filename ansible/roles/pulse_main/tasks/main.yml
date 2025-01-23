@@ -218,14 +218,14 @@
 
 - name: PULSE/AGENT - Append base-url options
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --base-url=http://' + LOADBALANCER_FQDN + '/downloads'}}"
+    generation_options: "{{ generation_options + ' --base-url=' + HTTP_PROTOCOL + '://' + LOADBALANCER_FQDN + '/downloads'}}"
   when:
     - LOADBALANCER_FQDN is defined
     - LOADBALANCER_FQDN != ''
 
 - name: PULSE/AGENT - Append base-url options
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --base-url=http://' + SERVER_FQDN + '/downloads'}}"
+    generation_options: "{{ generation_options + ' --base-url=' + HTTP_PROTOCOL + '://' + SERVER_FQDN + '/downloads'}}"
   when:
     - LOADBALANCER_FQDN is not defined
 
@@ -246,7 +246,7 @@
       - INSERT IGNORE INTO xmppmaster.qa_custom_command (user, os, namecmd, customcmd, description) VALUES ('allusers', 'windows', 'Deploy updatebackupclient.ini file', 'powershell.exe "$iniContent = \'[parameters] {0}backup_enabled = 0 {0}client_id = 0 {0}backup_server = {{ URBACKUP_SERVERADDRESS }} {0}backup_port = {{ URBACKUP_SERVERPORT }}\' -f ([environment]::NewLine); Clear-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\'; Add-Content -Path \'C:\\Program Files\\Pulse\\etc\\updatebackupclient.ini\' $iniContent"', 'Copy urbackup installation config file to client machine')
 
 - name: PULSE/AGENT - Generate minimal agent
-  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal {{ generation_options }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
+  ansible.builtin.command: /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal --base-url={{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/downloads {{ generation_options }} --linux-distros={{ LINUX_DISTROS_AGENT_SUPPORT }}
   ignore_errors: true
 
 - name: PULSE/PACKAGESERVER - Configure samba for package server
@@ -278,6 +278,7 @@
   ansible.builtin.user:
     name: drivers
     shell: /bin/false
+    uid: 215
   when:
     - not IMAGING_DISABLED
 
@@ -350,6 +351,21 @@
   when:
     - not IMAGING_DISABLED
 
+- name: PULSE/IMAGING - Check if an imaging server is already registered for this entity
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE name = %(name)s
+    named_args:
+      name: '{{ IMAGING_SERVER_NAME }}'
+  register: res_query_entity
+  when:
+    - not IMAGING_DISABLED
+
 - name: PULSE/IMAGING - Find Entity from GLPI
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
@@ -394,7 +410,7 @@
     - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
 
-- name: PULSE/IMAGING - Insert imaging server in database if not registered
+- name: PULSE/IMAGING - Insert imaging server in database if not registered and entity does not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -406,6 +422,7 @@
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
+    - res_query_entity.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
   community.mysql.mysql_query:

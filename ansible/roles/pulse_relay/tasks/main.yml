@@ -263,7 +263,7 @@
   register: res_querynewshare
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
-- name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
+- name: PULSE/SHARE - Create rw permission for root and admin on cluster share if it did not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -271,7 +271,10 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '{{ item }}', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+  with_items:
+    - 'root'
+    - '{{ PKGS_SHARE_ADMIN_USER_REGEX }}'
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - res_queryshareexists.rowcount[0] == 0
@@ -292,6 +295,33 @@
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
+
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+    uid: 215
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Configure samba for drivers
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb_drivers.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
+  notify:
+    - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Define Samba drivers Password
+  ansible.builtin.shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
@@ -318,6 +348,22 @@
     named_args:
       packageserver_uuid: '{{ ps_uuid }}'
   register: res_query
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Check if an imaging server is already registered for this entity
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE name = %(name)s
+    named_args:
+      name: '{{ IMAGING_SERVER_NAME }}'
+  register: res_query_entity
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
@@ -412,6 +458,7 @@
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
+    - res_query_entity.rowcount[0] == 0
 
 - name: PULSE/IMAGING - Update imaging server in database if registered
   community.mysql.mysql_query:

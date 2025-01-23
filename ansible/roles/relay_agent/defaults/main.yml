@@ -35,3 +35,5 @@ ITSM_DBPORT: 3306
 ITSM_DBUSER: glpi
 ITSM_DBPASSWD: '' # 12 character string. Must be vaulted
 ITSM_DBNAME: glpi
+HTTP_PROTOCOL: http
+ARS_ADMIN_USER_REGEX: '.*' # eg. '^{{ ansible_hostname[:6] }}.*'
