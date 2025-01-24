@@ -29,9 +29,14 @@ CREATE OR REPLACE TABLE xmppmaster.local_glpi_softwareversions (
     `comment` text DEFAULT NULL
 )ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_softwareversions';
 
-
 CREATE OR REPLACE TABLE xmppmaster.local_glpi_softwares(
     `id` int not null, primary key(id),
     `name` varchar(255) null default NULL,
     `comment` text null default null
 )ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_softwares';
+
+CREATE OR REPLACE TABLE xmppmaster.local_glpi_entities (
+    `id` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
+    `completename` text DEFAULT NULL,
+    `name` varchar(255) DEFAULT NULL
+)ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_entities';
