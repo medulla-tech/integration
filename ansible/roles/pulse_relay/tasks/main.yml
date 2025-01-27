@@ -83,30 +83,24 @@
     dest: '{{ APACHE_CONF_PATH }}/guacamole-{{ XMPP_DOMAIN }}.conf'
     mode: '0644'
     backup: yes
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/GUACAMOLE - Enable guacamole module
   ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ansible_distribution == 'Debian'
 
 - name: GUACAMOLE/APACHE - Reload apache on pulsemain
   systemd:
     name: '{{ APACHE_DAEMON }}'
     state: reloaded
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/APACHE - Setup local apache for agent update
   ansible.builtin.copy:
@@ -135,12 +129,10 @@
     named_args:
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
   register: res_query
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
-    - ITSM_DBHOST == PULSEMAIN_IP
+    - PULSEMAIN_FQDN is defined
+    - ITSM_DBHOST == PULSEMAIN_FQDN
 
 - name: PULSE/ITSM - Allow access to ITSM API
   community.mysql.mysql_query:
@@ -152,8 +144,6 @@
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
     single_transaction: yes
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
@@ -166,12 +156,11 @@
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
     method: GET
+    use_proxy: false
   register: json_session
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
 
 - name: PULSE/ITSM - Create entity in ITSM if it does not exist
@@ -188,23 +177,20 @@
       input:
         name: '{{ ENTITY }}'
     return_content: yes
+    use_proxy: false
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
-  when:
-    - PULSEMAIN_IP is defined
-    - ITSM_WRITEABLE
-    - res_query.rowcount[0] == 0
-
-- name: PULSE/ITSM - Clear the glpi cache
-  ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
+    - res_query.rowcount[0] == 0
 
+- name: PULSE/ITSM - Clear the itsm cache
+  ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
+  delegate_to: '{{ ITSM_FRONTSERVER if ITSM_FRONTSERVER != "" else omit }}'
+  when:
+    - ITSM_WRITEABLE
 
 - name: PULSE/ITSM - Create rules in ITSM if entity does not exist
   community.mysql.mysql_query:
@@ -218,11 +204,9 @@
       - INSERT INTO glpi_rules (sub_type, ranking, name, `match`) VALUES ('PluginFusioninventoryInventoryRuleEntity', 1, '{{ ENTITY }}', 'AND')
       - INSERT INTO glpi_rulecriterias (rules_id, criteria, `condition`, pattern) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'subnet', 0, '{{ NETWORK_ADDRESS }}')
       - INSERT INTO glpi_ruleactions (rules_id, action_type, field, value) VALUES ((SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity'), 'assign', 'entities_id', (SELECT id FROM glpi_entities WHERE name='{{ ENTITY }}'))
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
     - ITSM_WRITEABLE
     - res_query.rowcount[0] == 0
 
@@ -236,9 +220,7 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_queryshareexists
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: PULSE/SHARE - Get relay server id from db
   community.mysql.mysql_query:
@@ -254,9 +236,7 @@
   register: res_queryrelayserverid
   when:
     - res_queryshareexists.rowcount[0] == 0
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: PULSE/SHARE - Create cluster share in database if it did not exist
   community.mysql.mysql_query:
@@ -269,9 +249,7 @@
       - INSERT INTO pkgs_shares (name, comments, type, uri, ars_name, ars_id, share_path) VALUES ('{{ PKGS_SHARE_NAME }}', '{{ PKGS_SHARE_NAME }}', 'local', '{{ ansible_hostname }}', '{{ ansible_hostname }}', {{ res_queryrelayserverid.query_result[0][0].id }}, '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}')
   when:
     - res_queryshareexists.rowcount[0] == 0
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: PULSE/SHARE - Find id of newly added share
   community.mysql.mysql_query:
@@ -283,11 +261,9 @@
     query:
       - SELECT id FROM pkgs_shares WHERE name='{{ PKGS_SHARE_NAME }}' AND type='local' AND share_path='/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}'
   register: res_querynewshare
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
-- name: PULSE/SHARE - Create rw permission for root on cluster share if it did not exist
+- name: PULSE/SHARE - Create rw permission for root and admin on cluster share if it did not exist
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
     login_port: '{{ DBPORT }}'
@@ -295,10 +271,11 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: pkgs
     query:
-      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'rw', {{ res_querynewshare.query_result[0][0].id }})
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+      - INSERT INTO pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, '{{ item }}', 'rw', {{ res_querynewshare.query_result[0][0].id }})
+  with_items:
+    - 'root'
+    - '{{ PKGS_SHARE_ADMIN_USER_REGEX }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - res_queryshareexists.rowcount[0] == 0
 
@@ -315,11 +292,36 @@
     state: present
     key: "{{ sshkey.ssh_public_key }}"
     path: /var/lib/pulse2/file-transfer/.ssh/authorized_keys
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
+    - PULSEMAIN_FQDN is defined
+
+- name: PULSE/IMAGING - Create user drivers with no home and group
+  ansible.builtin.user:
+    name: drivers
+    shell: /bin/false
+    uid: 215
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Configure samba for drivers
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.template', './smb_drivers.conf.j2') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK drivers"
+  notify:
+    - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Define Samba drivers Password
+  ansible.builtin.shell: >
+    (pdbedit --user=drivers 2>&1 > /dev/null)
+    || (echo '{{ DRIVERS_PASSWORD }}'; echo '{{ DRIVERS_PASSWORD }}')
+    | smbpasswd -s -a drivers
+  when:
+    - not IMAGING_DISABLED
 
 - name: PULSE/IMAGING - Load config file to find Package Server UUID
   ansible.builtin.slurp:
@@ -346,9 +348,23 @@
     named_args:
       packageserver_uuid: '{{ ps_uuid }}'
   register: res_query
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Check if an imaging server is already registered for this entity
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM ImagingServer WHERE name = %(name)s
+    named_args:
+      name: '{{ IMAGING_SERVER_NAME }}'
+  register: res_query_entity
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
 
@@ -379,9 +395,7 @@
       - SELECT id FROM glpi_entities WHERE completename = %(completename)s
     named_args:
       completename: '{{ ORGANISATION }} > {{ ENTITY }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   register: res_queryentityglpi
   when:
     - not IMAGING_DISABLED
@@ -398,9 +412,7 @@
     named_args:
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityglpi.rowcount[0] != 0
@@ -414,9 +426,7 @@
     login_db: imaging
     query:
       - INSERT INTO Entity (name, uuid) VALUES ('{{ ORGANISATION }} > {{ ENTITY }}', 'UUID{{ res_queryentityglpi.query_result[0][0].id }}')
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityimaging.rowcount[0] == 0
@@ -430,9 +440,7 @@
     login_db: imaging
     query:
       - UPDATE Entity SET name = '{{ ORGANISATION }} > {{ ENTITY }}', uuid = 'UUID{{ res_queryentityglpi.query_result[0][0].id }}' WHERE id = {{ res_queryentityimaging.query_result[0][0].id }}
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
     - res_queryentityimaging.rowcount[0] != 0
@@ -449,9 +457,7 @@
     named_args:
       uuid: 'UUID{{ res_queryentityglpi.query_result[0][0].id }}'
   register: res_queryentityimaging
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
 
@@ -464,9 +470,7 @@
     login_db: imaging
     query:
       - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] == 0
@@ -481,9 +485,7 @@
     login_db: imaging
     query:
       - UPDATE ImagingServer SET name = '{{ IMAGING_SERVER_NAME }}', url = 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', associated = 1, fk_entity = {{ res_queryentityimaging.query_result[0][0].id }}, davos_opts = 'fqdn={{ SERVER_FQDN }}' WHERE packageserver_uuid = '{{ ps_uuid }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0

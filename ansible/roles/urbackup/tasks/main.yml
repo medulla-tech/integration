@@ -90,6 +90,7 @@
       username: admin
       password: '{{ URBACKUP_ADMINPASSWD }}'
       plainpw: 1
+    use_proxy: false
   register: session_key
 
 - name: BACKUP - Get session key
@@ -117,6 +118,7 @@
       update_freq_image_incr: -5184000
       internet_full_file_backups: 'true'
       ses: '{{ urbackup_session }}'
+    use_proxy: false
 
 - name: BACKUP - Ensure urbackup is running
   ansible.builtin.systemd:

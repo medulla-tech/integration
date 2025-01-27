@@ -101,8 +101,6 @@
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
     single_transaction: yes
-  vars:
-    ansible_ssh_user: root
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
@@ -115,6 +113,7 @@
     url_password: '{{ ITSM_API_PASSWORD }}'
     force_basic_auth: yes
     method: GET
+    use_proxy: false
   register: json_session
   when:
     - ITSM_WRITEABLE
@@ -133,13 +132,15 @@
       input:
         name: '{{ ENTITY }}'
     return_content: yes
+    use_proxy: false
   register: result
   failed_when: ('Duplicate entry' not in result.content) and (result.status != 201)
   when:
     - ITSM_WRITEABLE
 
-- name: GLPI - Clear the cache
+- name: PULSE/ITSM - Clear the itsm cache
   ansible.builtin.command: php /usr/share/glpi/bin/console cache:clear
+  delegate_to: '{{ ITSM_FRONTSERVER if ITSM_FRONTSERVER != "" else omit }}'
   when:
     - ITSM_WRITEABLE
 
@@ -257,6 +258,7 @@
   ansible.builtin.user:
     name: drivers
     shell: /bin/false
+    uid: 215
   when:
     - not IMAGING_DISABLED
 

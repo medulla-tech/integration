@@ -227,6 +227,28 @@
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: '{{ item }}'
+    state: present
+  with_items:
+    - dyngroup
+    - msc
+    - pkgs
+    - pulse2
+    - xmppmaster
+    - admin
+    - imaging
+    - kiosk
+    - urbackup
+    - updates
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC - Import database schemas
+  community.mysql.mysql_db:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    name: '{{ item }}'
     state: import
     target: '{{ CONTRIB_PATH }}/{{ item }}/sql/schema-001.sql'
   with_items:
@@ -275,6 +297,7 @@
   with_items:
     - { host: 'localhost', when: true }
     - { host: '{{ DBHOST }}', when: '{{ DBHOST != "localhost" }}' }
+    - { host: '{{ DBHOST_IP }}', when: '{{ DBHOST != "localhost" }}' }
     - { host: '{{ IP_ADDRESS }}', when: true }
     - { host: '{{ SERVER_FQDN }}', when: true }
     - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
@@ -558,6 +581,7 @@
         database: xmppmaster
       access: direct
     status_code: [200, 409]
+    use_proxy: false
 
 - name: MMC/GRAFANA - Configure API Key
   community.general.ini_file:

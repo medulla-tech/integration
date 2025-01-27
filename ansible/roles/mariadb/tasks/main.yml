@@ -17,6 +17,18 @@
     - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}.yml"
 
+- name: MARIADB - Redefine MARIADB_SOCKET_FILE if needed
+  ansible.builtin.set_fact:
+    MARIADB_SOCKET_FILE: '{{ NEW_MARIADB_SOCKET_FILE }}'
+  when:
+    - NEW_MARIADB_SOCKET_FILE != ''
+
+- name: MARIADB - Redefine MARIADB_PID_FILE if needed
+  ansible.builtin.set_fact:
+    MARIADB_PID_FILE: '{{ NEW_MARIADB_PID_FILE }}'
+  when:
+    - NEW_MARIADB_PID_FILE != ''
+
 - name: MARIADB - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
@@ -80,14 +92,90 @@
   when:
     - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
-- name: MARIADB - Ensure datadir exists
+- name: MARIADB - Change mariadb port if required
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: port
+    value: '{{ DBPORT }}'
+    backup: yes
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Make sure /etc/systemd/system/mariadb.service.d exists
   ansible.builtin.file:
-    path: '{{ MARIADB_DATADIR }}'
+    path: /etc/systemd/system/mariadb.service.d
+    mode: 0755
+    state: directory
+  when:
+    - MARIADB_USER != 'mysql'
+
+- name: MARIADB - Change mariadb system user if required
+  ansible.builtin.template:
+    src: user.conf.j2
+    dest: /etc/systemd/system/mariadb.service.d/user.conf
+    mode: '0644'
+  when:
+    - MARIADB_USER != 'mysql'
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Change mariadb system user if required
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: user
+    value: '{{ MARIADB_USER }}'
+    backup: yes
+  when:
+    - MARIADB_USER != 'mysql'
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Change mariadb datadir if required
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: datadir
+    value: '{{ MARIADB_DATADIR }}'
+    backup: yes
+  when:
+    - MARIADB_DATADIR != '/var/lib/mysql'
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Define mariadb socket file
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: socket
+    value: '{{ MARIADB_SOCKET_FILE }}'
+    backup: yes
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Define mariadb pid file
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: pid-file
+    value: '{{ MARIADB_PID_FILE }}'
+    backup: yes
+  notify:
+    - MARIADB - Restart mariadb
+
+- name: MARIADB - Ensure needed folders exist
+  ansible.builtin.file:
+    path: '{{ item }}'
     state: directory
     owner: '{{ MARIADB_USER }}'
     group: '{{ MARIADB_GROUP }}'
     recurse: yes
     mode: 0700
+  with_items:
+    - '{{ MARIADB_DATADIR }}'
+    - '{{ MARIADB_SOCKET_FILE | dirname }}'
+    - '{{ MARIADB_PID_FILE | dirname }}'
 
 - name: MARIADB - Check if datadir is initialized
   ansible.builtin.command: ls '{{ MARIADB_DATADIR }}/mysql'
@@ -95,7 +183,7 @@
   ignore_errors: True
 
 - name: MARIADB - Trying to initialize datadir
-  ansible.builtin.command: mysql_install_db --user={{ MARIADB_USER }}
+  ansible.builtin.command: mysql_install_db --user={{ MARIADB_USER }} --datadir={{ MARIADB_DATADIR }}
   when: 
     - lsdatadir.stdout | length == 0
 
@@ -106,19 +194,9 @@
 
 - name: MARIADB - Define root password
   community.mysql.mysql_user:
-    login_unix_socket: /var/run/mysqld/mysqld.sock
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: '{{ DBADMINUSER }}'
     password: '{{ DBADMINPASSWD }}'
-  when:
-    - ansible_distribution == 'Centos' or ansible_distribution == 'Debian'
-
-- name: MARIADB - Define root password
-  community.mysql.mysql_user:
-    login_unix_socket: /var/lib/mysql/mysql.sock
-    name: '{{ DBADMINUSER }}'
-    password: '{{ DBADMINPASSWD }}'
-  when:
-    - ansible_distribution == 'RedHat'
 
 - name: MARIADB - Create .my.cnf
   ansible.builtin.template:
@@ -130,6 +208,7 @@
 
 - name: MARIADB - Remove all anonymous user accounts
   community.mysql.mysql_user:
+    login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: ''
@@ -138,6 +217,7 @@
 
 - name: MARIADB - Delete test database
   community.mysql.mysql_db:
+    login_port: '{{ DBPORT }}'
     login_user: '{{ DBADMINUSER }}'
     login_password: '{{ DBADMINPASSWD }}'
     name: test
@@ -158,7 +238,7 @@
 
 - name: MARIADB - Enable server on all interfaces
   community.general.ini_file:
-    path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
     section: mysqld
     option: bind-address
     value: '0.0.0.0'
@@ -181,7 +261,7 @@
 
 - name: MARIADB - Define time zone
   community.general.ini_file:
-    path: '{{ MARIADB_CONF_PATH }}/50-server.cnf'
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
     section: mariadb
     option: default_time_zone
     value: "'Europe/Paris'"

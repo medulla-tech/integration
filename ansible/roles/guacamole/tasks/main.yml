@@ -108,23 +108,20 @@
 
 - name: GUACAMOLE - Delete guacamole database user
   community.mysql.mysql_user:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     host_all: yes
     state: absent
 
 - name: GUACAMOLE - Delete guacamole database
   community.mysql.mysql_db:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     state: absent
 
 - name: GUACAMOLE - Create guacamole database user
   community.mysql.mysql_user:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     password: '{{ GUACDBPASSWD }}'
     state: present
@@ -134,8 +131,7 @@
 
 - name: GUACAMOLE - Create guacamole database
   community.mysql.mysql_db:
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     name: guacamole
     state: import
     target: '{{ GUAC_SCHEMAS_PATH }}/{{ item }}'
@@ -145,9 +141,8 @@
 
 - name: GUACAMOLE - Define guacamole root user password in database
   community.mysql.mysql_query:
+    login_unix_socket: '{{ MARIADB_SOCKET_FILE }}'
     login_db: guacamole
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
     query: 
     - UPDATE guacamole_entity SET name = 'root' WHERE entity_id = 1
     - SET @salt = UNHEX(SHA2(UUID(), 256))
@@ -159,7 +154,7 @@
 - name: GUACAMOLE - Copy mysql-connector-java.jar to /etc/guacamole/lib/
   ansible.builtin.copy:
     src: /usr/share/java/mysql-connector-java.jar
-    dest: /etc/guacamole/lib/mysql-connector-java.jar
+    dest: /etc/guacamole/lib/
     remote_src: yes
     owner: root
     group: root
@@ -167,7 +162,7 @@
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
-- name: Creates /etc/guacamole/lib/ folder
+- name: GUACAMOLE - Create /etc/guacamole/lib/ folder
   ansible.builtin.file:
     path: /etc/guacamole/lib/
     state: directory

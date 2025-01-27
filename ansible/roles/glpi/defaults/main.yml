@@ -1,6 +1,7 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 GLPI_DBHOST: localhost
+GLPI_DBHOST_IP: "{{ query('community.general.dig', GLPI_DBHOST)[0] }}"
 GLPI_DBPORT: 3306
 GLPI_DBUSER: glpi
 GLPI_DBPASSWD: '' # 12 character string. Must be vaulted
@@ -15,3 +16,10 @@ IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 GLPI_VERSION: '10.0.17'
 SERVER_FQDN: '{{ ansible_fqdn }}'
 PUBLIC_IP: ''
+# For authenticating to external LDAP. Examples:
+# EXTERNAL_LDAP_URL: ldap://ldap.siveo.local:389 
+# EXTERNAL_LDAP_SUFFIX: OU=USERS,OU=AD,DC=siveo,DC=local
+EXTERNAL_LDAP_URL: ''
+EXTERNAL_LDAP_TYPE: ad # can be ad or openldap
+EXTERNAL_LDAP_SUFFIX: ''
+EXTERNAL_LDAP_USERATTR: cn

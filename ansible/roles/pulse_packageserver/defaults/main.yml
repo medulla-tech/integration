@@ -2,5 +2,5 @@ INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 NETMASK: "{{ vars['ansible_'~INTERFACE].ipv4.netmask }}"
 PUBLIC_IP: ''
-PULSEMAIN_IP: '' # PULSEMAIN_IP must be set if package server is installed on a separate server
+PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set if package server is installed on a separate server
 PKI_PATH: /var/lib/pulse2/pki

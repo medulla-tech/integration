@@ -2,6 +2,6 @@ PULSE_BIOS_PATH: /var/lib/pulse2/imaging/bootloader
 PULSE_UEFI32_PATH: /var/lib/pulse2/imaging/bootloader-uefi32
 PULSE_UEFI64_PATH: /var/lib/pulse2/imaging/bootloader-uefi64
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
-PULSEMAIN_IP: '' # PULSEMAIN_IP must be set
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 PULSEMAIN_FQDN: '' # PULSEMAIN_FQDN must be set
 HTTP_PROTOCOL: http

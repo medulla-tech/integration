@@ -115,6 +115,7 @@
     force_basic_auth: yes
     method: GET
     return_content: yes
+    use_proxy: false
   register: api_keys
 
 - name: GRAFANA - Get adminkey api key id if present
@@ -134,6 +135,7 @@
     url_password: '{{ GRAFANAADMINPASSWD }}'
     force_basic_auth: yes
     method: DELETE
+    use_proxy: false
   when:
     - adminkey_id is defined
 
@@ -148,6 +150,7 @@
     body:
       name: adminkey
       role: Admin
+    use_proxy: false
   register: admin_key
 
 - name: GRAFANA - Get api key

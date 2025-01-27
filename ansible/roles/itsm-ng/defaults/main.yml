@@ -1,6 +1,7 @@
 DBADMINUSER: root
 DBADMINPASSWD: '{{ ROOT_PASSWORD }}'
 ITSMNG_DBHOST: localhost
+ITSMNG_DBHOST_IP: "{{ query('community.general.dig', ITSMNG_DBHOST)[0] }}"
 ITSMNG_DBPORT: 3306
 ITSMNG_DBUSER: glpi
 ITSMNG_DBPASSWD: '' # 12 character string. Must be vaulted
@@ -14,3 +15,11 @@ INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
 SERVER_FQDN: '{{ ansible_fqdn }}'
 PUBLIC_IP: ''
+# For authenticating to external LDAP. Examples:
+# EXTERNAL_LDAP_URL: ldap://ldap.siveo.local:389 
+# EXTERNAL_LDAP_SUFFIX: OU=USERS,OU=AD,DC=siveo,DC=local
+EXTERNAL_LDAP_URL: ''
+EXTERNAL_LDAP_TYPE: ad # can be ad or openldap
+EXTERNAL_LDAP_SUFFIX: ''
+EXTERNAL_LDAP_USERATTR: cn
+

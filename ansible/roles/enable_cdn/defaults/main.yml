@@ -1,7 +1,8 @@
-PULSEMAIN_IP: ''
+PULSEMAIN_FQDN: ''
 AES_KEY: '' # 32 character string. Must be vaulted
 SSH_REMOTEUSER: cdnsync
 SSH_REMOTESERVER: cdn.siveo.net
 SSH_REMOTE_PATH: /home/cdnsync/webroot/sharing/
 CDN_BASEURL: http://cdn.siveo.net/sharing/
 CDN_TOKEN: '' # String used as X-Authorization token
+SSH_USER: root

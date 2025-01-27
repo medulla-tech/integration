@@ -107,19 +107,33 @@
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
-- name: RELAY_AGENT - Update /etc/hosts on pulsemain
+- name: RELAY_AGENT - Get all Medulla consoles
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'xmppmaster'
+    query:
+      - SELECT nameserver FROM relayserver WHERE jid LIKE '%@pulse/%'
+  register: res_querymmc
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
+
+- name: RELAY_AGENT - Update /etc/hosts on all Medulla console servers
   ansible.builtin.lineinfile:
     dest: /etc/hosts
     line: '{{ IP_ADDRESS }} {{ XMPP_DOMAIN }}'
     regexp: '^.* {{ XMPP_DOMAIN }}$'
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ item.nameserver }}.{{ DOMAIN_NAME }}'
+  loop: "{{ res_querymmc.query_result[0] }}"
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: RELAY_AGENT - Force relay to re-register in case of upgrade
   ansible.builtin.file:
@@ -131,6 +145,46 @@
 - name: RELAY_AGENT - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
 
+- name: RELAY_AGENT - Get location of server from ITSM
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWORD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT glpi_locations.completename AS locationname FROM glpi_locations LEFT JOIN glpi_computers ON glpi_computers.locations_id=glpi_locations.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
+  register: res_location
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Get entity of server from ITSM
+  community.mysql.mysql_query:
+    login_host: '{{ ITSM_DBHOST }}'
+    login_port: '{{ ITSM_DBPORT }}'
+    login_user: '{{ ITSM_DBUSER }}'
+    login_password: '{{ ITSM_DBPASSWORD }}'
+    login_db: '{{ ITSM_DBNAME }}'
+    query:
+      - SELECT glpi_entities.completename AS entityname FROM glpi_entities LEFT JOIN glpi_computers ON glpi_computers.entities_id=glpi_entities.id WHERE glpi_computers.name = '{{ ansible_hostname }}'
+  register: res_entity
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Define cluster description
+  ansible.builtin.set_fact:
+    CLUSTER_DESCRIPTION: "{{ res_entity.query_result[0][0].entityname.split(' > ')[3:] | join(' > ') | regex_replace (\"'\",\" \") }} # {{ res_location.query_result[0][0].locationname | regex_replace (\"'\",\" \") }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Define cluster name
+  ansible.builtin.set_fact:
+    CLUSTER_NAME: "{{ CLUSTER_NAME_PREFIX }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
+  when:
+    - CLUSTER_FROM_ITSM_LOCATION
+
 - name: RELAY_AGENT - Create or update cluster
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
@@ -139,10 +193,8 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: 'xmppmaster'
     query:
-      - INSERT IGNORE INTO cluster_ars (name, description) VALUES('{{ CLUSTER_NAME }}', '{{ CLUSTER_NAME }}') ON DUPLICATE KEY UPDATE description='{{ CLUSTER_NAME }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
+      - INSERT IGNORE INTO cluster_ars (name, description) VALUES('{{ CLUSTER_NAME }}', '{{ CLUSTER_DESCRIPTION }}') ON DUPLICATE KEY UPDATE description='{{ CLUSTER_DESCRIPTION }}'
+  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
 
 - name: RELAY_AGENT - Get cluster id for relay
   community.mysql.mysql_query:
@@ -156,9 +208,18 @@
     named_args:
       name: '{{ CLUSTER_NAME }}'
   register: res_queryclusterid
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP }}"
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+
+- name: RELAY_AGENT - Set admin permissions on cluster
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: 'pkgs'
+    query:
+      - INSERT IGNORE INTO pkgs_rules_global (pkgs_rules_algos_id, pkgs_cluster_ars_id, subject, permission) VALUES (3, {{ res_queryclusterid.query_result[0][0].id }}, '{{ ARS_ADMIN_USER_REGEX }}', 'rw') ON DUPLICATE KEY UPDATE permission='rw'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
 
 - name: RELAY_AGENT - Get RELAYSERVER_ID FROM relayserver waiting up to 5 minutes
   community.mysql.mysql_query:
@@ -175,9 +236,7 @@
   retries: 10
   delay: 30
   until: res_queryrelayserverid.rowcount[0] != 0
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
+  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
 
 - name: RELAY_AGENT - Make sure ssh key exists
   ansible.builtin.user:
@@ -195,9 +254,7 @@
     login_db: 'xmppmaster'
     query:
       - UPDATE relayserver SET ssh_public_key = '{{ sshkey.ssh_public_key }}' WHERE id = {{ res_queryrelayserverid.query_result[0][0].id }}
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
+  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
 
 - name: RELAY_AGENT - Insert relay in its cluster
   community.mysql.mysql_query:
@@ -208,9 +265,7 @@
     login_db: 'xmppmaster'
     query:
       - INSERT INTO has_cluster_ars (id_ars, id_cluster) VALUES ({{ res_queryrelayserverid.query_result[0][0].id }}, {{ res_queryclusterid.query_result[0][0].id }}) ON DUPLICATE KEY UPDATE id_cluster='{{ res_queryclusterid.query_result[0][0].id }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
+  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
 
 - name: RELAY_AGENT - Create initial substituteconf records
   community.mysql.mysql_query:
@@ -243,9 +298,7 @@
     login_db: 'xmppmaster'
     query:
       - INSERT IGNORE INTO xmppmaster.substituteconf (type, jidsubtitute, relayserver_id) SELECT DISTINCT type, jidsubtitute, '{{ res_queryrelayserverid.query_result[0][0].id }}' FROM substituteconf
-  vars:
-    ansible_ssh_user: root
-  delegate_to: "{{ PULSEMAIN_IP if PULSEMAIN_IP is defined else omit }}"
+  delegate_to: "{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN is defined else omit }}"
 
 - name: RELAY_AGENT - Ensure relay service is running
   ansible.builtin.systemd:

@@ -103,8 +103,9 @@
       label: "{{ SHARE_NAME }}"
       path: "{{ SHARE_PATH }}"
       type: "{{ MAIN_SHARE_TYPE }}"
+    use_proxy: false
   when:
-    - PULSEMAIN_IP == ''
+    - PULSEMAIN_FQDN == ''
 
 - name: ST_SHARE_FOLDER - Create syncthing shares
   ansible.builtin.uri:
@@ -118,20 +119,21 @@
       label: "{{ SHARE_NAME }}"
       path: "{{ SHARE_PATH }}"
       type: "{{ RELAY_SHARE_TYPE }}"
+    use_proxy: false
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Get local device id for sharing from main
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
   register: localdeviceid
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Set LOCAL_DEVICE_ID for sharing from main
   ansible.builtin.set_fact:
     LOCAL_DEVICE_ID: "{{ localdeviceid.stdout }}"
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Get Pulsemain Syncthing API Key
   community.general.xml:
@@ -139,18 +141,16 @@
     xpath: /configuration/gui/apikey
     content: text
   register: xmlres
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Set MAINSTAPIKEY variable
   ansible.builtin.set_fact:
     MAINSTAPIKEY: '{{ xmlres.matches[0].apikey }}'
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Get current folder configuration on main waiting up to 5 minutes
   ansible.builtin.uri:
@@ -160,14 +160,13 @@
     method: GET
     body_format: json
     status_code: 200
+    use_proxy: false
   throttle: 1
   register: result
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
   retries: 10
   delay: 30
   until: ('status' in result) and result.status == 200
@@ -179,7 +178,7 @@
     new_device:
       deviceID: "{{ LOCAL_DEVICE_ID }}"
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Share folder to relay waiting up to 5 minutes
   ansible.builtin.uri:
@@ -191,13 +190,12 @@
     body:
       devices: "{{ new_devices }}"
     status_code: 200
+    use_proxy: false
   throttle: 1
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
   register: result
   retries: 10
   delay: 30
@@ -205,23 +203,19 @@
 
 - name: ST_SHARE_FOLDER - Find pulsemain device id for syncthing
   ansible.builtin.command: syncthing -home=/var/lib/syncthing/{{ SYNCTHING_CONF_FOLDER }}/syncthing/ -device-id
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   register: pulsemaindeviceid
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Set PULSEMAIN_DEVICE_ID for syncthing
   ansible.builtin.set_fact:
     PULSEMAIN_DEVICE_ID: '{{ pulsemaindeviceid.stdout }}'
-  vars:
-    ansible_ssh_user: root
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Get current folder configuration
   ansible.builtin.uri:
@@ -230,9 +224,10 @@
       X-API-Key: '{{ STAPIKEY }}'
     method: GET
     body_format: json
+    use_proxy: false
   register: result
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Append main device to devices configuration
   ansible.builtin.set_fact:
@@ -241,7 +236,7 @@
     new_device:
       deviceID: "{{ PULSEMAIN_DEVICE_ID }}"
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
 - name: ST_SHARE_FOLDER - Share folder to main
   ansible.builtin.uri:
@@ -252,6 +247,7 @@
     body_format: json
     body:
       devices: "{{ new_devices }}"
+    use_proxy: false
   when:
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN != ''
 
