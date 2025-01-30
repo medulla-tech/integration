@@ -2,5 +2,6 @@
   gather_facts: true
   hosts: all
   remote_user: root
+  # environment: "{{ proxy_env }}"
   roles:
     - mariadb
