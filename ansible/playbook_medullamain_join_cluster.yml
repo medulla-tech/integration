@@ -3,7 +3,7 @@
   hosts: mmccluster
   remote_user: root
   serial: 1
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: MEDULLAMAIN_CLUSTER - Set version for this playbook

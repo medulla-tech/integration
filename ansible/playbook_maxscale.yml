@@ -2,7 +2,7 @@
   gather_facts: true
   hosts: all
   remote_user: root
-  environment: "{{ proxy_env }}"
+  # environment: "{{ proxy_env }}"
 
   pre_tasks:
     - name: MAXSCALE - Set version for this playbook
