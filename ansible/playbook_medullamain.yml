@@ -59,3 +59,11 @@
     - { role: syncthing_share_folder, SHARE_NAME: 'postinst', SHARE_PATH: '/var/lib/pulse2/imaging/postinst/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (not IMAGING_DISABLED) }
     - { role: pulse_imaging, when: (not IMAGING_DISABLED) }
     - pulse_main
+
+  post_tasks:
+    - name: MEDULLAMAIN - Print a few variables
+      ansible.builtin.debug:
+        msg:
+          - "GRAFANA_ADMIN_KEY: {{ GRAFANA_ADMIN_KEY }}"
+          - "STDISCOSRV_URL: {{ STDISCOSRV_URL }}"
+          - "STRELAYSRV_URL: {{ STRELAYSRV_URL }}"
