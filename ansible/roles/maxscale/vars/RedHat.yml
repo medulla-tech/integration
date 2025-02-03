@@ -1,0 +1,2 @@
+MARIADB_CONF_PATH: /etc/my.cnf.d
+SERVER_CONF_FILE: mariadb-server.cnf

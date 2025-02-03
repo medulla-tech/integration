@@ -7,3 +7,6 @@ MAXSCALE_USER_PASSWORD: '' # 16 character string. Must be vaulted
 MAXSCALE_MONITOR_USER: maxscale_monitor_user
 MAXSCALE_MONITOR_USER_PASSWORD: '' # 16 character string. Must be vaulted
 MAXSCALE_SPLITTER_PORT: 3306
+INTERFACE: '{{ ansible_default_ipv4.interface }}'
+IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+NETMASK: "{{ vars['ansible_'~INTERFACE].ipv4.netmask }}"

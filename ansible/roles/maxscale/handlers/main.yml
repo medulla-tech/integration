@@ -3,3 +3,10 @@
     name: 'maxscale'
     state: restarted
     daemon_reload: yes
+
+- name: MAXSCALE - Restart mariadb on master
+  ansible.builtin.systemd:
+    name: 'mariadb'
+    state: restarted
+    daemon_reload: yes
+  delegate_to: '{{ MASTER_FQDN }}'

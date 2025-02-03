@@ -4,3 +4,9 @@
     state: restarted
     daemon_reload: yes
   delegate_to: '{{ MAXSCALE_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Restart mariadb
+  ansible.builtin.systemd:
+    name: 'mariadb'
+    state: restarted
+    daemon_reload: yes

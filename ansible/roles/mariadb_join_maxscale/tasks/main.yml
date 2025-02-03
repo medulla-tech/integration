@@ -56,6 +56,7 @@
     - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'address', value: '{{ SERVER_FQDN }}' }
     - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'port', value: '{{ MARIADB_SERVER_PORT }}' }
     - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'protocol', value: 'MariaDBBackend' }
+    - { section: '{{ SERVER_FQDN.split(".")[0] }}', parameter: 'proxy_protocol', value: 'true' }
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
   delegate_to: '{{ MAXSCALE_FQDN }}'
@@ -77,6 +78,21 @@
   notify:
     - MAXSCALE_CLUSTER - Restart maxscale
   delegate_to: '{{ MAXSCALE_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Get allowed proxies from master db server
+  ansible.builtin.set_fact:
+    proxies_list: "{{ lookup('ansible.builtin.ini', 'proxy-protocol-networks', section='mariadb', file='{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}') }}"
+  delegate_to: '{{ MASTER_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Allow proxied requests on mariadb servers from maxscale
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mariadb
+    option: proxy-protocol-networks
+    value: "{{ proxies_list }}"
+    backup: yes
+  notify:
+    - MAXSCALE_CLUSTER - Restart mariadb
 
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers

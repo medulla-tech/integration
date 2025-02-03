@@ -127,6 +127,17 @@
   notify:
     - MAXSCALE - Restart maxscale
 
+- name: MAXSCALE - Allow proxied requests on master mariadb from maxscale
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mariadb
+    option: proxy-protocol-networks
+    value: "::1, localhost, {{ IP_ADDRESS }}/{{ NETMASK | ansible.utils.ipaddr('prefix') }}"
+    backup: yes
+  delegate_to: '{{ MASTER_FQDN }}'
+  notify:
+    - MAXSCALE - Restart mariadb on master
+
 - name: MAXSCALE - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
 
