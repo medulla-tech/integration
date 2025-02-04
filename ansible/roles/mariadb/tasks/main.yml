@@ -92,6 +92,13 @@
   when:
     - ansible_distribution == 'Debian' and ( ansible_distribution_major_version == '11' or ansible_distribution_major_version == '12' )
 
+- name: MARIADB - Make sure /var/log/mysql exists
+  ansible.builtin.file:
+    path: /var/log/mysql
+    mode: 0755
+    owner: '{{ MARIADB_USER }}'
+    state: directory
+
 - name: MARIADB - Change mariadb port if required
   community.general.ini_file:
     path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
