@@ -124,3 +124,7 @@
 - name: MAXSCALE_CLUSTER - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
   delegate_to: '{{ MAXSCALE_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Reset replication
+  ansible.builtin.command: maxctrl call command mariadbmon reset-replication MariaDB-Monitor
+  delegate_to: '{{ MAXSCALE_FQDN }}'

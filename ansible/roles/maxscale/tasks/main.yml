@@ -175,6 +175,9 @@
 - name: MAXSCALE - Restart maxscale with the new parameters
   ansible.builtin.meta: flush_handlers
 
+- name: MAXSCALE - Reset replication
+  ansible.builtin.command: maxctrl call command mariadbmon reset-replication MariaDB-Monitor
+
 - name: MAXSCALE - Ensure maxscale is running
   ansible.builtin.systemd:
     name: maxscale
