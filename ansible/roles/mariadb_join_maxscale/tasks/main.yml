@@ -11,6 +11,27 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: MAXSCALE_CLUSTER - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: MAXSCALE_CLUSTER - Enable bin logs for replication
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { option: 'server-id', value: '{{ MARIADB_SERVER_INDEX }}' }
+    - { option: 'log_bin', value: '/var/log/mysql/mysql-bin.log' }
+    - { option: 'expire_logs_days', value: '10' }
+    - { option: 'max_binlog_size', value: '100M' }
+  notify:
+    - MAXSCALE_CLUSTER - Restart mariadb
+
 - name: MAXSCALE_CLUSTER - Create maxscale database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
@@ -41,7 +62,11 @@
     host: '%'
     state: present
     priv:
-      '*.*': 'REPLICATION CLIENT,SUPER,RELOAD'
+      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN'
+      '*.*': 'SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN'
+      'mysql.user': 'SELECT'
+      'mysql.global_priv': 'SELECT'
+      '*.*': 'REPLICATION SLAVE'
   no_log: True
 
 - name: MAXSCALE_CLUSTER - Configure mariadb server in maxscale
@@ -80,9 +105,13 @@
   delegate_to: '{{ MAXSCALE_FQDN }}'
 
 - name: MAXSCALE_CLUSTER - Get allowed proxies from master db server
-  ansible.builtin.set_fact:
-    proxies_list: "{{ lookup('ansible.builtin.ini', 'proxy-protocol-networks', section='mariadb', file='{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}') }}"
+  ansible.builtin.command: grep -m1 -ir '^proxy-protocol-networks' {{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}
+  register: grep_output
   delegate_to: '{{ MASTER_FQDN }}'
+
+- name: MAXSCALE_CLUSTER - Define proxies_list
+  ansible.builtin.set_fact:
+    proxies_list: '{{ grep_output.stdout.split("=")[1] }}'
 
 - name: MAXSCALE_CLUSTER - Allow proxied requests on mariadb servers from maxscale
   community.general.ini_file:

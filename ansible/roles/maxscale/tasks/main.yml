@@ -11,6 +11,12 @@
     msg:
     - "{{role_name}} version: {{ ROLE_VERSION }}"
 
+- name: MAXSCALE - Add the OS specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
 - name: MAXSCALE - Install tools needed for the setup
   ansible.builtin.yum:
     state: latest
@@ -54,6 +60,22 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: MAXSCALE - Enable bin logs for replication
+  community.general.ini_file:
+    path: '{{ MARIADB_CONF_PATH }}/{{ SERVER_CONF_FILE }}'
+    section: mysqld
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+    backup: yes
+  with_items:
+    - { option: 'server-id', value: '1' }
+    - { option: 'log_bin', value: '/var/log/mysql/mysql-bin.log' }
+    - { option: 'expire_logs_days', value: '10' }
+    - { option: 'max_binlog_size', value: '100M' }
+  delegate_to: '{{ MASTER_FQDN }}'
+  notify:
+    - MAXSCALE - Restart mariadb on master
+
 - name: MAXSCALE - Create maxscale database user
   community.mysql.mysql_user:
     login_user: '{{ DBADMINUSER }}'
@@ -85,7 +107,11 @@
     host: '%'
     state: present
     priv:
-      '*.*': 'REPLICATION CLIENT,SUPER,RELOAD'
+      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN'
+      '*.*': 'SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN'
+      'mysql.user': 'SELECT'
+      'mysql.global_priv': 'SELECT'
+      '*.*': 'REPLICATION SLAVE'
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 
@@ -115,6 +141,16 @@
     - { parameter: 'service', value: 'Splitter-Service' }
     - { parameter: 'protocol', value: 'MariaDBClient' }
     - { parameter: 'port', value: '{{ MAXSCALE_SPLITTER_PORT }}' }
+  notify:
+    - MAXSCALE - Restart maxscale
+
+- name: MAXSCALE - Configure Admin GUI
+  community.general.ini_file:
+    path: /etc/maxscale.cnf
+    section: maxscale
+    option: admin_secure_gui
+    value: 'false'
+    backup: yes
   notify:
     - MAXSCALE - Restart maxscale
 
