@@ -107,11 +107,9 @@
     host: '%'
     state: present
     priv:
-      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN'
-      '*.*': 'SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN'
+      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN, SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN, REPLICATION SLAVE'
       'mysql.user': 'SELECT'
       'mysql.global_priv': 'SELECT'
-      '*.*': 'REPLICATION SLAVE'
   delegate_to: '{{ MASTER_FQDN }}'
   no_log: True
 
