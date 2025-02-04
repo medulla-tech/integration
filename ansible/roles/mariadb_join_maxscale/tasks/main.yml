@@ -62,11 +62,9 @@
     host: '%'
     state: present
     priv:
-      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN'
-      '*.*': 'SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN'
+      '*.*': 'REPLICATION CLIENT, REPLICA MONITOR, FILE, CONNECTION ADMIN, SUPER, RELOAD, PROCESS, SHOW DATABASES, EVENT, READ_ONLY ADMIN, REPLICATION SLAVE'
       'mysql.user': 'SELECT'
       'mysql.global_priv': 'SELECT'
-      '*.*': 'REPLICATION SLAVE'
   no_log: True
 
 - name: MAXSCALE_CLUSTER - Configure mariadb server in maxscale
