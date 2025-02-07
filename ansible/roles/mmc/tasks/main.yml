@@ -128,6 +128,21 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: MMC - Get value of STDISCOSRV_URL from main mmc
+  ansible.builtin.command: grep -m1 -ir '^announce_server' /etc/mmc/plugins/xmppmaster.ini.local
+  register: grep_output
+  delegate_to: '{{ PULSEMAIN_IP }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - PULSEMAIN_IP != ''
+
+- name: MMC - Set STDISCOSRV_URL variable
+  ansible.builtin.set_fact:
+    STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - PULSEMAIN_IP != ''
+
 - name: MMC - Configure mmc-agent
   ansible.builtin.copy:
     src: config.ini.local

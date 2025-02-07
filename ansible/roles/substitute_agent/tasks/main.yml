@@ -51,6 +51,21 @@
   when:
     - ansible_distribution == 'Debian'
 
+- name: SUBSTITUTE_AGENT - Get value of STDISCOSRV_URL from main mmc
+  ansible.builtin.command: grep -m1 -ir '^announce_server' /etc/mmc/plugins/xmppmaster.ini.local
+  register: grep_output
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN != ''
+
+- name: SUBSTITUTE_AGENT - Set STDISCOSRV_URL variable
+  ansible.builtin.set_fact:
+    STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
+  when:
+    - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN != ''
+
 - name: SUBSTITUTE_AGENT - Find substitute number
   ansible.builtin.set_fact:
     subs_long_name: '{{ SUBS_NAME }}'
