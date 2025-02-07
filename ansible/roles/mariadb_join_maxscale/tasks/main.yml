@@ -29,6 +29,7 @@
     - { option: 'log_bin', value: '/var/log/mysql/mysql-bin.log' }
     - { option: 'expire_logs_days', value: '10' }
     - { option: 'max_binlog_size', value: '100M' }
+    - { option: 'log_bin_trust_function_creators', value: '1' }
   notify:
     - MAXSCALE_CLUSTER - Restart mariadb
 
