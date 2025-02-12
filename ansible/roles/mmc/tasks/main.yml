@@ -277,6 +277,123 @@
   when:
     - MMC_DBINITIALISED is not defined
 
+- name: MMC - Get list of mariadb replicas for creating federated server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DB_SETUP_PORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: mysql
+    query: show replica hosts
+  register: res_query
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC - Set master
+  ansible.builtin.set_fact:
+    MASTER:
+      - { dbhost: "{{DBHOST}}", dbport: "{{ DB_SETUP_PORT }}" }
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC - Set list of replicas
+  ansible.builtin.set_fact:
+    REPLICAS_LIST: "{{ res_query | to_json | from_json | community.general.json_query(replicas_query) }}"
+  vars:
+    replicas_query: "query_result[0][].{dbhost: Host, dbport: Port}"
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC/ITSM - Set ITSM_DBHOST to 127.0.0.1 for federated server connection if ITSM_DBHOST is localhost
+  ansible.builtin.set_fact:
+    ITSM_DBHOST: '127.0.0.1'
+  when:
+    - ITSM_DBHOST == 'localhost'
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC/ITSM - Create federated server connection to ITSM DB using mariadb wrapper
+  community.mysql.mysql_query:
+    login_host: '{{ item.dbhost }}'
+    login_port: '{{ item.dbport }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE SERVER itsm_federated FOREIGN DATA WRAPPER 'mariadb' OPTIONS ( HOST %(itsm_dbhost)s, PORT %(itsm_dbport)s, USER %(itsm_dbuser)s, PASSWORD %(itsm_dbpasswd)s, DATABASE %(itsm_dbname)s )
+    named_args:
+      itsm_dbhost: '{{ ITSM_DBHOST }}'
+      itsm_dbport: '{{ ITSM_DBPORT }}'
+      itsm_dbuser: '{{ ITSM_DBUSER }}'
+      itsm_dbpasswd: '{{ ITSM_DBPASSWD }}'
+      itsm_dbname: '{{ ITSM_DBNAME }}'
+  with_items:
+    - "{{ MASTER | union(REPLICAS_LIST) }}"
+  when:
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC/ITSM - Create local federated table for ITSM version
+  community.mysql.mysql_query:
+    login_host: '{{ item.dbhost }}'
+    login_port: '{{ item.dbport }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE TABLE `local_{{ ITSM_TYPE }}_configs` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(150) DEFAULT NULL, `value` text DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_configs'
+  with_items:
+    - "{{ MASTER | union(REPLICAS_LIST) }}"
+  when:
+    - MMC_DBINITIALISED is not defined
+  ignore_errors: true
+
+- name: MMC/ITSM - Check if federated mariadb wrapper is working
+  community.mysql.mysql_query:
+    login_host: '{{ item.dbhost }}'
+    login_port: '{{ item.dbport }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: SELECT * FROM `local_{{ ITSM_TYPE }}_configs`
+  register: federated_result
+  with_items:
+    - "{{ MASTER | union(REPLICAS_LIST) }}"
+  when:
+    - MMC_DBINITIALISED is not defined
+  ignore_errors: true
+
+- name: MMC/ITSM - Create federated server connection to ITSM DB using mysql wrapper
+  community.mysql.mysql_query:
+    login_host: '{{ item.dbhost }}'
+    login_port: '{{ item.dbport }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE SERVER itsm_federated FOREIGN DATA WRAPPER 'mysql' OPTIONS ( HOST %(itsm_dbhost)s, PORT %(itsm_dbport)s, USER %(itsm_dbuser)s, PASSWORD %(itsm_dbpasswd)s, DATABASE %(itsm_dbname)s )
+    named_args:
+      itsm_dbhost: '{{ ITSM_DBHOST }}'
+      itsm_dbport: '{{ ITSM_DBPORT }}'
+      itsm_dbuser: '{{ ITSM_DBUSER }}'
+      itsm_dbpasswd: '{{ ITSM_DBPASSWD }}'
+      itsm_dbname: '{{ ITSM_DBNAME }}'
+  with_items:
+    - "{{ MASTER | union(REPLICAS_LIST) }}"
+  when:
+    - federated_result is failed
+    - MMC_DBINITIALISED is not defined
+
+- name: MMC/ITSM - Create local federated table for ITSM version
+  community.mysql.mysql_query:
+    login_host: '{{ item.dbhost }}'
+    login_port: '{{ item.dbport }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'xmppmaster'
+    query: CREATE OR REPLACE TABLE `local_{{ ITSM_TYPE }}_configs` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(150) DEFAULT NULL, `value` text DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_configs'
+  register: federated_result
+  with_items:
+    - "{{ MASTER | union(REPLICAS_LIST) }}"
+  when:
+    - federated_result is failed
+    - MMC_DBINITIALISED is not defined
+
 - name: MMC - Import database schemas
   community.mysql.mysql_db:
     login_host: '{{ DBHOST }}'
@@ -344,77 +461,6 @@
     state: touch
   when:
     - PULSEDB_CHANGED | bool
-
-- name: MMC/ITSM - Set ITSM_DBHOST to 127.0.0.1 for federated server connection if ITSM_DBHOST is localhost
-  ansible.builtin.set_fact:
-    ITSM_DBHOST: '127.0.0.1'
-  when:
-    - ITSM_DBHOST == 'localhost'
-
-- name: MMC/ITSM - Create federated server connection to ITSM DB using mariadb wrapper
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DB_SETUP_PORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    login_db: 'xmppmaster'
-    query: CREATE OR REPLACE SERVER itsm_federated FOREIGN DATA WRAPPER 'mariadb' OPTIONS ( HOST %(itsm_dbhost)s, PORT %(itsm_dbport)s, USER %(itsm_dbuser)s, PASSWORD %(itsm_dbpasswd)s, DATABASE %(itsm_dbname)s )
-    named_args:
-      itsm_dbhost: '{{ ITSM_DBHOST }}'
-      itsm_dbport: '{{ ITSM_DBPORT }}'
-      itsm_dbuser: '{{ ITSM_DBUSER }}'
-      itsm_dbpasswd: '{{ ITSM_DBPASSWD }}'
-      itsm_dbname: '{{ ITSM_DBNAME }}'
-
-- name: MMC/ITSM - Create local federated table for ITSM version
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DB_SETUP_PORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    login_db: 'xmppmaster'
-    query: CREATE OR REPLACE TABLE `local_{{ ITSM_TYPE }}_configs` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(150) DEFAULT NULL, `value` text DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_configs'
-  ignore_errors: true
-
-- name: MMC/ITSM - Check if federated mariadb wrapper is working
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DB_SETUP_PORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    login_db: 'xmppmaster'
-    query: SELECT * FROM `local_{{ ITSM_TYPE }}_configs`
-  register: federated_result
-  ignore_errors: true
-
-- name: MMC/ITSM - Create federated server connection to ITSM DB using mysql wrapper
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DB_SETUP_PORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    login_db: 'xmppmaster'
-    query: CREATE OR REPLACE SERVER itsm_federated FOREIGN DATA WRAPPER 'mysql' OPTIONS ( HOST %(itsm_dbhost)s, PORT %(itsm_dbport)s, USER %(itsm_dbuser)s, PASSWORD %(itsm_dbpasswd)s, DATABASE %(itsm_dbname)s )
-    named_args:
-      itsm_dbhost: '{{ ITSM_DBHOST }}'
-      itsm_dbport: '{{ ITSM_DBPORT }}'
-      itsm_dbuser: '{{ ITSM_DBUSER }}'
-      itsm_dbpasswd: '{{ ITSM_DBPASSWD }}'
-      itsm_dbname: '{{ ITSM_DBNAME }}'
-  when:
-    - federated_result is failed
-
-- name: MMC/ITSM - Create local federated table for ITSM version
-  community.mysql.mysql_query:
-    login_host: '{{ DBHOST }}'
-    login_port: '{{ DB_SETUP_PORT }}'
-    login_user: '{{ DBADMINUSER }}'
-    login_password: '{{ DBADMINPASSWD }}'
-    login_db: 'xmppmaster'
-    query: CREATE OR REPLACE TABLE `local_{{ ITSM_TYPE }}_configs` (`id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(150) DEFAULT NULL, `value` text DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=FEDERATED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci CONNECTION='itsm_federated/glpi_configs'
-  register: federated_result
-  when:
-    - federated_result is failed
 
 - name: MMC/ITSM - Find ITSM version
   community.mysql.mysql_query:
