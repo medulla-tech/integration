@@ -218,14 +218,14 @@
 
 - name: PULSE/AGENT - Append base-url options
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --base-url=http://' + LOADBALANCER_FQDN + '/downloads'}}"
+    generation_options: "{{ generation_options + ' --base-url=' + HTTP_PROTOCOL + '://' + LOADBALANCER_FQDN + '/downloads'}}"
   when:
     - LOADBALANCER_FQDN is defined
     - LOADBALANCER_FQDN != ''
 
 - name: PULSE/AGENT - Append base-url options
   ansible.builtin.set_fact:
-    generation_options: "{{ generation_options + ' --base-url=http://' + SERVER_FQDN + '/downloads'}}"
+    generation_options: "{{ generation_options + ' --base-url=' + HTTP_PROTOCOL + '://' + SERVER_FQDN + '/downloads'}}"
   when:
     - LOADBALANCER_FQDN is not defined
 
