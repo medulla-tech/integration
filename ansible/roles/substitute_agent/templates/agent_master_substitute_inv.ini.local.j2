@@ -10,6 +10,7 @@ url_to_forward = {{ ITSM_BASEURL }}/plugins/{{ GLPI_PLUGIN }}/front/plugin_fusio
 {% else %}
 url_to_forward = {{ ITSM_BASEURL }}/marketplace/{{ GLPI_PLUGIN }}/front/plugin_fusioninventory.communication.php
 {% endif %}
+inventory_plugin = {{ GLPI_PLUGIN }}
 
 [glpidatabase]
 glpi_dbhost = {{ ITSM_DBHOST }}
