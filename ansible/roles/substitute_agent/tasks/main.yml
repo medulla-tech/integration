@@ -57,6 +57,7 @@
   delegate_to: '{{ PULSEMAIN_FQDN }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
 
 - name: SUBSTITUTE_AGENT - Set STDISCOSRV_URL variable
@@ -64,6 +65,7 @@
     STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
 
 - name: SUBSTITUTE_AGENT - Find substitute number

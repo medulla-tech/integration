@@ -134,6 +134,7 @@
   delegate_to: '{{ PULSEMAIN_IP }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: MMC - Set STDISCOSRV_URL variable
@@ -141,6 +142,7 @@
     STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_IP is defined
     - PULSEMAIN_IP != ''
 
 - name: MMC - Configure mmc-agent
