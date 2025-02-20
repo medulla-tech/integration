@@ -131,19 +131,19 @@
 - name: MMC - Get value of STDISCOSRV_URL from main mmc
   ansible.builtin.command: grep -m1 -ir '^announce_server' /etc/mmc/plugins/xmppmaster.ini.local
   register: grep_output
-  delegate_to: '{{ PULSEMAIN_IP }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - STDISCOSRV_URL == ''
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: MMC - Set STDISCOSRV_URL variable
   ansible.builtin.set_fact:
     STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
   when:
     - STDISCOSRV_URL == ''
-    - PULSEMAIN_IP is defined
-    - PULSEMAIN_IP != ''
+    - PULSEMAIN_FQDN is defined
+    - PULSEMAIN_FQDN != ''
 
 - name: MMC - Configure mmc-agent
   ansible.builtin.copy:
