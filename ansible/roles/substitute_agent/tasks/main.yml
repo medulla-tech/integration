@@ -54,9 +54,10 @@
 - name: SUBSTITUTE_AGENT - Get value of STDISCOSRV_URL from main mmc
   ansible.builtin.command: grep -m1 -ir '^announce_server' /etc/mmc/plugins/xmppmaster.ini.local
   register: grep_output
-  delegate_to: '{{ PULSEMAIN_FQDN }}'
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
 
 - name: SUBSTITUTE_AGENT - Set STDISCOSRV_URL variable
@@ -64,6 +65,7 @@
     STDISCOSRV_URL: '{{ grep_output.stdout.split("=")[1] }}'
   when:
     - STDISCOSRV_URL == ''
+    - PULSEMAIN_FQDN is defined
     - PULSEMAIN_FQDN != ''
 
 - name: SUBSTITUTE_AGENT - Find substitute number
