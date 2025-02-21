@@ -5,10 +5,15 @@ jidmastersubstitute = master_{{ subs_short_name }}@{{ XMPP_DOMAIN }}
 
 [glpi]
 enable_forward = True
-{% if ITSM_BASEURL == 'http://' + SERVER_FQDN + '/' + ITSM_TYPE %}
+{% if ITSM_FORWARD_URLINVENTORY != '' %}
+url_to_forward = {{ ITSM_FORWARD_URLINVENTORY }}
+{% elif ITSM_BASEURL == 'http://' + SERVER_FQDN + '/' + ITSM_TYPE %}
 url_to_forward = {{ ITSM_BASEURL }}/plugins/{{ GLPI_PLUGIN }}/front/plugin_fusioninventory.communication.php
 {% else %}
 url_to_forward = {{ ITSM_BASEURL }}/marketplace/{{ GLPI_PLUGIN }}/front/plugin_fusioninventory.communication.php
+{% endif %}
+{% if GLPI_PLUGIN != '' %}
+inventory_plugin = {{ GLPI_PLUGIN }}
 {% endif %}
 
 [glpidatabase]
