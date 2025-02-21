@@ -16,8 +16,9 @@ DBPORT: 3306
 DBUSER: mmc
 DBPASSWORD: '' # 12 character string. Must be vaulted
 ITSM_TYPE: glpi # can be glpi or itsm-ng
-GLPI_PLUGIN: glpiinventory # can be glpiinventory or fusioninventory
+GLPI_PLUGIN: glpiinventory # can be glpiinventory or fusioninventory. Set the value to '' for OCS
 ITSM_BASEURL: 'http://{{ SERVER_FQDN }}/{{ ITSM_TYPE }}'
+ITSM_FORWARD_URLINVENTORY: '' # Define this for OCS
 # For using glpi on another server, redefine following ITSM_* variables. The following defaults are for local glpi.
 ITSM_DBHOST: localhost
 ITSM_DBPORT: 3306
