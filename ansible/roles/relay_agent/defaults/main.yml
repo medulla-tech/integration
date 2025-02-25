@@ -4,6 +4,7 @@ SERVER_FQDN: '{{ ansible_fqdn }}'
 DOMAIN_NAME: '{{ ansible_domain }}'
 INTERFACE: '{{ ansible_default_ipv4.interface }}'
 IP_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.address }}"
+NETWORK_ADDRESS: "{{ vars['ansible_'~INTERFACE].ipv4.network }}"
 # Define PUBLIC_IP if main pulse server also has a public relay. TODO: Maybe this needs to go in another task
 PUBLIC_IP: ''
 GUACAMOLE_ROOT_PASSWORD: '' # 40 character string. Must be vaulted
@@ -13,8 +14,6 @@ CLIENTS_VNC_PORT: 5900
 CLIENTS_VNC_PASSWORD: '' # 8 character string. Must be vaulted
 REVERSE_SSH_PORT: 22
 ENTITY: Public
-CLUSTER_NAME: '{{ ENTITY }}'
-CLUSTER_DESCRIPTION: '{{ CLUSTER_NAME }}'
 # For using database on another server, define DBHOST
 DBHOST: localhost # To be set to PULSEMAIN_IP on relays
 DBPORT: 3306
@@ -28,7 +27,9 @@ INTERNET_DISABLED: false
 RELAY_INDEX: ''
 WOL_PORT: 9
 LOADBALANCER_FQDN: '' # If Medulla is load balanced, FQDN of the load balancer
+CLUSTER_FROM_ENTITY: true
 CLUSTER_FROM_ITSM_LOCATION: false
+CLUSTER_FROM_NETWORK_ADDRESS: false
 CLUSTER_NAME_PREFIX: '{{ ENTITY }}'
 ITSM_DBHOST: '{{ PULSEMAIN_FQDN }}'
 ITSM_DBPORT: 3306
