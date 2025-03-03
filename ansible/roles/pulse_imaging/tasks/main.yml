@@ -70,6 +70,7 @@
     - /var/lib/pulse2/imaging/tools
     - /var/lib/pulse2/imaging/bootmenus
     - /var/lib/pulse2/imaging/certs
+    - /var/lib/pulse2/imaging/logs
     - /var/log/clonezilla
 
 - name: PULSE_IMAGING - Add certificates to certs folder

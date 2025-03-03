@@ -284,6 +284,17 @@
   when:
     - not IMAGING_DISABLED
 
+- name: PULSE/IMAGING - Configure samba for imaging logs
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_imaginglogs.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK imaginglogs"
+  notify:
+    - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
+
 - name: PULSE/IMAGING - Configure samba for tools
   ansible.builtin.blockinfile:
     block: "{{ lookup('ansible.builtin.file', './smb_tools.conf') }}"
