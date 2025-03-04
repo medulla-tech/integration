@@ -23,6 +23,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
       - cron
       - mariadb-client
       - crudini
@@ -36,6 +37,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
       - cronie
       - crudini
       - vim-common
@@ -48,6 +50,7 @@
     state: latest
     pkg:
       - python3-pymysql
+      - python3-netaddr
       - cron
       - mariadb-client
       - crudini

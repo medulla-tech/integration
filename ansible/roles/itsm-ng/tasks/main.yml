@@ -67,7 +67,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
-      - python3-netaddr
+      - python3.11-netaddr
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
