@@ -22,7 +22,6 @@
     state: latest
     pkg:
       - crudini
-      - python3.11-netaddr
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -31,7 +30,24 @@
     state: latest
     pkg:
       - crudini
+  when:
+    - ansible_distribution == 'Debian'
+
+- name: MAXSCALE - Install tools needed for the setup on master
+  ansible.builtin.yum:
+    state: latest
+    pkg:
+      - python3.11-netaddr
+  delegate_to: '{{ MASTER_FQDN }}'
+  when:
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- name: MAXSCALE - Install tools needed for the setup on master
+  ansible.builtin.apt:
+    state: latest
+    pkg:
       - python3-netaddr
+  delegate_to: '{{ MASTER_FQDN }}'
   when:
     - ansible_distribution == 'Debian'
 
