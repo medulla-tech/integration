@@ -22,6 +22,7 @@
     state: latest
     pkg:
       - crudini
+      - python3.11-netaddr
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -30,6 +31,7 @@
     state: latest
     pkg:
       - crudini
+      - python3-netaddr
   when:
     - ansible_distribution == 'Debian'
 
