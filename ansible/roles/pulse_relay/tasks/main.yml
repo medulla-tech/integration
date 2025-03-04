@@ -23,14 +23,16 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PULSE - Install tools needed for the setup
   ansible.builtin.apt:
     state: latest
     pkg:
       - python3-pymysql
+      - python3-netaddr
   when:
     - ansible_distribution == 'Debian'
 
@@ -143,7 +145,6 @@
     login_db: '{{ ITSM_DBNAME }}'
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
-    single_transaction: yes
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE

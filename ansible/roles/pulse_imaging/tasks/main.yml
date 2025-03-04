@@ -61,16 +61,18 @@
 
 - name: PULSE_IMAGING - Make sure needed folders exist
   ansible.builtin.file:
-    path: '{{ item }}'
+    path: '{{ item.path }}'
     state: directory
+    mode: '{{ item.mode }}'
   with_items:
-    - '{{ PULSE_BIOS_PATH }}'
-    - '{{ PULSE_UEFI32_PATH }}'
-    - '{{ PULSE_UEFI64_PATH }}'
-    - /var/lib/pulse2/imaging/tools
-    - /var/lib/pulse2/imaging/bootmenus
-    - /var/lib/pulse2/imaging/certs
-    - /var/log/clonezilla
+    - { path: '{{ PULSE_BIOS_PATH }}', mode: '0755' }
+    - { path: '{{ PULSE_UEFI32_PATH }}', mode: '0755' }
+    - { path: '{{ PULSE_UEFI64_PATH }}', mode: '0755' }
+    - { path: /var/lib/pulse2/imaging/tools, mode: '0755' }
+    - { path: /var/lib/pulse2/imaging/bootmenus, mode: '0755' }
+    - { path: /var/lib/pulse2/imaging/certs, mode: '0755' }
+    - { path: /var/lib/pulse2/imaging/logs, mode: '0777' }
+    - { path: /var/log/clonezilla, mode: '0755' }
 
 - name: PULSE_IMAGING - Add certificates to certs folder
   ansible.builtin.copy:

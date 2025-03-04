@@ -5,3 +5,4 @@
 /var/lib/pulse2/imaging/masters         *(async,rw,no_root_squash,subtree_check)
 /var/lib/pulse2/imaging/postinst        *(async,ro,no_root_squash,subtree_check)
 /var/lib/pulse2/imaging/certs           *(async,ro,no_root_squash,subtree_check)
+/var/lib/pulse2/imaging/logs            *(async,rw,no_root_squash,subtree_check)
