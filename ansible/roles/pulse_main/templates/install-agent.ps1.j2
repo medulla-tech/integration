@@ -1,10 +1,28 @@
-# Disable Windows Update
-New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update" -Force
-New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Force
-New-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Name AUOptions -Value 2 -PropertyType DWORD -Force
-Stop-Service -Name wuauserv -Force
-Set-Service -Name wuauserv -StartupType Disabled
+$ProgressPreference = "SilentlyContinue"
+$hostname = $env:COMPUTERNAME
 
-# Download and install pulse agent
-Invoke-WebRequest -Uri '{{ HTTP_PROTOCOL }}://{{ SERVER_FQDN }}/downloads/win/Medulla-Agent-windows-FULL-latest.exe' -OutFile 'C:\Windows\Temp\medulla-setup.exe'
-Start-Process -FilePath 'C:\Windows\Temp\medulla-setup.exe' -ArgumentList '/S' -NoNewWindow -Wait
+# Function to display "Task Done" message
+function Write-TaskDone {
+    param (
+        [string]$task
+    )
+    Write-Output "$hostname : $task : OK"
+}
+
+try {
+    # Désactiver Windows Update
+    New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update" -Force -ErrorAction Stop > $null
+    New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Force -ErrorAction Stop > $null
+    New-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\Windows Update\AU" -Name AUOptions -Value 2 -PropertyType DWORD -Force -ErrorAction Stop > $null
+    Stop-Service -Name wuauserv -Force -ErrorAction Stop > $null
+    Set-Service -Name wuauserv -StartupType Disabled -ErrorAction Stop > $null
+    $downloadUrl = 'http://VJMEDULA2.villejuif.fr/downloads/win/Medulla-Agent-windows-FULL-latest.exe'
+    $outputFile = 'C:\Windows\Temp\medulla-setup.exe'
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $outputFile -ErrorAction Stop > $null
+    Start-Process -FilePath $outputFile -ArgumentList '/S' -NoNewWindow -Wait -ErrorAction Stop > $null
+    Write-TaskDone "Installation Medulla-Agent"
+
+} catch {
+    Write-Output "$hostname : Erreur : $_.Exception.Message"
+}
+
