@@ -446,6 +446,69 @@
   when:
     - not IMAGING_DISABLED
 
+- name: PULSE/IMAGING - Check if default boot menu exists for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Menu WHERE default_name = 'Default Boot Menu - {{ ORGANISATION }} > {{ ENTITY }}'
+  register: res_querymenu
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Duplicate default boot menu for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO Menu (default_name, fk_name, timeout, background_uri, message, fk_default_item, fk_default_item_WOL) SELECT 'Default Boot Menu - {{ ORGANISATION }} > {{ ENTITY }}', fk_name, timeout, background_uri, message, fk_default_item, fk_default_item_WOL FROM Menu WHERE id = 1
+      - SELECT LAST_INSERT_ID() AS menuid
+    single_transaction: true
+  register: res_querynewmenu
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Duplicate "Continue Usual Startup" default menu item for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO MenuItem (`order`, hidden, hidden_WOL, fk_menu) VALUES (0, 0, 0, {{ res_querynewmenu.query_result[1][0].menuid }});
+      - INSERT INTO BootServiceInMenu (fk_bootservice, fk_menuitem) VALUES (1, LAST_INSERT_ID());
+    single_transaction: true
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Duplicate "Create a backup" default menu item for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO MenuItem (`order`, hidden, hidden_WOL, fk_menu) VALUES (1, 0, 0, {{ res_querynewmenu.query_result[1][0].menuid }});
+      - INSERT INTO BootServiceInMenu (fk_bootservice, fk_menuitem) VALUES (3, LAST_INSERT_ID());
+    single_transaction: true
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
 - name: PULSE/IMAGING - Insert imaging server in database if not registered
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
@@ -454,7 +517,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', {{ res_querynewmenu.query_result[1][0].menuid }}, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
