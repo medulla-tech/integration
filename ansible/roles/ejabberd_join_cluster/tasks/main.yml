@@ -55,7 +55,7 @@
   ansible.builtin.meta: flush_handlers
 
 - name: EJABBERD_CLUSTER - Check if node is already part of the cluster
-  ansible.builtin.shell: ejabberdctl list_cluster | grep ^{{ grep_output.stdout.split("=")[1] }}$
+  ansible.builtin.shell: ejabberdctl list_cluster | grep -E "^'?{{ grep_output.stdout.split("=")[1] }}'?$"
   register: cluster_list
   ignore_errors: true
 
