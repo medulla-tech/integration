@@ -1,0 +1,6 @@
+[websocket_logs]
+{% if PULSEMAIN_FQDN != '' %}
+log_path = {{ APACHE_DAEMON }}/access.log, {{ APACHE_DAEMON }}/error.log, ejabberd/ejabberd.log, ejabberd/error.log, mmc/pulse2-package-server.log, mmc/pulse2-register-pxe.log, pulse/xmpp-agent-relay.log, pulse/pulse-package-watching.log
+{% else %}
+log_path = {{ APACHE_DAEMON }}/access.log, {{ APACHE_DAEMON }}/error.log, ejabberd/ejabberd.log, ejabberd/error.log, mmc/mmc-agent.log, mmc/master-asse.log, mmc/master-depl.log, mmc/master-inv.log, mmc/master-log.log, mmc/master-mast.log, mmc/master-mon.log, mmc/master-reconf.log, mmc/master-reg.log, mmc/master-subs.log, mmc/master-upd.log, mmc/pulse2-package-server.log, mmc/pulse2-register-pxe.log, pulse/xmpp-agent-relay.log, pulse/pulse-package-watching.log
+{% endif %}

@@ -490,3 +490,19 @@
     hour: "*/4"
     user: root
     job: "/var/lib/pulse2/maintenance/maintenance_ejabberd.sh &> /dev/null"
+
+- name: PULSE/ADMIN - Setup local apache for websocket logs
+  ansible.builtin.template:
+    src: websocketlogs.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/websocketlogs.conf'
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE - Restart apache
+
+- name: PULSE/ADMIN - Enable websocketlogs module
+  ansible.builtin.command: a2enconf websocketlogs
+  notify:
+    - PULSE - Restart apache
+  when:
+    - ansible_distribution == 'Debian'

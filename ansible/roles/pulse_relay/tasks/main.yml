@@ -533,3 +533,37 @@
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0
+
+- name: PULSE/ADMIN - Setup apache for websocket logs on main pulse
+  ansible.builtin.template:
+    src: websocketlogs.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/websocketlogs-{{ ansible_hostname }}.conf'
+    mode: '0644'
+    backup: yes
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
+  when:
+    - PULSEMAIN_FQDN is defined
+
+- name: PULSE/ADMIN - Enable websocketlogs module
+  ansible.builtin.command: a2enconf websocketlogs-{{ ansible_hostname }}
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
+  when:
+    - PULSEMAIN_FQDN is defined
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/ADMIN - Define relay server logs in admin.ini.local on main pulse
+  community.general.ini_file:
+    path: /etc/mmc/plugins/admin.ini.local
+    section: websocket_logs
+    option: '{{ ansible_hostname }}'
+    value: '{{ APACHE_DAEMON }}/access.log, {{ APACHE_DAEMON }}/error.log, ejabberd/ejabberd.log, ejabberd/error.log, mmc/pulse2-package-server.log, mmc/pulse2-register-pxe.log, pulse/xmpp-agent-relay.log, pulse/pulse-package-watching.log'
+    backup: yes
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Restart mmc-agent on main server
+  when:
+    - PULSEMAIN_FQDN is defined

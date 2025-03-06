@@ -1,0 +1,2 @@
+ProxyPass "/wsl-{{ ansible_hostname }}/" "ws://{{ SERVER_FQDN }}:5555/"
+ProxyPassReverse "/wsl-{{ ansible_hostname }}/" "ws://{{ SERVER_FQDN }}:5555/"
