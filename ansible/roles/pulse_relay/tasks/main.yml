@@ -86,23 +86,19 @@
     mode: '0644'
     backup: yes
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
   when:
     - PULSEMAIN_FQDN is defined
 
 - name: PULSE/GUACAMOLE - Enable guacamole module
   ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
   when:
     - PULSEMAIN_FQDN is defined
     - ansible_distribution == 'Debian'
-
-- name: GUACAMOLE/APACHE - Reload apache on pulsemain
-  systemd:
-    name: '{{ APACHE_DAEMON }}'
-    state: reloaded
-  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
-  when:
-    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/APACHE - Setup local apache for agent update
   ansible.builtin.copy:
