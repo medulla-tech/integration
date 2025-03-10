@@ -127,7 +127,7 @@
     - resdbinitialised.stat.exists
 
 - name: ITSM-NG - Initialise database
-  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSMNG_DBHOST }} --db-port={{ ITSMNG_DBPORT }} --db-name {{ ITSMNG_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSMNG_DBHOST }} --db-port={{ ITSMNG_DBPORT }} --db-name {{ ITSMNG_DBNAME }} --db-user {{ ITSMNG_DBUSER }} --db-password '{{ ITSMNG_DBPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
     - ITSMNG_DBINITIALISED is not defined
   register: itsm_init

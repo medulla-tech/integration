@@ -136,7 +136,7 @@
     - resdbinitialised.stat.exists
 
 - name: GLPI - Initialise database
-  ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+  ansible.builtin.command: php /usr/share/glpi/bin/console -n db:install --db-host={{ GLPI_DBHOST }} --db-port={{ GLPI_DBPORT }} --db-name {{ GLPI_DBNAME }} --db-user {{ GLPI_DBUSER }} --db-password '{{ GLPI_DBPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
     - GLPI_DBINITIALISED is not defined
   register: glpi_init
