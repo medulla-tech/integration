@@ -14,8 +14,8 @@
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED
     Allow from 127.0.0.1
-    ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
-    ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
+    ProxyPass "http://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel" upgrade=websocket
+    ProxyPassReverse "http://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel" upgrade=websocket
     ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/
 </Location>
 SetEnvIf Request_URI "^/guacamole/tunnel" dontlog
