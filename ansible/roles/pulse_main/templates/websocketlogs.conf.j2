@@ -1,2 +1,2 @@
-ProxyPass "/wsl-{{ ansible_hostname }}/" "ws://{{ SERVER_FQDN }}:5555/"
-ProxyPassReverse "/wsl-{{ ansible_hostname }}/" "ws://{{ SERVER_FQDN }}:5555/"
+ProxyPass "/wsl-{{ ansible_hostname }}/" "http://{{ SERVER_FQDN }}:5555/" upgrade=websocket
+ProxyPassReverse "/wsl-{{ ansible_hostname }}/" "http://{{ SERVER_FQDN }}:5555/" upgrade=websocket
