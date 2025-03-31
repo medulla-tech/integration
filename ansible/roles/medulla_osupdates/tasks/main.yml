@@ -50,10 +50,13 @@
 
 - name: MEDULLA_OSUPDATES - Configure script
   ansible.builtin.template:
-    src: medulla-generate-winupdate-packages.j2
-    dest: /usr/sbin/medulla-generate-winupdate-packages
+    src: '{{ item }}.j2'
+    dest: '{{ item }}'
     mode: '0755'
     owner: root
+  with_items:
+    - medulla-generate-winupdate-packages
+    - medulla-generate-winupdatemajor-packages
 
 - name: MEDULLA_OSUPDATES - Create folders needed to generate the update packages
   ansible.builtin.file:
@@ -95,11 +98,14 @@
     - { host: '{{ PUBLIC_IP }}', when: '{{ PUBLIC_IP != "" }}' }
   no_log: True
 
-- name: MEDULLA_OSUPDATES - Create winupdates folder
+- name: MEDULLA_OSUPDATES - Create winupdates folders
   ansible.builtin.file:
-    path: /var/lib/pulse2/packages/sharing/winupdates
+    path: '/var/lib/pulse2/packages/sharing/{{ item }}'
     state: directory
     mode: '0755'
+  with_items:
+    - winupdates
+    - winupdatesmajor
 
 - name: MEDULLA_OSUPDATES - Get share id for winupdates share if it exists
   community.mysql.mysql_query:
@@ -136,6 +142,45 @@
     login_db: 'pkgs'
     query:
       - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ res_querymaxshareid.query_result[0][0].id + 1 }}, 'winupdates', 'Windows Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdates')
+      - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', {{ res_querymaxshareid.query_result[0][0].id + 1 }})
+  when: 
+    - res_queryshareid.rowcount[0] == 0
+
+- name: MEDULLA_OSUPDATES - Get share id for winupdatesmajor share if it exists
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DB_SETUP_PORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+      - SELECT id from pkgs_shares where name = %(name)s
+    named_args:
+      name: winupdatesmajor
+  register: res_queryshareid
+
+- name: MEDULLA_OSUPDATES - Get MAX_ID FROM pkgs_shares when share does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DB_SETUP_PORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+     - SELECT MAX(id) as id FROM pkgs_shares
+  register: res_querymaxshareid
+  when: 
+    - res_queryshareid.rowcount[0] == 0
+
+- name: MEDULLA_OSUPDATES - Create winupdatesmajor share and add root user for packages management if it does not exist
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DB_SETUP_PORT }}'
+    login_user: '{{ DBADMINUSER }}'
+    login_password: '{{ DBADMINPASSWD }}'
+    login_db: 'pkgs'
+    query:
+      - INSERT IGNORE INTO pkgs.pkgs_shares (id, name, comments, type, uri, ars_name, ars_id, share_path) VALUES ({{ res_querymaxshareid.query_result[0][0].id + 1 }}, 'winupdatesmajor', 'Windows Major Updates', 'update', 'pulse', 'pulse', 1, '/var/lib/pulse2/packages/sharing/winupdatesmajor')
       - INSERT IGNORE INTO pkgs.pkgs_rules_local (pkgs_rules_algos_id, `order`, subject, permission, pkgs_shares_id) VALUES (1, 10, 'root', 'r', {{ res_querymaxshareid.query_result[0][0].id + 1 }})
   when: 
     - res_queryshareid.rowcount[0] == 0

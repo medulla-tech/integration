@@ -1,4 +1,4 @@
-DBDUMP_DL_BASEURL: https://updates.siveo.net
+DL_BASEURL: https://updates.siveo.net
 # For using database on another server, define DBHOST
 DBHOST: localhost
 DBHOST_IP: "{{ query('community.general.dig', DBHOST)[0] }}"
