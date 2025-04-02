@@ -51,7 +51,7 @@
 - name: MEDULLA_OSUPDATES - Configure script
   ansible.builtin.template:
     src: '{{ item }}.j2'
-    dest: '{{ item }}'
+    dest: '/usr/sbin/{{ item }}'
     mode: '0755'
     owner: root
   with_items:
