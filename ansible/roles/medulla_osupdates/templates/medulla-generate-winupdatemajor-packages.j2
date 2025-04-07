@@ -25,7 +25,6 @@ SHARE_NAME=winupdatesmajor
 DEST=/var/lib/pulse2/packages/sharing/${SHARE_NAME}
 COMMAND='powershell -NoProfile -ExecutionPolicy Bypass -File ".\update_iso.ps1"'
 
-PACKAGE_UUID=$(uuidgen)
 PACKAGE_DATE=$(date +'%F %X')
 
 DBHOST=$(crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbhost 2> /dev/null || echo localhost)
@@ -60,9 +59,8 @@ display_usage() {
     #
     # Display usage message
     #
-    echo -e "\nUsage:\n$0 --version [--force]\n"
+    echo -e "\nUsage:\n$0 [--force]\n"
     echo -e "arguments:"
-    echo -e "\t--version=<Windows complete version> eg. Win11_24H2_French_x64"
     echo -e "\t[--force]"
     exit 0
 }
@@ -75,10 +73,6 @@ check_arguments() {
     ARGS="$@"
     for i in "$@"; do
         case $i in
-            --version*)
-                VERSION="${i#*=}"
-                shift
-                ;;
             --force*)
                 FORCE=1
                 shift
@@ -99,41 +93,55 @@ run_checks() {
         colored_echo red "$(date +\[%F\ %X\]) DL_URL parameter is not set. Please set it"
         exit 1
     fi
+}
 
-    if [[ ${VERSION} == '' ]]; then
-        colored_echo red "$(date +\[%F\ %X\]) This script needs to be called with the version as argument. eg: --version=Win11_24H2_French_x64"
-        exit 1
-    fi
+find_packages_to_generate() {
+    #
+    # Find the list of packages to generate
+    #
+    mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} xmppmaster -se "CALL up_init_table_major_win_complet();"
+    local result=$(mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} xmppmaster \
+        -se "SELECT DISTINCT iso_filename,package_uuid FROM up_major_win;")
+    echo ${result}
+    return 0
 }
 
 check_package_exists() {
     #
     # Check if package already exists in the database
+    # Parameter passed is package_uuid ($1)
     #
+    PACKAGE_UUID=$1
     local result=$(mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} pkgs \
-        -se "SELECT uuid FROM packages WHERE label='${VERSION}' LIMIT 1")
+        -se "SELECT COUNT(*) FROM packages WHERE uuid='${PACKAGE_UUID}'")
     
-    if [[ -n "${result}" ]]; then
-        echo "${result}" # Return the uuid
-        return 0
-    else
+    if [[ ${result} == 0 ]]; then
         echo "false" # Return false if no record is found
         return 1
+    else
+        echo "true"
+        return 0
     fi
 }
 
 download_ps1_script() {
     #
     # Create powershell script to update the system
+    # Parameters passed are package_uuid ($1) and iso_filename ($2)
     #
+    PACKAGE_UUID=$1
+    ISO_FILENAME=$2
     colored_echo blue "Downloading powershell script to update the system..."
-    curl --silent -C - -o ${DEST}/${PACKAGE_UUID}/update_iso.ps1 ${DL_URL}/${VERSION%%_*}/update_iso.ps1?token=${KEYAES32}
+    curl --silent -C - -o ${DEST}/${PACKAGE_UUID}/update_iso.ps1 ${DL_URL}/${ISO_FILENAME%%_*}/update_iso.ps1?token=${KEYAES32}
 }
 
 generate_package() {
     #
     # Create package file
+    # Parameters passed are package_uuid ($1) and iso_filename ($2)
     #
+    PACKAGE_UUID=$1
+    ISO_FILENAME=$2
     colored_echo blue "Generating package..."
     cat <<EOF > ${DEST}/${PACKAGE_UUID}/xmppdeploy.json
 {
@@ -154,10 +162,10 @@ generate_package() {
             "inventory": "False",
             "localisation_server": "$SHARE_NAME",
             "typescript": "Batch",
-            "description": "Major update to $VERSION",
+            "description": "Major update to ${ISO_FILENAME%%.*}",
             "previous_localisation_server": "$SHARE_NAME",
             "Dependency": [],
-            "name": "$VERSION",
+            "name": "${ISO_FILENAME%%.*}",
             "url": "",
             "edition_date": "$PACKAGE_DATE",
             "transferfile": true,
@@ -249,7 +257,7 @@ EOF
             "localisation_server": "$SHARE_NAME",
             "sub_packages": [],
             "metagenerator": "manual",
-            "description": "Major update to $VERSION",
+            "description": "Major update to ${ISO_FILENAME%%.*}",
             "creator": "root",
             "edition_date": "$PACKAGE_DATE",
             "previous_localisation_server": "$SHARE_NAME",
@@ -292,7 +300,7 @@ EOF
                 }
             },
             "id": "$PACKAGE_UUID",
-            "name": "$VERSION"
+            "name": "${ISO_FILENAME%%.*}"
         }
 EOF
 
@@ -301,9 +309,12 @@ EOF
 download_iso() {
     #
     # Download ISO file
+    # Parameters passed are package_uuid ($1) and iso_filename ($2)
     #
-    colored_echo blue "Downloading ISO file ${DL_URL}/${VERSION%%_*}/${VERSION}.iso to ${DEST}/${PACKAGE_UUID}/${VERSION}.iso..."
-    curl --silent -C - -o ${DEST}/${PACKAGE_UUID}/${VERSION}.iso ${DL_URL}/${VERSION%%_*}/${VERSION}.iso?token=${KEYAES32}
+    PACKAGE_UUID=$1
+    ISO_FILENAME=$2
+    colored_echo blue "Downloading ISO file ${DL_URL}/${ISO_FILENAME%%_*}/${ISO_FILENAME} to ${DEST}/${PACKAGE_UUID}/${ISO_FILENAME}..."
+    curl --silent -C - -o ${DEST}/${PACKAGE_UUID}/${ISO_FILENAME} ${DL_URL}/${ISO_FILENAME%%_*}/${ISO_FILENAME}?token=${KEYAES32}
 }
 
 create_package_record() {
@@ -319,25 +330,34 @@ create_package_record() {
 colored_echo blue "$(date +\[%F\ %X\]) ##### Starting $(basename $0)"
 check_arguments $@
 run_checks
-old_package_uuid=$(check_package_exists)
-if [[ "${old_package_uuid}" != "false" ]]; then
-    if [[ ${FORCE} == 1 ]]; then
-        colored_echo blue "$(date +\[%F\ %X\]) Package already exists with UUID: ${old_package_uuid} but forcing package re-creation..."
-        rm -rf ${DEST}/${old_package_uuid}
+PACKAGES_LIST=$(find_packages_to_generate)
+# If no packages to generate, exit
+if [[ ${PACKAGES_LIST} == '' ]]; then
+    colored_echo red "$(date +\[%F\ %X\]) No packages to generate"
+    exit 0
+fi
+echo "$PACKAGES_LIST" | while IFS=" " read -r ISO_FILENAME PACKAGE_UUID; do
+    # Skip the header line if it exists
+    if [[ "$ISO_FILENAME" == "iso_filename" ]]; then
+        continue
+    fi
+
+    # Check if the package already exists
+    if [ "$(check_package_exists ${PACKAGE_UUID})" != "false" ] && [ ${FORCE} == 1 ]; then
+        colored_echo blue "$(date +\[%F\ %X\]) Package already exists but forcing package re-creation..."
+        rm -rf ${DEST}/${PACKAGE_UUID}
         colored_echo blue "$(date +\[%F\ %X\]) Creating new package with UUID ${PACKAGE_UUID}..."
         mkdir -p ${DEST}/${PACKAGE_UUID}
+    elif [ "$(check_package_exists ${PACKAGE_UUID})" != "false" ]; then
+        colored_echo red "$(date +\[%F\ %X\]) Package already exists with UUID: ${PACKAGE_UUID}"
+        continue
     else
-        colored_echo red "$(date +\[%F\ %X\]) Package already exists with UUID: ${old_package_uuid}"
-        exit 1
+        colored_echo blue "$(date +\[%F\ %X\]) Creating new package with UUID ${PACKAGE_UUID}..."
+        mkdir -p ${DEST}/${PACKAGE_UUID}
     fi
-else
-    colored_echo blue "$(date +\[%F\ %X\]) Creating new package with UUID ${PACKAGE_UUID}..."
-    mkdir -p ${DEST}/${PACKAGE_UUID}
-fi
-download_ps1_script
-generate_package
-download_iso
+    download_ps1_script ${PACKAGE_UUID} ${ISO_FILENAME}
+    generate_package ${PACKAGE_UUID} ${ISO_FILENAME}
+    download_iso ${PACKAGE_UUID} ${ISO_FILENAME}
+done
 create_package_record
 colored_echo green "$(date +\[%F\ %X\]) ##### Finished $(basename $0)"
-
-
