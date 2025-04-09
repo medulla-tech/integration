@@ -114,7 +114,7 @@ check_package_exists() {
     PACKAGE_UUID=$1
     local result=$(mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} pkgs \
         -se "SELECT COUNT(*) FROM packages WHERE uuid='${PACKAGE_UUID}'")
-    
+
     if [[ ${result} == 0 ]]; then
         echo "false" # Return false if no record is found
         return 1
@@ -325,8 +325,6 @@ create_package_record() {
     /usr/sbin/pulse2-generation_package.py -H${DBHOST} -P${DBPORT} -u${DBUSER} -p${DBPASS} -r -l -g
 }
 
-
-
 colored_echo blue "$(date +\[%F\ %X\]) ##### Starting $(basename $0)"
 check_arguments $@
 run_checks
@@ -336,8 +334,14 @@ if [[ ${PACKAGES_LIST} == '' ]]; then
     colored_echo red "$(date +\[%F\ %X\]) No packages to generate"
     exit 0
 fi
-echo "$PACKAGES_LIST" | while IFS=" " read -r ISO_FILENAME PACKAGE_UUID; do
-    # Skip the header line if it exists
+
+# Convertir la chaîne en tableau
+couples=($PACKAGES_LIST)
+
+# Parcourir le tableau deux par deux
+for ((i=0; i<${#couples[@]}; i+=2)); do
+    ISO_FILENAME=${couples[i]}
+    PACKAGE_UUID=${couples[i+1]}
     if [[ "$ISO_FILENAME" == "iso_filename" ]]; then
         continue
     fi
