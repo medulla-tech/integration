@@ -112,6 +112,7 @@ check_package_exists() {
     # Parameter passed is package_uuid ($1)
     #
     PACKAGE_UUID=$1
+
     local result=$(mysql -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} pkgs \
         -se "SELECT COUNT(*) FROM packages WHERE uuid='${PACKAGE_UUID}'")
 
@@ -325,6 +326,7 @@ create_package_record() {
     /usr/sbin/pulse2-generation_package.py -H${DBHOST} -P${DBPORT} -u${DBUSER} -p${DBPASS} -r -l -g
 }
 
+
 colored_echo blue "$(date +\[%F\ %X\]) ##### Starting $(basename $0)"
 check_arguments $@
 run_checks
@@ -347,12 +349,13 @@ for ((i=0; i<${#couples[@]}; i+=2)); do
     fi
 
     # Check if the package already exists
-    if [ "$(check_package_exists ${PACKAGE_UUID})" != "false" ] && [ ${FORCE} == 1 ]; then
+    a="$(check_package_exists ${PACKAGE_UUID})"
+    if [ ${a} != "false" ] && [ ${FORCE} == 1 ]; then
         colored_echo blue "$(date +\[%F\ %X\]) Package already exists but forcing package re-creation..."
         rm -rf ${DEST}/${PACKAGE_UUID}
         colored_echo blue "$(date +\[%F\ %X\]) Creating new package with UUID ${PACKAGE_UUID}..."
         mkdir -p ${DEST}/${PACKAGE_UUID}
-    elif [ "$(check_package_exists ${PACKAGE_UUID})" != "false" ]; then
+    elif [ ${a} != "false" ]; then
         colored_echo red "$(date +\[%F\ %X\]) Package already exists with UUID: ${PACKAGE_UUID}"
         continue
     else
