@@ -137,3 +137,7 @@
     owner: root
   with_items:
     - medulla_dev_gitinit.sh
+    - medulla_dev.sh
+
+- name: SIVEODEV - Init git repositories
+  ansible.builtin.command: /usr/sbin/medulla_dev_gitinit.sh
