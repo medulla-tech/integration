@@ -92,6 +92,7 @@
     - reverse_ssh_on
     - scheduling_mon_pulsesystem
     - wakeonlan
+    - scheduling_websocket_logs
   notify:
     - RELAY_AGENT - Restart pulse-xmpp-agent-relay
 
@@ -145,6 +146,18 @@
 - name: RELAY_AGENT - Force restart of service after configuration
   ansible.builtin.meta: flush_handlers
 
+- name: RELAY_AGENT - Define cluster description
+  ansible.builtin.set_fact:
+    CLUSTER_DESCRIPTION: "{{ ENTITY }}"
+  when:
+    - CLUSTER_FROM_ENTITY
+
+- name: RELAY_AGENT - Define cluster name
+  ansible.builtin.set_fact:
+    CLUSTER_NAME: "{{ CLUSTER_NAME_PREFIX }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
+  when:
+    - CLUSTER_FROM_ENTITY
+
 - name: RELAY_AGENT - Get location of server from ITSM
   community.mysql.mysql_query:
     login_host: '{{ ITSM_DBHOST }}'
@@ -184,6 +197,18 @@
     CLUSTER_NAME: "{{ CLUSTER_NAME_PREFIX }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
   when:
     - CLUSTER_FROM_ITSM_LOCATION
+
+- name: RELAY_AGENT - Define cluster description
+  ansible.builtin.set_fact:
+    CLUSTER_DESCRIPTION: "{{ NETWORK_ADDRESS }}"
+  when:
+    - CLUSTER_FROM_NETWORK_ADDRESS
+
+- name: RELAY_AGENT - Define cluster name
+  ansible.builtin.set_fact:
+    CLUSTER_NAME: "{{ CLUSTER_NAME_PREFIX }}-{{ CLUSTER_DESCRIPTION | hash('md5') }}"
+  when:
+    - CLUSTER_FROM_NETWORK_ADDRESS
 
 - name: RELAY_AGENT - Create or update cluster
   community.mysql.mysql_query:

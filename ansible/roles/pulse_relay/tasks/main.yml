@@ -23,14 +23,16 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
   when:
-    - ansible_distribution == 'CentOS'
+    - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: PULSE - Install tools needed for the setup
   ansible.builtin.apt:
     state: latest
     pkg:
       - python3-pymysql
+      - python3-netaddr
   when:
     - ansible_distribution == 'Debian'
 
@@ -84,23 +86,19 @@
     mode: '0644'
     backup: yes
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
   when:
     - PULSEMAIN_FQDN is defined
 
 - name: PULSE/GUACAMOLE - Enable guacamole module
   ansible.builtin.command: a2enconf guacamole-{{ XMPP_DOMAIN }}
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
   when:
     - PULSEMAIN_FQDN is defined
     - ansible_distribution == 'Debian'
-
-- name: GUACAMOLE/APACHE - Reload apache on pulsemain
-  systemd:
-    name: '{{ APACHE_DAEMON }}'
-    state: reloaded
-  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
-  when:
-    - PULSEMAIN_FQDN is defined
 
 - name: PULSE/APACHE - Setup local apache for agent update
   ansible.builtin.copy:
@@ -143,7 +141,6 @@
     login_db: '{{ ITSM_DBNAME }}'
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
-    single_transaction: yes
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
@@ -461,6 +458,69 @@
   when:
     - not IMAGING_DISABLED
 
+- name: PULSE/IMAGING - Check if default boot menu exists for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - SELECT id FROM Menu WHERE default_name = 'Default Boot Menu - {{ ORGANISATION }} > {{ ENTITY }}'
+  register: res_querymenu
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Duplicate default boot menu for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO Menu (default_name, fk_name, timeout, background_uri, message, fk_default_item, fk_default_item_WOL) SELECT 'Default Boot Menu - {{ ORGANISATION }} > {{ ENTITY }}', fk_name, timeout, background_uri, message, fk_default_item, fk_default_item_WOL FROM Menu WHERE id = 1
+      - SELECT LAST_INSERT_ID() AS menuid
+    single_transaction: true
+  register: res_querynewmenu
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Duplicate "Continue Usual Startup" default menu item for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO MenuItem (`order`, hidden, hidden_WOL, fk_menu) VALUES (0, 0, 0, {{ res_querynewmenu.query_result[1][0].menuid }});
+      - INSERT INTO BootServiceInMenu (fk_bootservice, fk_menuitem) VALUES (1, LAST_INSERT_ID());
+    single_transaction: true
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
+- name: PULSE/IMAGING - Duplicate "Create a backup" default menu item for this imaging server
+  community.mysql.mysql_query:
+    login_host: '{{ DBHOST }}'
+    login_port: '{{ DBPORT }}'
+    login_user: '{{ DBUSER }}'
+    login_password: '{{ DBPASSWORD }}'
+    login_db: imaging
+    query:
+      - INSERT INTO MenuItem (`order`, hidden, hidden_WOL, fk_menu) VALUES (1, 0, 0, {{ res_querynewmenu.query_result[1][0].menuid }});
+      - INSERT INTO BootServiceInMenu (fk_bootservice, fk_menuitem) VALUES (3, LAST_INSERT_ID());
+    single_transaction: true
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  when:
+    - not IMAGING_DISABLED
+    - res_querymenu.rowcount[0] == 0
+
 - name: PULSE/IMAGING - Insert imaging server in database if not registered
   community.mysql.mysql_query:
     login_host: '{{ DBHOST }}'
@@ -469,7 +529,7 @@
     login_password: '{{ DBPASSWORD }}'
     login_db: imaging
     query:
-      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', 1, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
+      - INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, associated, fk_entity, davos_opts ) VALUES ('{{ IMAGING_SERVER_NAME }}', 'https://{{ XMPP_DOMAIN }}:9990/imaging_api', {{ res_querynewmenu.query_result[1][0].menuid }}, '{{ ps_uuid }}', 1, {{ res_queryentityimaging.query_result[0][0].id }}, 'fqdn={{ SERVER_FQDN }}' )
   delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
   when:
     - not IMAGING_DISABLED
@@ -489,3 +549,37 @@
   when:
     - not IMAGING_DISABLED
     - res_query.rowcount[0] != 0
+
+- name: PULSE/ADMIN - Setup apache for websocket logs on main pulse
+  ansible.builtin.template:
+    src: websocketlogs.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/websocketlogs-{{ ansible_hostname }}.conf'
+    mode: '0644'
+    backup: yes
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
+  when:
+    - PULSEMAIN_FQDN is defined
+
+- name: PULSE/ADMIN - Enable websocketlogs module
+  ansible.builtin.command: a2enconf websocketlogs-{{ ansible_hostname }}
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Reload apache on main server
+  when:
+    - PULSEMAIN_FQDN is defined
+    - ansible_distribution == 'Debian'
+
+- name: PULSE/ADMIN - Define relay server logs in admin.ini.local on main pulse
+  community.general.ini_file:
+    path: /etc/mmc/plugins/admin.ini.local
+    section: websocket_logs
+    option: '{{ ansible_hostname }}'
+    value: '{{ APACHE_DAEMON }}/access.log, {{ APACHE_DAEMON }}/error.log, ejabberd/ejabberd.log, ejabberd/error.log, mmc/pulse2-package-server.log, mmc/pulse2-register-pxe.log, pulse/xmpp-agent-relay.log, pulse/pulse-package-watching.log'
+    backup: yes
+  delegate_to: '{{ PULSEMAIN_FQDN if PULSEMAIN_FQDN != "" else omit }}'
+  notify:
+    - PULSE - Restart mmc-agent on main server
+  when:
+    - PULSEMAIN_FQDN is defined

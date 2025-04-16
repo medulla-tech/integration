@@ -9,3 +9,16 @@
     name: '{{ SAMBA_DAEMON }}'
     state: restarted
     daemon_reload: yes
+
+- name: PULSE - Reload apache on main server
+  ansible.builtin.systemd:
+    name: '{{ APACHE_DAEMON }}'
+    state: reloaded
+  delegate_to: '{{ PULSEMAIN_FQDN }}'
+
+- name: PULSE - Restart mmc-agent on main server
+  ansible.builtin.systemd:
+    name: mmc-agent
+    state: restarted
+    daemon_reload: yes
+  delegate_to: '{{ PULSEMAIN_FQDN }}'

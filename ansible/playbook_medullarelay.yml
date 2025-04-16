@@ -42,6 +42,7 @@
     - { role: syncthing_share_folder, SHARE_NAME: 'downloads', SHARE_PATH: '/var/lib/pulse2/clients/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
     - { role: syncthing_share_folder, SHARE_NAME: 'global', SHARE_PATH: '/var/lib/pulse2/packages/sharing/global/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
     - { role: syncthing_share_folder, SHARE_NAME: 'winupdates', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdates/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
+    - { role: syncthing_share_folder, SHARE_NAME: 'winupdatesmajor', SHARE_PATH: '/var/lib/pulse2/packages/sharing/winupdatesmajor/', MAIN_SHARE_TYPE: 'sendonly', RELAY_SHARE_TYPE: 'sendreceive' }
     - relay_agent
 
 - name: Medulla Relay - Part 3
@@ -50,7 +51,7 @@
   remote_user: root
   # environment: "{{ proxy_env }}"
   roles:
-    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
+    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: ((PKGS_SHARE_NAME is defined) and (PKGS_SHARE_NAME != '')) }
 
 - name: Medulla Relay - Part 4
   gather_facts: true
@@ -59,7 +60,7 @@
   remote_user: root
   # environment: "{{ proxy_env }}"
   roles:
-    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: (PKGS_SHARE_NAME is defined) }
+    - { role: syncthing_share_folder, SHARE_NAME: '{{ PKGS_SHARE_NAME }}', SHARE_PATH: '/var/lib/pulse2/packages/sharing/{{ PKGS_SHARE_NAME }}/', MAIN_SHARE_TYPE: 'sendreceive', RELAY_SHARE_TYPE: 'receiveonly', when: ((PKGS_SHARE_NAME is defined) and (PKGS_SHARE_NAME != '')) }
     - pulse_relay
 
 - name: Medulla Relay - Part 5

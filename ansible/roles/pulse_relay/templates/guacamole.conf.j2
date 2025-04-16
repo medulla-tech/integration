@@ -3,6 +3,7 @@
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED
+    Allow from 127.0.0.1
     ProxyPass http://{{ SERVER_FQDN }}:8081/guacamole/ max=20 flushpackets=on
     ProxyPassReverse http://{{ SERVER_FQDN }}:8081/guacamole/
     ProxyPassReverseCookiePath /guacamole/ /guacamole-{{ XMPP_DOMAIN}}/
@@ -12,6 +13,7 @@
     Order Deny,Allow
     Deny from all
     Allow from env=GUACAMOLE_ALLOWED
+    Allow from 127.0.0.1
     ProxyPass ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
     ProxyPassReverse ws://{{ SERVER_FQDN }}:8081/guacamole/websocket-tunnel
     ProxyPassReverseCookiePath /guacamole/ /guacamole-{{XMPP_DOMAIN }}/

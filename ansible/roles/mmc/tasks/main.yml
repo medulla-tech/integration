@@ -116,6 +116,7 @@
     pkg:
       - python3.11-PyMySQL
       - python3.11-ldap
+      - python3.11-netaddr
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -125,6 +126,7 @@
     pkg:
       - python3-pymysql
       - python3-pyldap
+      - python3-netaddr
   when:
     - ansible_distribution == 'Debian'
 

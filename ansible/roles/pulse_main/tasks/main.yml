@@ -23,6 +23,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
       - cron
       - mariadb-client
       - crudini
@@ -36,6 +37,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
+      - python3.11-netaddr
       - cronie
       - crudini
       - vim-common
@@ -48,6 +50,7 @@
     state: latest
     pkg:
       - python3-pymysql
+      - python3-netaddr
       - cron
       - mariadb-client
       - crudini
@@ -100,7 +103,6 @@
     login_db: '{{ ITSM_DBNAME }}'
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ IP_ADDRESS }}', 1, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ IP_ADDRESS | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
-    single_transaction: yes
   delegate_to: '{{ ITSM_DBHOST }}'
   when:
     - ITSM_WRITEABLE
@@ -279,6 +281,17 @@
     path: /etc/samba/smb.conf
     backup: yes
     marker: "# {mark} ANSIBLE MANAGED BLOCK postinst"
+  notify:
+    - PULSE - Restart samba
+  when:
+    - not IMAGING_DISABLED
+
+- name: PULSE/IMAGING - Configure samba for imaging logs
+  ansible.builtin.blockinfile:
+    block: "{{ lookup('ansible.builtin.file', './smb_imaginglogs.conf') }}"
+    path: /etc/samba/smb.conf
+    backup: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK imaginglogs"
   notify:
     - PULSE - Restart samba
   when:
@@ -477,3 +490,19 @@
     hour: "*/4"
     user: root
     job: "/var/lib/pulse2/maintenance/maintenance_ejabberd.sh &> /dev/null"
+
+- name: PULSE/ADMIN - Setup local apache for websocket logs
+  ansible.builtin.template:
+    src: websocketlogs.conf.j2
+    dest: '{{ APACHE_CONF_PATH }}/websocketlogs.conf'
+    mode: '0644'
+    backup: yes
+  notify:
+    - PULSE - Restart apache
+
+- name: PULSE/ADMIN - Enable websocketlogs module
+  ansible.builtin.command: a2enconf websocketlogs
+  notify:
+    - PULSE - Restart apache
+  when:
+    - ansible_distribution == 'Debian'

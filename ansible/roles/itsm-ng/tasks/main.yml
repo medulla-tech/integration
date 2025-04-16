@@ -67,7 +67,7 @@
     state: latest
     pkg:
       - python3.11-PyMySQL
-      - python3-netaddr
+      - python3.11-netaddr
   when:
     - ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
@@ -127,7 +127,7 @@
     - resdbinitialised.stat.exists
 
 - name: ITSM-NG - Initialise database
-  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSMNG_DBHOST }} --db-port={{ ITSMNG_DBPORT }} --db-name {{ ITSMNG_DBNAME }} --db-user {{ DBADMINUSER }} --db-password '{{ DBADMINPASSWD }}' --default-language=fr_FR --force --reconfigure
+  ansible.builtin.command: php /usr/share/itsm-ng/bin/console -n db:install --db-host={{ ITSMNG_DBHOST }} --db-port={{ ITSMNG_DBPORT }} --db-name {{ ITSMNG_DBNAME }} --db-user {{ ITSMNG_DBUSER }} --db-password '{{ ITSMNG_DBPASSWD }}' --default-language=fr_FR --force --reconfigure
   when:
     - ITSMNG_DBINITIALISED is not defined
   register: itsm_init
@@ -253,7 +253,6 @@
     login_db: '{{ ITSMNG_DBNAME }}'
     query:
     - INSERT INTO glpi_apiclients (is_recursive, name, is_active, ipv4_range_start, ipv4_range_end) VALUES (1, 'full access from {{ PUBLIC_IP }}', 1, {{ PUBLIC_IP | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }}, {{ PUBLIC_IP | ansible.utils.ipaddr('address') | ansible.utils.ipaddr('int') }})
-    single_transaction: yes
   when:
     - PUBLIC_IP != ''
 

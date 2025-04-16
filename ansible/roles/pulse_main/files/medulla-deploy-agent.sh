@@ -15,6 +15,10 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 WINRM_PORT='5985'
+DBHOST=$(crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbhost 2> /dev/null || echo localhost)
+DBPORT=$(crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbport 2> /dev/null || echo 3306)
+DBUSER=$(crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbuser 2> /dev/null || echo mmc)
+DBPASS=$(crudini --get /etc/mmc/plugins/xmppmaster.ini.local database dbpasswd)
 
 display_usage() {
     echo -e "${RED}Usage: $0 --target=<target_cidr | target_fqdn> | --server=<ad_server_name> [--port=<winrm_or_ssh_port>] [--namefilter=<filter_on_hostname>] [--domain=<user_domain>] [--username=<remote_username>] [--password=<remote_password>] [--sshkey=<path_to_ssh_key>] [--ou=<ad_ou>] [--force] [--reinstall]"
@@ -91,6 +95,10 @@ check_arguments() {
                 ;;
             --force*)
                 FORCE=1
+                shift
+                ;;
+            --reinstall*)
+                REINSTALL=1
                 shift
                 ;;
             --debug*)
@@ -189,6 +197,16 @@ Invoke-Command -ComputerName ${SERVER} -Authentication Negotiate -Credential \$c
     fi
 }
 
+remove_installed() {
+    index=0
+    for MACH in ${MACH_LIST[@]}; do
+        if [[ $(mysql -Ns -h ${DBHOST} -P ${DBPORT} -u${DBUSER} -p${DBPASS} xmppmaster -e "SELECT hostname FROM machines WHERE hostname='${MACH%%.*}'") != '' ]]; then
+            unset 'MACH_LIST[index]'
+        fi
+        ((index++))
+    done
+}
+
 confirm_list() {
     echo -e "${NC}"
     echo "Are you sure you want to install Medulla agent on the following machines:"
@@ -260,6 +278,9 @@ else
     else
         get_machines_list_ad
     fi
+fi
+if [ -z ${REINSTALL+x} ]; then
+    remove_installed
 fi
 if [ ${#MACH_LIST[@]} -eq 0 ]; then
     echo -e "${NC}No machines to install Medulla Agent on"
